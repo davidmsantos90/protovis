@@ -36,7 +36,8 @@ pv.SvgScene.line = function(scenes) {
       "stroke": stroke.color,
       "stroke-opacity": stroke.opacity || null,
       "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null,
-      "stroke-linejoin": s.lineJoin
+      "stroke-linejoin": s.lineJoin,
+      "stroke-dasharray": s.strokeDasharray
     });
   return this.append(e, scenes, 0);
 };

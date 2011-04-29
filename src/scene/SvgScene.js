@@ -133,10 +133,9 @@ pv.SvgScene.append = function(e, scenes, index) {
 /**
  * Applies a title tooltip to the specified element <tt>e</tt>, using the
  * <tt>title</tt> property of the specified scene node <tt>s</tt>. Note that
- * this implementation does not create an SVG <tt>title</tt> element as a child
- * of <tt>e</tt>; although this is the recommended standard, it is only
- * supported in Opera. Instead, an anchor element is created around the element
- * <tt>e</tt>, and the <tt>xlink:title</tt> attribute is set accordingly.
+ * this implementation creates both the SVG <tt>title</tt> element (which
+ * is the recommended approach, but only works in more modern browsers) and 
+ * the <tt>xlink:title</tt> attribute which works on more down-level browsers.
  *
  * @param e an SVG element.
  * @param s a scene node.
@@ -147,6 +146,8 @@ pv.SvgScene.title = function(e, s) {
   if (s.title) {
     if (!a) {
       a = this.create("a");
+      // for FF>=4 when showing non-title element tooltips
+      a.setAttributeNS(this.xlink, "xlink:href", "");
       if (e.parentNode) e.parentNode.replaceChild(a, e);
       a.appendChild(e);
     }
@@ -154,7 +155,29 @@ pv.SvgScene.title = function(e, s) {
     // Set the title. Using xlink:title ensures the call works in IE
     // but only FireFox seems to show the title.
     // without xlink: in there, it breaks IE.
-    a.setAttributeNS(this.xlink, "xlink:title", s.title);
+    a.setAttributeNS(this.xlink, "xlink:title", s.title); // for FF<4
+	
+	// for SVG renderers that follow the recommended approach
+	var t = null;
+	for (var c = e.firstChild; c != null; c = c.nextSibling) {
+      if (c.nodeName == "title") {
+        t = c;
+        break;
+      }
+	}
+	if (!t) {
+      t = this.create("title");
+      e.appendChild(t);
+    } else {
+      t.removeChild(t.firstChild); // empty out the text
+	}
+	
+	if (pv.renderer() == "svgweb") { // SVGWeb needs an extra 'true' to create SVG text nodes properly in IE.
+      t.appendChild(document.createTextNode(s.title, true));
+	} else {
+      t.appendChild(document.createTextNode(s.title));
+	}
+	
     return a;
   }
   if (a) a.parentNode.replaceChild(e, a);

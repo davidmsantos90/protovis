@@ -62,7 +62,7 @@ pv.SvgScene.panel = function(scenes) {
                 * Until a better solution comes along, lets use this.
                 */
                 var me = this;
-                var callback = function () {
+                (function () {
                     if (complete) {
                         complete = false;
                         me.appendChild(frag);
@@ -70,11 +70,11 @@ pv.SvgScene.panel = function(scenes) {
                           me.addEventListener(pv.Scene.events[j], pv.SvgScene.dispatch, false);
                         }
                         scenes.$g = me;
+						scenes.$g.__ready = true;
                     } else {
-                        setTimeout(callback, 10);
+                        setTimeout(arguments.callee, 10);
                     }
-                }
-                callback();
+                })();
 
             }, false);
 
@@ -85,12 +85,13 @@ pv.SvgScene.panel = function(scenes) {
               g.addEventListener(this.events[j], this.dispatch, false);
             }
             g = s.canvas.appendChild(g);
+			g.__ready = true;
         }
 
         e = g.firstChild;
       }
       scenes.$g = g;
-      if (pv.renderer() != 'svgweb') {
+      if (g.__ready) {
         g.setAttribute("width", s.width + s.left + s.right);
         g.setAttribute("height", s.height + s.top + s.bottom);
       }

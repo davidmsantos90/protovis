@@ -25,6 +25,7 @@ pv.Dot.prototype = pv.extend(pv.Mark)
     .property("shapeSize", Number)
     .property("lineWidth", Number)
     .property("strokeStyle", pv.color)
+    .property("strokeDasharray", String)
     .property("fillStyle", pv.color);
 
 pv.Dot.prototype.type = "dot";
@@ -120,7 +121,8 @@ pv.Dot.prototype.defaults = new pv.Dot()
     .extend(pv.Mark.prototype.defaults)
     .shape("circle")
     .lineWidth(1.5)
-    .strokeStyle(pv.Colors.category10().by(pv.parent));
+    .strokeStyle(pv.Colors.category10().by(pv.parent))
+    .strokeDasharray("");
 
 /**
  * Constructs a new dot anchor with default properties. Dots support five
