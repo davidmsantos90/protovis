@@ -63,7 +63,7 @@ pv.SvgScene.dot = function(scenes) {
       "stroke": stroke.color,
       "stroke-opacity": stroke.opacity || null,
       "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null,
-      "stroke-dasharray": s.strokeDasharray	  
+      "stroke-dasharray": s.strokeDasharray
     };
     if (path) {
       svg.transform = "translate(" + s.left + "," + s.top + ")";

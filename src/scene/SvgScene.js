@@ -134,7 +134,7 @@ pv.SvgScene.append = function(e, scenes, index) {
  * Applies a title tooltip to the specified element <tt>e</tt>, using the
  * <tt>title</tt> property of the specified scene node <tt>s</tt>. Note that
  * this implementation creates both the SVG <tt>title</tt> element (which
- * is the recommended approach, but only works in more modern browsers) and 
+ * is the recommended approach, but only works in more modern browsers) and
  * the <tt>xlink:title</tt> attribute which works on more down-level browsers.
  *
  * @param e an SVG element.
@@ -156,28 +156,28 @@ pv.SvgScene.title = function(e, s) {
     // but only FireFox seems to show the title.
     // without xlink: in there, it breaks IE.
     a.setAttributeNS(this.xlink, "xlink:title", s.title); // for FF<4
-	
-	// for SVG renderers that follow the recommended approach
-	var t = null;
-	for (var c = e.firstChild; c != null; c = c.nextSibling) {
+
+    // for SVG renderers that follow the recommended approach
+    var t = null;
+    for (var c = e.firstChild; c != null; c = c.nextSibling) {
       if (c.nodeName == "title") {
         t = c;
         break;
       }
-	}
-	if (!t) {
+    }
+    if (!t) {
       t = this.create("title");
       e.appendChild(t);
     } else {
       t.removeChild(t.firstChild); // empty out the text
-	}
-	
-	if (pv.renderer() == "svgweb") { // SVGWeb needs an extra 'true' to create SVG text nodes properly in IE.
+    }
+
+    if (pv.renderer() == "svgweb") { // SVGWeb needs an extra 'true' to create SVG text nodes properly in IE.
       t.appendChild(document.createTextNode(s.title, true));
-	} else {
+    } else {
       t.appendChild(document.createTextNode(s.title));
-	}
-	
+    }
+
     return a;
   }
   if (a) a.parentNode.replaceChild(e, a);

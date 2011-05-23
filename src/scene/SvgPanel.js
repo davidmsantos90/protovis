@@ -70,7 +70,7 @@ pv.SvgScene.panel = function(scenes) {
                           me.addEventListener(pv.Scene.events[j], pv.SvgScene.dispatch, false);
                         }
                         scenes.$g = me;
-						scenes.$g.__ready = true;
+                        scenes.$g.__ready = true;
                     } else {
                         setTimeout(arguments.callee, 10);
                     }
@@ -85,7 +85,7 @@ pv.SvgScene.panel = function(scenes) {
               g.addEventListener(this.events[j], this.dispatch, false);
             }
             g = s.canvas.appendChild(g);
-			g.__ready = true;
+            g.__ready = true;
         }
 
         e = g.firstChild;

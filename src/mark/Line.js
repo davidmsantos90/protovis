@@ -142,7 +142,7 @@ pv.Line.prototype.defaults = new pv.Line()
     .lineJoin("miter")
     .lineWidth(1.5)
     .strokeStyle(pv.Colors.category10().by(pv.parent))
-	.strokeDasharray("")
+    .strokeDasharray("")
     .interpolate("linear")
     .eccentricity(0)
     .tension(.7);
