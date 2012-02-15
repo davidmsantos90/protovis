@@ -206,6 +206,12 @@ pv.Mark.prototype.propertyValue = function(name, v) {
 pv.Mark.prototype
     .property("data")
     .property("visible", Boolean)
+    // DATUM - an object counterpart for each value of data.
+    // Must be added here,
+    // to ensure that it is evaluated before VISIBLE
+    // Properties are evaluated backwards in defining order...
+    // Amongst required properties the order will be: id, datum, visible
+    .property("datum", Object)
     .property("left", Number)
     .property("right", Number)
     .property("top", Number)
@@ -440,6 +446,10 @@ pv.Mark.prototype.scale = 1;
  */
 pv.Mark.prototype.defaults = new pv.Mark()
     .data(function(d) { return [d]; })
+    // DATUM - an object counterpart for each value of data.
+    .datum(function() {
+        return this.parent ?
+                this.parent.scene[this.parent.index].datum : null; })
     .visible(true)
     .antialias(true)
     .events("painted");
@@ -528,6 +538,10 @@ pv.Mark.prototype.anchor = function(name) {
     .name(name)
     .data(function() {
         return this.scene.target.map(function(s) { return s.data; });
+      })
+    // DATUM - an object counterpart for each value of data.
+    .datum(function() {
+        return this.scene.target[this.index].datum;
       })
     .visible(function() {
         return this.scene.target[this.index].visible;
@@ -824,7 +838,9 @@ pv.Mark.stack = [];
  * do not need to be queried during build.
  */
 pv.Mark.prototype.bind = function() {
-  var seen = {}, types = [[], [], [], []], data, required = [];
+  var seen = {}, types = [[], [], [], []], data, required = [],
+      // DATUM - an object counterpart for each value of data.
+      requiredPositions = {};
 
   /** Scans the proto chain for the specified mark. */
   function bind(mark) {
@@ -836,7 +852,15 @@ pv.Mark.prototype.bind = function() {
           seen[p.name] = p;
           switch (p.name) {
             case "data": data = p; break;
-            case "visible": case "id": required.push(p); break;
+
+            // DATUM - an object counterpart for each value of data.
+            case "datum":
+            case "visible":
+            case "id":
+                required.push(p);
+                requiredPositions[p.name] = i;
+                break;
+
             default: types[p.type].push(p); break;
           }
         }
@@ -847,6 +871,17 @@ pv.Mark.prototype.bind = function() {
   /* Scan the proto chain for all defined properties. */
   bind(this);
   bind(this.defaults);
+
+  /*
+   * DATUM - an object counterpart for each value of data.
+   * Sort required properties to respect (inverse) definition order
+   * These may be out of order when one o the properties
+   * comes form this and the other fom this.defaults
+   */
+  required.sort(function(pa, pb){
+      return requiredPositions[pb.name] - requiredPositions[pa.name];
+  });
+
   types[1].reverse();
   types[3].reverse();
 
