@@ -96,7 +96,7 @@ pv.Behavior.point = function(r) {
   }
 
   /** @private */
-  function mousemove() {
+  function mousemove(e) {
     /* If the closest mark is far away, clear the current target. */
     var point = search(this.scene, this.index);
     if ((point.cost == Infinity) || (point.distance > r2)) point = null;
@@ -106,12 +106,12 @@ pv.Behavior.point = function(r) {
       if (point
           && (unpoint.scene == point.scene)
           && (unpoint.index == point.index)) return;
-      pv.Mark.dispatch("unpoint", unpoint.scene, unpoint.index);
+      pv.Mark.dispatch("unpoint", unpoint.scene, unpoint.index, e);
     }
 
     /* Point the new target, if there is one. */
     if (unpoint = point) {
-      pv.Mark.dispatch("point", point.scene, point.index);
+      pv.Mark.dispatch("point", point.scene, point.index, e);
 
       /* Unpoint when the mouse leaves the root panel. */
       pv.listen(this.root.canvas(), "mouseout", mouseout);
@@ -121,7 +121,7 @@ pv.Behavior.point = function(r) {
   /** @private */
   function mouseout(e) {
     if (unpoint && !pv.ancestor(this, e.relatedTarget)) {
-      pv.Mark.dispatch("unpoint", unpoint.scene, unpoint.index);
+      pv.Mark.dispatch("unpoint", unpoint.scene, unpoint.index, e);
       unpoint = null;
     }
   }

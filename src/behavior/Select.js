@@ -62,7 +62,7 @@ pv.Behavior.select = function() {
       m1; // initial mouse position
 
   /** @private */
-  function mousedown(d) {
+  function mousedown(d, e) {
     index = this.index;
     scene = this.scene;
     m1 = this.mouse();
@@ -70,11 +70,11 @@ pv.Behavior.select = function() {
     r.x = m1.x;
     r.y = m1.y;
     r.dx = r.dy = 0;
-    pv.Mark.dispatch("selectstart", scene, index);
+    pv.Mark.dispatch("selectstart", scene, index, e);
   }
 
   /** @private */
-  function mousemove() {
+  function mousemove(e) {
     if (!scene) return;
     scene.mark.context(scene, index, function() {
         var m2 = this.mouse();
@@ -84,13 +84,13 @@ pv.Behavior.select = function() {
         r.dy = Math.min(this.height(), Math.max(m2.y, m1.y)) - r.y;
         this.render();
       });
-    pv.Mark.dispatch("select", scene, index);
+    pv.Mark.dispatch("select", scene, index, e);
   }
 
   /** @private */
-  function mouseup() {
+  function mouseup(e) {
     if (!scene) return;
-    pv.Mark.dispatch("selectend", scene, index);
+    pv.Mark.dispatch("selectend", scene, index, e);
     scene = null;
   }
 

@@ -61,7 +61,7 @@ pv.Behavior.pan = function() {
   }
 
   /** @private */
-  function mousemove() {
+  function mousemove(e) {
     if (!scene) return;
     scene.mark.context(scene, index, function() {
         var x = (pv.event.pageX - v1.x) * k,
@@ -73,7 +73,7 @@ pv.Behavior.pan = function() {
         }
         this.transform(m).render();
       });
-    pv.Mark.dispatch("pan", scene, index);
+    pv.Mark.dispatch("pan", scene, index, e);
   }
 
   /** @private */

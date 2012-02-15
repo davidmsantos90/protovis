@@ -63,7 +63,7 @@ pv.Behavior.resize = function(side) {
       m1; // initial mouse position
 
   /** @private */
-  function mousedown(d) {
+  function mousedown(d, e) {
     index = this.index;
     scene = this.scene;
     m1 = this.mouse();
@@ -74,11 +74,11 @@ pv.Behavior.resize = function(side) {
       case "top": m1.y = r.y + r.dy; break;
       case "bottom": m1.y = r.y; break;
     }
-    pv.Mark.dispatch("resizestart", scene, index);
+    pv.Mark.dispatch("resizestart", scene, index, e);
   }
 
   /** @private */
-  function mousemove() {
+  function mousemove(e) {
     if (!scene) return;
     scene.mark.context(scene, index, function() {
         var m2 = this.mouse();
@@ -88,13 +88,13 @@ pv.Behavior.resize = function(side) {
         r.dy = Math.min(this.parent.height(), Math.max(m2.y, m1.y)) - r.y;
         this.render();
       });
-    pv.Mark.dispatch("resize", scene, index);
+    pv.Mark.dispatch("resize", scene, index, e);
   }
 
   /** @private */
-  function mouseup() {
+  function mouseup(e) {
     if (!scene) return;
-    pv.Mark.dispatch("resizeend", scene, index);
+    pv.Mark.dispatch("resizeend", scene, index, e);
     scene = null;
   }
 

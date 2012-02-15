@@ -1231,11 +1231,11 @@ pv.Mark.prototype.context = function(scene, index, f) {
 };
 
 /** @private Execute the event listener, then re-render. */
-pv.Mark.dispatch = function(type, scene, index) {
+pv.Mark.dispatch = function(type, scene, index, event) {
   var m = scene.mark, p = scene.parent, l = m.$handlers[type];
-  if (!l) return p && pv.Mark.dispatch(type, p, scene.parentIndex);
+  if (!l) return p && pv.Mark.dispatch(type, p, scene.parentIndex, event);
   m.context(scene, index, function() {
-      m = l.apply(m, pv.Mark.stack);
+      m = l.apply(m, pv.Mark.stack.concat(event));
       if (m && m.render) m.render();
     });
   return true;

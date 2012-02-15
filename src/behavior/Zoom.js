@@ -43,7 +43,7 @@ pv.Behavior.zoom = function(speed) {
   if (!arguments.length) speed = 1 / 48;
 
   /** @private */
-  function mousewheel() {
+  function mousewheel(e) {
     var v = this.mouse(),
         k = pv.event.wheel * speed,
         m = this.transform().translate(v.x, v.y)
@@ -55,7 +55,7 @@ pv.Behavior.zoom = function(speed) {
       m.y = Math.max((1 - m.k) * this.height(), Math.min(0, m.y));
     }
     this.transform(m).render();
-    pv.Mark.dispatch("zoom", this.scene, this.index);
+    pv.Mark.dispatch("zoom", this.scene, this.index, e);
   }
 
   /**
