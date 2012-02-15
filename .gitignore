@@ -1,2 +1,5 @@
 .DS_Store
 jsdoc
+
+/nbproject
+/build.xml
