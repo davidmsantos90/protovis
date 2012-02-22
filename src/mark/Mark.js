@@ -207,10 +207,6 @@ pv.Mark.prototype
     .property("data")
     .property("visible", Boolean)
     // DATUM - an object counterpart for each value of data.
-    // Must be added here,
-    // to ensure that it is evaluated before VISIBLE
-    // Properties are evaluated backwards in defining order...
-    // Amongst required properties the order will be: id, datum, visible
     .property("datum", Object)
     .property("left", Number)
     .property("right", Number)
@@ -840,7 +836,9 @@ pv.Mark.stack = [];
 pv.Mark.prototype.bind = function() {
   var seen = {}, types = [[], [], [], []], data, required = [],
       // DATUM - an object counterpart for each value of data.
-      requiredPositions = {};
+      // Ensure that required properties are evaluated in
+      // the order: id, datum, visible
+      requiredPositions = {id: 0, datum: 1, visible: 3};
 
   /** Scans the proto chain for the specified mark. */
   function bind(mark) {
@@ -858,7 +856,6 @@ pv.Mark.prototype.bind = function() {
             case "visible":
             case "id":
                 required.push(p);
-                requiredPositions[p.name] = i;
                 break;
 
             default: types[p.type].push(p); break;
@@ -874,12 +871,12 @@ pv.Mark.prototype.bind = function() {
 
   /*
    * DATUM - an object counterpart for each value of data.
-   * Sort required properties to respect (inverse) definition order
-   * These may be out of order when one o the properties
-   * comes form this and the other fom this.defaults
+   * Sort required properties.
+   * These may be out of order when one of the properties
+   * comes from 'this' and the other from 'this.defaults'.
    */
   required.sort(function(pa, pb){
-      return requiredPositions[pb.name] - requiredPositions[pa.name];
+      return requiredPositions[pa.name] - requiredPositions[pb.name];
   });
 
   types[1].reverse();
