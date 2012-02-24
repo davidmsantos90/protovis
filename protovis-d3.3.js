@@ -1,4 +1,4 @@
-// 62a6c37614462d38b5b1d5300e993405a2146a1c
+// bb677cde2fae25b1bec496d53b551e7f66d41944
 /**
  * @class The built-in Array class.
  * @name Array
@@ -9767,7 +9767,8 @@ pv.Transition = function(mark) {
   var that = this,
       ease = pv.ease("cubic-in-out"),
       duration = 250,
-      timer;
+      timer,
+      onEndCallback;
 
   var interpolated = {
     top: 1,
@@ -9810,9 +9811,9 @@ pv.Transition = function(mark) {
   function interpolateProperty(list, name, before, after) {
     if (name in interpolated) {
       var i = pv.Scale.interpolator(before[name], after[name]);
-      var f = function(t) { before[name] = i(t); }
+      var f = function(t) {before[name] = i(t);}
     } else {
-      var f = function(t) { if (t > .5) before[name] = after[name]; }
+      var f = function(t) {if (t > .5) before[name] = after[name];}
     }
     f.next = list.head;
     list.head = f;
@@ -9884,7 +9885,7 @@ pv.Transition = function(mark) {
     var seen = {};
     for (var i = 0; i < p.length; i++) seen[p[i].name] = 1;
     p = m.binds.optional
-        .filter(function(p) { return !(p.name in seen); })
+        .filter(function(p) {return !(p.name in seen);})
         .concat(p);
 
     /* Evaluate the properties and update any implied ones. */
@@ -9923,9 +9924,22 @@ pv.Transition = function(mark) {
         : duration;
   };
 
-  that.start = function() {
+  function doEnd(){
+      if(onEndCallback){
+          var cb = onEndCallback;
+          onEndCallback = null;
+          cb();
+      }
+  }
+
+  that.start = function(onEnd) {
+    onEndCallback = onEnd;
+
     // TODO allow partial rendering
-    if (mark.parent) fail();
+    if (mark.parent) {
+        doEnd();
+        fail();
+    }
 
     // TODO allow parallel and sequenced transitions
     if (mark.$transition) mark.$transition.stop();
@@ -9956,6 +9970,7 @@ pv.Transition = function(mark) {
 
   that.stop = function() {
     clearInterval(timer);
+    doEnd();
   };
 };
 pv.Transient = function(mark) {
