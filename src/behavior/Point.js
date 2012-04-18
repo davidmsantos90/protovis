@@ -59,6 +59,7 @@ pv.Behavior.point = function(r) {
       collapse = null, // dimensions to collapse
       kx = 1, // x-dimension cost scale
       ky = 1, // y-dimension cost scale
+      pointingPanel = null, 
       r2 = arguments.length ? r * r : 900; // fuzzy radius
 
   /** @private Search for the mark closest to the mouse. */
@@ -113,8 +114,16 @@ pv.Behavior.point = function(r) {
     if (unpoint = point) {
       pv.Mark.dispatch("point", point.scene, point.index, e);
 
-      /* Unpoint when the mouse leaves the root panel. */
-      pv.listen(this.root.canvas(), "mouseout", mouseout);
+      /* Unpoint when the mouse leaves the pointing panel. */
+      if(!pointingPanel && this.type === 'panel') {
+          pointingPanel = this;
+          pointingPanel.event('mouseout', function(){
+              var ev = arguments[arguments.length - 1];
+              mouseout.call(pointingPanel.scene.$g, ev);
+          });
+      } else {
+          pv.listen(this.root.canvas(), "mouseout", mouseout);
+      }
     }
   }
 
