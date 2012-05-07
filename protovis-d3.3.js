@@ -1,4 +1,4 @@
-// 4308bfb058323b0fd612b48578a10177f5a4241d
+// 1c02ef657fbe8457bdb3500066d5b1f94a25f722
 /**
  * @class The built-in Array class.
  * @name Array
@@ -3398,18 +3398,18 @@ pv.Scale.quantitative = function() {
     }
 
     /* Normal case: numbers. */
-        if (!arguments.length) m = 10;
-        var step = pv.logFloor(span / m, 10),
-            err = m / (span / step);
-        if (err <= .15) step *= 10;
-        else if (err <= .35) step *= 5;
-        else if (err <= .75) step *= 2;
-        var start = Math.ceil(min / step) * step,
-            end = Math.floor(max / step) * step;
-        tickFormat = pv.Format.number()
-            .fractionDigits(Math.max(0, -Math.floor(pv.log(step, 10) + .01)));
-        var ticks = pv.range(start, end + step, step);
-        return reverse ? ticks.reverse() : ticks;
+    if (!arguments.length) m = 10;
+    var step = pv.logFloor(span / m, 10),
+        err = m / (span / step);
+    if (err <= .15) step *= 10;
+    else if (err <= .35) step *= 5;
+    else if (err <= .75) step *= 2;
+    var start = Math.ceil(min / step) * step,
+        end = Math.floor(max / step) * step;
+    tickFormat = pv.Format.number()
+        .fractionDigits(Math.max(0, -Math.floor(pv.log(step, 10) + .01)));
+    var ticks = pv.range(start, end + step, step);
+    return reverse ? ticks.reverse() : ticks;
   };
 
 
@@ -12099,10 +12099,10 @@ pv.Layout.Grid.prototype.buildImplied = function(s) {
  * supported streamgraph algorithms.
  *
  * <p>In the simplest case, the layer data can be specified as a two-dimensional
- * array of numbers. The <tt>x</tt> and <tt>y</tt> pseudo-properties are used to
+ * array of numbers. The <tt>x</tt> and <tt>y</tt> psuedo-properties are used to
  * define the thickness of each layer at the given position, respectively; in
  * the above example of the "bottom-left" orientation, the <tt>x</tt> and
- * <tt>y</tt> pseudo-properties are equivalent to the <tt>left</tt> and
+ * <tt>y</tt> psuedo-properties are equivalent to the <tt>left</tt> and
  * <tt>height</tt> properties that you might use if you implemented a stacked
  * area by hand.
  *
@@ -12116,10 +12116,10 @@ pv.Layout.Grid.prototype.buildImplied = function(s) {
  * <tt>x</tt> and <tt>y</tt> specify pixel sizes. To simplify scaling math, use
  * this layout in conjunction with {@link pv.Scale.linear} or similar.
  *
- * <p>In other cases, the <tt>values</tt> pseudo-property can be used to define
+ * <p>In other cases, the <tt>values</tt> psuedo-property can be used to define
  * the data more flexibly. As with a typical panel &amp; area, the
  * <tt>layers</tt> property corresponds to the data in the enclosing panel,
- * while the <tt>values</tt> pseudo-property corresponds to the data for the
+ * while the <tt>values</tt> psuedo-property corresponds to the data for the
  * area within the panel. For example, given an array of data values:
  *
  * <pre>var crimea = [
@@ -12143,7 +12143,7 @@ pv.Layout.Grid.prototype.buildImplied = function(s) {
  *     ...</pre>
  *
  * As with the panel &amp; area case, the datum that is passed to the
- * pseudo-properties <tt>x</tt> and <tt>y</tt> are the values (an element in
+ * psuedo-properties <tt>x</tt> and <tt>y</tt> are the values (an element in
  * <tt>crimea</tt>); the second argument is the layer data (a string in
  * <tt>causes</tt>). Additional arguments specify the data of enclosing panels,
  * if any.
@@ -12180,56 +12180,44 @@ pv.Layout.Stack = function() {
         dy = [];
 
     /*
-     * Iterate over the data, evaluating the values, x and y functions.
-     * The context in which the x and y pseudo-properties are evaluated is a
-     * pseudo-mark that is a *grandchild* of this layout.
+     * Iterate over the data, evaluating the values, x and y functions. The
+     * context in which the x and y psuedo-properties are evaluated is a
+     * pseudo-mark that is a grandchild of this layout.
      */
-    var stack = pv.Mark.stack, 
-        o = {parent: {parent: this}};
-
+    var stack = pv.Mark.stack, o = {parent: {parent: this}};
     stack.unshift(null);
     values = [];
-    for (var l = 0; l < n; l++) {
-      var layerDy = dy[l] = [];
-      y[l]  = [];
-      o.parent.index = l;
-      stack[0] = data[l];
-
-      var layerData = values[l] = this.$values.apply(o.parent, stack);
-      if (!l) {
-          /* Get number of points per layer */
-          m = values[l].length;
-      }
-
+    for (var i = 0; i < n; i++) {
+      dy[i] = [];
+      y[i] = [];
+      o.parent.index = i;
+      stack[0] = data[i];
+      values[i] = this.$values.apply(o.parent, stack);
+      if (!i) m = values[i].length;
       stack.unshift(null);
       for (var j = 0; j < m; j++) {
-        stack[0] = layerData[j];
+        stack[0] = values[i][j];
         o.index = j;
-        if (!l) {
-            /* Evaluate x on first point of each layer */
-            x[j] = this.$x.apply(o, stack);
-        }
-
-        layerDy[j] = this.$y.apply(o, stack);
+        if (!i) x[j] = this.$x.apply(o, stack);
+        dy[i][j] = this.$y.apply(o, stack);
       }
       stack.shift();
     }
     stack.shift();
-    
-    /* Layer order */
-    var layerIndex;
+
+    /* order */
+    var index;
     switch (s.order) {
       case "inside-out": {
-        var max  = dy.map(function(v) { return pv.max.index(v); }),
-            map  = pv.range(n).sort(function(a, b) { return max[a] - max[b]; }),
+        var max = dy.map(function(v) { return pv.max.index(v); }),
+            map = pv.range(n).sort(function(a, b) { return max[a] - max[b]; }),
             sums = dy.map(function(v) { return pv.sum(v); }),
-            top  = 0,
+            top = 0,
             bottom = 0,
             tops = [],
             bottoms = [];
-
-        for (var l = 0; l < n; l++) {
-          var j = map[l];
+        for (var i = 0; i < n; i++) {
+          var j = map[i];
           if (top < bottom) {
             top += sums[j];
             tops.push(j);
@@ -12238,138 +12226,80 @@ pv.Layout.Stack = function() {
             bottoms.push(j);
           }
         }
-        layerIndex = bottoms.reverse().concat(tops);
+        index = bottoms.reverse().concat(tops);
         break;
       }
-      
-      case "reverse":
-          layerIndex = pv.range(n - 1, -1, -1);
-          break;
-
-      default:
-          layerIndex = pv.range(n);
-          break;
+      case "reverse": index = pv.range(n - 1, -1, -1); break;
+      default: index = pv.range(n); break;
     }
 
-    /* Layer Y0 offset */
-    var y0 = y[layerIndex[0]];
+    /* offset */
     switch (s.offset) {
       case "silohouette": {
         for (var j = 0; j < m; j++) {
-          /* Sum across layers for this point, j */
-          var sumDy = 0;
-          for (var l = 0; l < n; l++) {
-              sumDy += dy[l][j];
-          }
-
-          y0[j] = (h - sumDy) / 2;
+          var o = 0;
+          for (var i = 0; i < n; i++) o += dy[i][j];
+          y[index[0]][j] = (h - o) / 2;
         }
         break;
       }
-
       case "wiggle": {
         var o = 0;
-        for (var l = 0; l < n; l++) o += dy[l][0];
-        y[layerIndex[0]][0] = o = (h - o) / 2;
+        for (var i = 0; i < n; i++) o += dy[i][0];
+        y[index[0]][0] = o = (h - o) / 2;
         for (var j = 1; j < m; j++) {
           var s1 = 0, s2 = 0, dx = x[j] - x[j - 1];
-          for (var l = 0; l < n; l++) s1 += dy[l][j];
-          for (var l = 0; l < n; l++) {
-            var s3 = (dy[layerIndex[l]][j] - dy[layerIndex[l]][j - 1]) / (2 * dx);
-            for (var k = 0; k < l; k++) {
-              s3 += (dy[layerIndex[k]][j] - dy[layerIndex[k]][j - 1]) / dx;
+          for (var i = 0; i < n; i++) s1 += dy[i][j];
+          for (var i = 0; i < n; i++) {
+            var s3 = (dy[index[i]][j] - dy[index[i]][j - 1]) / (2 * dx);
+            for (var k = 0; k < i; k++) {
+              s3 += (dy[index[k]][j] - dy[index[k]][j - 1]) / dx;
             }
-            s2 += s3 * dy[layerIndex[l]][j];
+            s2 += s3 * dy[index[i]][j];
           }
-
-          y0[j] = o -= s1 ? s2 / s1 * dx : 0;
+          y[index[0]][j] = o -= s1 ? s2 / s1 * dx : 0;
         }
         break;
       }
-      
       case "expand": {
         for (var j = 0; j < m; j++) {
-          y0[j] = 0;
-
-          /* Sum across layers for this point, j */
-          var sumDy = 0;
-          for (var l = 0; l < n; l++) {
-              sumDy += dy[l][j];
-          }
-
-          /* Scale dys */
-          if (sumDy) {
-            var s = h / sumDy;
-            for (var l = 0; l < n; l++) dy[l][j] *= s;
+          y[index[0]][j] = 0;
+          var k = 0;
+          for (var i = 0; i < n; i++) k += dy[i][j];
+          if (k) {
+            k = h / k;
+            for (var i = 0; i < n; i++) dy[i][j] *= k;
           } else {
-            var dyi = h / n;
-            for (var l = 0; l < n; l++) dy[l][j] = dyi;
+            k = h / n;
+            for (var i = 0; i < n; i++) dy[i][j] = k;
           }
         }
         break;
       }
-
       default: {
-        /* All 0 offsets */
-        for (var j = 0; j < m; j++) {
-            y0[j] = 0;
-        }
+        for (var j = 0; j < m; j++) y[index[0]][j] = 0;
         break;
       }
     }
 
     /* Propagate the offset to the other series. */
     for (var j = 0; j < m; j++) {
-      var o = y[layerIndex[0]][j];
-      for (var l = 1; l < n; l++) {
-        o += dy[layerIndex[l - 1]][j];
-        y[layerIndex[l]][j] = o;
+      var o = y[index[0]][j];
+      for (var i = 1; i < n; i++) {
+        o += dy[index[i - 1]][j];
+        y[index[i]][j] = o;
       }
     }
 
     /* Find the property definitions for dynamic substitution. */
-    /*
-     * <layerOrder>-<pointsOrder>
-     * 
-     * (horizontal layers)
-     * bottom-left == bottom
-     * bottom-right
-     * top-left == top
-     * top-right
-     *
-     * (vertical layers)
-     * left-top
-     * left-bottom == left
-     * right-top
-     * right-bottom == right
-     *
-     * horizontal = /^(top|bottom)\b/.test(orient)
-     */
-    var i   = orient.indexOf("-"),
+    var i = orient.indexOf("-"),
         pdy = horizontal ? "h" : "w",
-        px  = i < 0 ? 
-                /* Default pointsOrder 
-                 * horizontal -> left
-                 * vertical   -> bottom
-                 */
-                (horizontal ? "l" : "b") :
-                /*
-                 * -l,r,t,b ...
-                 */
-                orient.charAt(i + 1),
-
-        /*
-         * b,t,l,r
-         */
-        py  = orient.charAt(0);
-
-    for(var p in prop) {
-        prop[p] = none;
-    }
-
-    prop[px ] = function(l, j) { return x[j];     };
-    prop[py ] = function(l, j) { return y[l][j];  };
-    prop[pdy] = function(l, j) { return dy[l][j]; };
+        px = i < 0 ? (horizontal ? "l" : "b") : orient.charAt(i + 1),
+        py = orient.charAt(0);
+    for (var p in prop) prop[p] = none;
+    prop[px] = function(i, j) { return x[j]; };
+    prop[py] = function(i, j) { return y[i][j]; };
+    prop[pdy] = function(i, j) { return dy[i][j]; };
   };
 
   /**
@@ -12396,7 +12326,7 @@ pv.Layout.Stack = function() {
   this.layer.add = function(type) {
     return that.add(pv.Panel)
         .data(function() { return that.layers(); })
-        .add(type)
+      .add(type)
         .extend(this);
   };
 };
@@ -12426,7 +12356,7 @@ pv.Layout.Stack.prototype.$x
     = function() { return 0; };
 
 /**
- * The x pseudo-property; determines the position of the value within the layer.
+ * The x psuedo-property; determines the position of the value within the layer.
  * This typically corresponds to the independent variable. For example, with the
  * default "bottom-left" orientation, this function defines the "left" property.
  *
@@ -12439,7 +12369,7 @@ pv.Layout.Stack.prototype.x = function(f) {
 };
 
 /**
- * The y pseudo-property; determines the thickness of the layer at the given
+ * The y psuedo-property; determines the thickness of the layer at the given
  * value.  This typically corresponds to the dependent variable. For example,
  * with the default "bottom-left" orientation, this function defines the
  * "height" property.
@@ -12471,7 +12401,7 @@ pv.Layout.Stack.prototype.values = function(f) {
 /**
  * The layer data in row-major order. The value of this property is typically a
  * two-dimensional (i.e., nested) array, but any array can be used, provided the
- * values pseudo-property is defined accordingly.
+ * values psuedo-property is defined accordingly.
  *
  * @type array[]
  * @name pv.Layout.Stack.prototype.layers
@@ -12585,7 +12515,7 @@ pv.Layout.Band = function() {
      * The prototype mark of the items mark.
      */
     var itemProto = new pv.Mark()
-        .data  (function(){ return values[this.parent.index]; })
+        .data  (function(){return values[this.parent.index];})
         .top   (proxy("t"))
         .left  (proxy("l"))
         .right (proxy("r"))
@@ -12653,7 +12583,7 @@ pv.Layout.Band = function() {
 
         add: function(type) {
             return that.add(pv.Panel)
-                    .data(function(){ return that.layers(); })
+                    .data(function(){return that.layers();})
                     .add(type)
                     .extend(itemProto);
         },
@@ -12772,8 +12702,8 @@ pv.Layout.Band = function() {
 };
 
 pv.Layout.Band.$baseItemProps = (function(){
-    var none = function() { return null; };
-    return {t: none, b: none, r: none, b: none, w: none, h: none};
+    var none = function() {return null;};
+    return {t: none, l: none, r: none, b: none, w: none, h: none};
 }());
 
 pv.Layout.Band.prototype = pv.extend(pv.Layout)
@@ -12887,21 +12817,13 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
                 };
             }
 
-            var iy = (scene.yZero || 0),
-                iw = this.$iw.apply(o, stack),
-                ih = this.$ih.apply(o, stack);
-
-            /* Negative heights are transformed into a lower iy */
-            if(ih < 0){
-                ih = -ih;
-                iy -= ih;
-            }
-
+            var ih = this.$ih.apply(o, stack);
             band.items[l] = {
-                y: iy,
+                y: (scene.yZero || 0),
                 x: 0,
-                w: iw,
-                h: ih
+                w: this.$iw.apply(o, stack),
+                h: Math.abs(ih),
+                dir: ih < 0 ? -1 : 1
             };
         }
         stack.shift();
@@ -12967,15 +12889,16 @@ pv.Layout.Band.prototype._calcGrouped = function(bands, L, scene){
             var item = items[l];
             item.x = ix;
             ix += item.w + margin;
+
+            /* Negative direction turns into a lower iy */
+            if(item.dir < 0){
+                item.y -= item.h;
+            }
         }
     }
 };
 
 pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
-    /*
-     * Calculate layer 0 item offset
-     * (default already is items[l].y=0)
-     */
     var B = bands.length,
         items;
 
@@ -12986,10 +12909,17 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
             /* Sum across layers for this band */
             var hSum = 0;
             for (var l = 0; l < L; l++) {
-                hSum += items[l].h;
+                /* We get rid of negative heights
+                 * because it is preferable to respect the layer's order
+                 * in this case, than to group negative and positive layers,
+                 * taking them out of order.
+                 */
+                var item = items[l];
+                item.dir = 1;
+                hSum += item.h;
             }
 
-            /* Scale dys */
+            /* Scale hs */
             if (hSum) {
                 var hScale = bh / hSum;
                 for (var l = 0; l < L; l++) {
@@ -13012,36 +12942,42 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
      */
     for (var b = 0; b < B; b++) {
         var band = bands[b],
-            x = band.x, // centered on band
-            vertiMargin  = band.vertiMargin > 0 ? band.vertiMargin : 0,
-            vertiMargin2 = vertiMargin / 2;
+            bx = band.x, // centered on band
+            vertiMargin  = band.vertiMargin > 0 ? band.vertiMargin : 0;
 
         items = band.items;
 
-        var prevItem = items[0];
-        prevItem.x = x - prevItem.w / 2;
-        if(vertiMargin2){
-            prevItem.y += vertiMargin2;
-            prevItem.h -= vertiMargin;
-        }
-        
-        var yOffset = prevItem.y;
-
-        for (var l = 1 ; l < L ; l++) {
-            var item = items[l];
-            
-            yOffset += prevItem.h + vertiMargin;
-            
-            if(vertiMargin){
-                prevItem.h -= vertiMargin;
-            }
-
-            item.y = yOffset;
-            item.x = x - item.w / 2;
-
-            prevItem = item;
+        if(this._layoutItemsOfDir(+1,  items, vertiMargin, bx)){
+            this._layoutItemsOfDir(-1, items, vertiMargin, bx);
         }
     }
+};
+
+pv.Layout.Band.prototype._layoutItemsOfDir = function(dir, items, vertiMargin, bx){
+    var existsOtherDir = false,
+        vertiMargin2 = vertiMargin / 2,
+        yOffset = 0;
+    
+    for (var l = 0, L = items.length ; l < L ; l+=1) {
+        var item = items[dir > 0 ? l : (L -l -1)];
+
+        if(item.dir === dir){
+            var h = item.h;
+            if(dir > 0){
+                item.y += (yOffset + vertiMargin2);
+            } else {
+                item.y -= (yOffset + h - vertiMargin2);
+            }
+            
+            yOffset += h;
+            item.h -= vertiMargin;
+            item.x = bx - item.w / 2;
+        } else {
+            existsOtherDir = true;
+        }
+    }
+
+    return existsOtherDir;
 };
 
 pv.Layout.Band.prototype._bindItemProps = function(bands, itemProps, orient, horizontal){
@@ -13069,10 +13005,10 @@ pv.Layout.Band.prototype._bindItemProps = function(bands, itemProps, orient, hor
         */
         py  = orient.charAt(0);
 
-    itemProps[px] = function(b, l) { return bands[b].items[l].x; };
-    itemProps[py] = function(b, l) { return bands[b].items[l].y; };
-    itemProps[pw] = function(b, l) { return bands[b].items[l].w; };
-    itemProps[ph] = function(b, l) { return bands[b].items[l].h; };
+    itemProps[px] = function(b, l) {return bands[b].items[l].x;};
+    itemProps[py] = function(b, l) {return bands[b].items[l].y;};
+    itemProps[pw] = function(b, l) {return bands[b].items[l].w;};
+    itemProps[ph] = function(b, l) {return bands[b].items[l].h;};
 };
 /**
  * Constructs a new, empty treemap layout. Layouts are not typically
