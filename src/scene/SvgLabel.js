@@ -49,6 +49,10 @@ pv.SvgScene.label = function(scenes) {
         "text-shadow": s.textShadow,
         "text-decoration": s.textDecoration
       });
+
+    if(s.svg) this.setAttributes(e, s.svg);
+    if(s.css) this.setStyle(e, s.css);
+
     if (e.firstChild) e.firstChild.nodeValue = s.text;
     else {
         if (pv.renderer() == "svgweb") { // SVGWeb needs an extra 'true' to create SVG text nodes properly in IE.

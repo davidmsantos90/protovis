@@ -39,6 +39,10 @@ pv.SvgScene.line = function(scenes) {
       "stroke-linejoin": s.lineJoin,
       "stroke-dasharray": s.strokeDasharray || 'none'
     });
+
+  if(s.svg) this.setAttributes(e, s.svg);
+  if(s.css) this.setStyle(e, s.css);
+
   return this.append(e, scenes, 0);
 };
 
@@ -85,6 +89,10 @@ pv.SvgScene.lineSegment = function(scenes) {
         "stroke-width": stroke.opacity ? s1.lineWidth / this.scale : null,
         "stroke-linejoin": s1.lineJoin
       });
+    
+    if(s1.svg) this.setAttributes(e, s1.svg);
+    if(s1.css) this.setStyle(e, s1.css);
+
     e = this.append(e, scenes, i);
   }
   return e;

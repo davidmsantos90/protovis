@@ -72,6 +72,7 @@ JS_LAYOUT_FILES = \
 	src/layout/Hierarchy.js \
 	src/layout/Grid.js \
 	src/layout/Stack.js \
+    src/layout/Band.js \
 	src/layout/Treemap.js \
 	src/layout/Tree.js \
 	src/layout/Indent.js \
@@ -119,7 +120,8 @@ protovis-r3.3.js: $(JS_FILES)
 
 %-d3.3.js: Makefile
 	grep '	' -Hn $(filter %.js,$^) && echo "ERROR: tab" && exit 1 || true
-	grep '' -Hn $(filter %.js,$^) && echo "ERROR: dos newline" && exit 1 || true
+	grep '
+' -Hn $(filter %.js,$^) && echo "ERROR: dos newline" && exit 1 || true
 	grep ' $$' -Hn $(filter %.js,$^) && echo "ERROR: trailing space" && exit 1 || true
 	rm -f $@
 	echo "// $(shell git rev-parse HEAD)" >> $@

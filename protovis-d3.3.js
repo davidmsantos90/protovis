@@ -1,4 +1,4 @@
-// ec599039867a0aa97b7645c830c5a79aaae28e97
+// 4308bfb058323b0fd612b48578a10177f5a4241d
 /**
  * @class The built-in Array class.
  * @name Array
@@ -3398,18 +3398,18 @@ pv.Scale.quantitative = function() {
     }
 
     /* Normal case: numbers. */
-    if (!arguments.length) m = 10;
-    var step = pv.logFloor(span / m, 10),
-        err = m / (span / step);
-    if (err <= .15) step *= 10;
-    else if (err <= .35) step *= 5;
-    else if (err <= .75) step *= 2;
-    var start = Math.ceil(min / step) * step,
-        end = Math.floor(max / step) * step;
-    tickFormat = pv.Format.number()
-        .fractionDigits(Math.max(0, -Math.floor(pv.log(step, 10) + .01)));
-    var ticks = pv.range(start, end + step, step);
-    return reverse ? ticks.reverse() : ticks;
+        if (!arguments.length) m = 10;
+        var step = pv.logFloor(span / m, 10),
+            err = m / (span / step);
+        if (err <= .15) step *= 10;
+        else if (err <= .35) step *= 5;
+        else if (err <= .75) step *= 2;
+        var start = Math.ceil(min / step) * step,
+            end = Math.floor(max / step) * step;
+        tickFormat = pv.Format.number()
+            .fractionDigits(Math.max(0, -Math.floor(pv.log(step, 10) + .01)));
+        var ticks = pv.range(start, end + step, step);
+        return reverse ? ticks.reverse() : ticks;
   };
 
 
@@ -3931,7 +3931,11 @@ pv.Scale.ordinal = function() {
    * between points.
    *
    * <p>This method must be called <i>after</i> the domain is set.
-   *
+   * <p>
+   * The computed step width can be retrieved from the range as
+   * <tt>scale.range().step</tt>.
+   * </p>
+   * 
    * @function
    * @name pv.Scale.ordinal.prototype.split
    * @param {number} min minimum value of the output range.
@@ -3943,6 +3947,100 @@ pv.Scale.ordinal = function() {
   scale.split = function(min, max) {
     var step = (max - min) / this.domain().length;
     r = pv.range(min + step / 2, max, step);
+    r.step = step;
+    return this;
+  };
+
+  /**
+   * Sets the range from the given continuous interval.
+   * The interval [<i>min</i>, <i>max</i>] is subdivided into <i>n</i> equispaced bands,
+   * where <i>n</i> is the number of (unique) values in the domain.
+   *
+   * The first and last band are offset from the edge of the range by
+   * half the distance between bands.
+   *
+   * The positions are centered in each band.
+   * <pre>
+   * m = M/2
+   *
+   *  |mBm|mBm| ... |mBm|
+   * min               max
+   *   r0 -> min + m + B/2
+   * </pre>
+   * <p>This method must be called <i>after</i> the domain is set.</p>
+   * <p>
+   * The computed absolute band width can be retrieved from the range as
+   * <tt>scale.range().band</tt>.
+   * The properties <tt>step</tt> and <tt>margin</tt> are also exposed.
+   * </p>
+   *
+   * @function
+   * @name pv.Scale.ordinal.prototype.splitBandedCenter
+   * @param {number} min minimum value of the output range.
+   * @param {number} max maximum value of the output range.
+   * @param {number} [band] the fractional band width in [0, 1]; defaults to 1.
+   * @returns {pv.Scale.ordinal} <tt>this</tt>.
+   * @see #split
+   */
+  scale.splitBandedCenter = function(min, max, band) {
+    scale.split(min, max);
+    if (band == null) {
+        band = 1;
+    }
+    r.band   = r.step * band;
+    r.margin = r.step - r.band;
+    return this;
+  };
+
+  /**
+   * Sets the range from the given continuous interval.
+   * The interval [<i>min</i>, <i>max</i>] is subdivided into <i>n</i> equispaced bands,
+   * where <i>n</i> is the number of (unique) values in the domain.
+   *
+   * The first and last bands are aligned to the edges of the range.
+   * <pre>
+   *  |Bm|mBm| ...|mB|
+   *  or
+   *  |BM |BM |... |B|
+   * min           max
+   *   r0 -> min + B/2
+   * </pre>
+   * <p>
+   * The positions are centered in each band
+   * (the first position is at <tt>min + band / 2</tt>).
+   * </p>
+   * <p>This method must be called <i>after</i> the domain is set.</p>
+   * <p>
+   * The computed absolute band width can be retrieved from the range as
+   * <tt>scale.range().band</tt>.
+   * The properties <tt>step</tt> and <tt>margin</tt> are also exposed.
+   * </p>
+   *
+   * @function
+   * @name pv.Scale.ordinal.prototype.splitBandedFlushCenter
+   * @param {number} min minimum value of the output range.
+   * @param {number} max maximum value of the output range.
+   * @param {number} [band] the fractional band width in [0, 1]; defaults to 1.
+   * @returns {pv.Scale.ordinal} <tt>this</tt>.
+   * @see #split
+   */
+  scale.splitBandedFlushCenter = function(min, max, band) {
+    if (band == null) {
+        band = 1;
+    }
+
+    // Requires N > 0
+
+    var R = (max - min),
+        N = this.domain().length,
+        B = (R * band) / N,
+        M = N > 1 ? ((R - N * B) / (N - 1)) : 0,
+        S = M + B;
+    
+    r = pv.range(min + B / 2, max, S);
+    r.step   = S;
+    r.band   = B;
+    r.margin = M;
     return this;
   };
 
@@ -3981,6 +4079,16 @@ pv.Scale.ordinal = function() {
    * that the band width will be equal to the padding width. The computed
    * absolute band width can be retrieved from the range as
    * <tt>scale.range().band</tt>.
+   * The properties <tt>step</tt> and <tt>margin</tt> are also exposed.
+   * </p>
+   *
+   * <pre>
+   * m = M/2
+   *
+   *  |MBm|mBm| ... |mBM|
+   * min               max
+   *   r0 -> min + M
+   * </pre>
    *
    * <p>If the band width argument is negative, this method will allocate bands
    * of a <i>fixed</i> width <tt>-band</tt>, rather than a relative fraction of
@@ -4013,6 +4121,8 @@ pv.Scale.ordinal = function() {
       var step = (max - min) / (this.domain().length + (1 - band));
       r = pv.range(min + step * (1 - band), max, step);
       r.band = step * band;
+      r.step = step;
+      r.margin = step - r.band;
     }
     return this;
   };
@@ -5190,12 +5300,23 @@ pv.SvgScene.expect = function(e, type, attributes, style) {
   } else {
     e = this.create(type);
   }
-  for (var name in attributes) {
-    var value = attributes[name];
-    if (value == this.implicit.svg[name]) value = null;
-    if (value == null) e.removeAttribute(name);
-    else e.setAttribute(name, value);
-  }
+
+  if(attributes) this.setAttributes(e, attributes);
+  if(style)      this.setStyle(e, style);
+
+  return e;
+};
+
+pv.SvgScene.setAttributes = function(e, attributes){
+    for (var name in attributes) {
+        var value = attributes[name];
+        if (value == this.implicit.svg[name]) value = null;
+        if (value == null) e.removeAttribute(name);
+        else e.setAttribute(name, value);
+    }
+};
+
+pv.SvgScene.setStyle = function(e, style){
   for (var name in style) {
     var value = style[name];
     if (value == this.implicit.css[name]) value = null;
@@ -5210,7 +5331,6 @@ pv.SvgScene.expect = function(e, type, attributes, style) {
     else
       e.style[name] = value;
   }
-  return e;
 };
 
 /** TODO */
@@ -5762,6 +5882,10 @@ pv.SvgScene.area = function(scenes) {
       "stroke-opacity": stroke.opacity || null,
       "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null
     });
+
+  if(s.svg) this.setAttributes(e, s.svg);
+  if(s.css) this.setStyle(e, s.css);
+
   return this.append(e, scenes, 0);
 };
 
@@ -5831,6 +5955,10 @@ pv.SvgScene.areaSegment = function(scenes) {
         "stroke-opacity": stroke.opacity || null,
         "stroke-width": stroke.opacity ? s1.lineWidth / this.scale : null
       });
+
+    if(s1.svg) this.setAttributes(e, s1.svg);
+    if(s1.css) this.setStyle(e, s1.css);
+
     e = this.append(e, scenes, i);
   }
   return e;
@@ -5859,6 +5987,10 @@ pv.SvgScene.bar = function(scenes) {
         "stroke-opacity": stroke.opacity || null,
         "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null
       });
+
+    if(s.svg) this.setAttributes(e, s.svg);
+    if(s.css) this.setStyle(e, s.css);
+
     e = this.append(e, scenes, i);
   }
   return e;
@@ -5941,6 +6073,10 @@ pv.SvgScene.dot = function(scenes) {
       svg.r = radius;
       e = this.expect(e, "circle", svg);
     }
+
+    if(s.svg) this.setAttributes(e, s.svg);
+    if(s.css) this.setStyle(e, s.css);
+
     e = this.append(e, scenes, i);
   }
   return e;
@@ -5965,6 +6101,8 @@ pv.SvgScene.image = function(scenes) {
           "width": s.width,
           "height": s.height
         });
+      if(s.svg) this.setAttributes(e, s.svg);
+      if(s.css) this.setStyle(e, s.css);
       var c = e.firstChild || e.appendChild(document.createElementNS(this.xhtml, "canvas"));
       c.$scene = {scenes:scenes, index:i};
       c.style.width = s.width;
@@ -5981,6 +6119,10 @@ pv.SvgScene.image = function(scenes) {
           "width": s.width,
           "height": s.height
         });
+
+      if(s.svg) this.setAttributes(e, s.svg);
+      if(s.css) this.setStyle(e, s.css);
+
       e.setAttributeNS(this.xlink, "xlink:href", s.url);
     }
     e = this.append(e, scenes, i);
@@ -6041,6 +6183,10 @@ pv.SvgScene.label = function(scenes) {
         "text-shadow": s.textShadow,
         "text-decoration": s.textDecoration
       });
+
+    if(s.svg) this.setAttributes(e, s.svg);
+    if(s.css) this.setStyle(e, s.css);
+
     if (e.firstChild) e.firstChild.nodeValue = s.text;
     else {
         if (pv.renderer() == "svgweb") { // SVGWeb needs an extra 'true' to create SVG text nodes properly in IE.
@@ -6095,6 +6241,10 @@ pv.SvgScene.line = function(scenes) {
       "stroke-linejoin": s.lineJoin,
       "stroke-dasharray": s.strokeDasharray || 'none'
     });
+
+  if(s.svg) this.setAttributes(e, s.svg);
+  if(s.css) this.setStyle(e, s.css);
+
   return this.append(e, scenes, 0);
 };
 
@@ -6141,6 +6291,10 @@ pv.SvgScene.lineSegment = function(scenes) {
         "stroke-width": stroke.opacity ? s1.lineWidth / this.scale : null,
         "stroke-linejoin": s1.lineJoin
       });
+    
+    if(s1.svg) this.setAttributes(e, s1.svg);
+    if(s1.css) this.setStyle(e, s1.css);
+
     e = this.append(e, scenes, i);
   }
   return e;
@@ -6430,6 +6584,10 @@ pv.SvgScene.rule = function(scenes) {
         "stroke-opacity": stroke.opacity,
         "stroke-width": s.lineWidth / this.scale
       });
+    
+    if(s.svg) this.setAttributes(e, s.svg);
+    if(s.css) this.setStyle(e, s.css);
+
     e = this.append(e, scenes, i);
   }
   return e;
@@ -6496,6 +6654,10 @@ pv.SvgScene.wedge = function(scenes) {
         "stroke-opacity": stroke.opacity || null,
         "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null
       });
+
+    if(s.svg) this.setAttributes(e, s.svg);
+    if(s.css) this.setStyle(e, s.css);
+
     e = this.append(e, scenes, i);
   }
   return e;
@@ -6710,6 +6872,10 @@ pv.Mark.prototype
     .property("visible", Boolean)
     // DATUM - an object counterpart for each value of data.
     .property("datum", Object)
+    // CSS attributes pass-through
+    .property("css", Object)
+    // SVG attributes pass-through
+    .property("svg", Object)
     .property("left", Number)
     .property("right", Number)
     .property("top", Number)
@@ -9835,18 +10001,28 @@ pv.Transition = function(mark) {
     var map = {};
     for (var i = 0; i < marks.length; i++) {
       var mark = marks[i];
-      if (mark.id) map[mark.id] = mark;
+      if (mark.id) {
+          map[mark.id] = mark;
+      }
     }
+    
     return map;
   }
 
   /** @private */
   function interpolateProperty(list, name, before, after) {
+    var f;
     if (name in interpolated) {
       var i = pv.Scale.interpolator(before[name], after[name]);
-      var f = function(t) {before[name] = i(t);}
+      f = function(t) {
+          before[name] = i(t); 
+      };
     } else {
-      var f = function(t) {if (t > .5) before[name] = after[name];}
+      f = function(t) {
+          if (t > .5) {
+              before[name] = after[name];
+          }
+      };
     }
     f.next = list.head;
     list.head = f;
@@ -9868,11 +10044,21 @@ pv.Transition = function(mark) {
 
   /** @private */
   function interpolate(list, before, after) {
-    var mark = before.mark, bi = ids(before), ai = ids(after);
+    var mark = before.mark, 
+        bi = ids(before), 
+        ai = ids(after);
+    
     for (var i = 0; i < before.length; i++) {
-      var b = before[i], a = b.id ? ai[b.id] : after[i];
+      var b = before[i], 
+          a = b.id ? ai[b.id] : after[i];
+      
       b.index = i;
-      if (!b.visible) continue;
+      
+      if (!b.visible) { 
+          continue;
+      }
+      
+      // No after or not after.visible
       if (!(a && a.visible)) {
         var o = override(before, i, mark.$exit, after);
 
@@ -9883,17 +10069,25 @@ pv.Transition = function(mark) {
          * them from the scenegraph; for instances that became invisible, we
          * need to mark them invisible. See the cleanup method for details.
          */
-        b.transition = a ? 2 : (after.push(o), 1);
+        b.transition = a ? 
+                2 : 
+                (after.push(o), 1);
         a = o;
       }
       interpolateInstance(list, b, a);
     }
+    
     for (var i = 0; i < after.length; i++) {
-      var a = after[i], b = a.id ? bi[a.id] : before[i];
+      var a = after[i], 
+          b = a.id ? bi[a.id] : before[i];
+      
       if (!(b && b.visible) && a.visible) {
         var o = override(after, i, mark.$enter, before);
-        if (!b) before.push(o);
-        else before[b.index] = o;
+        if (!b) 
+            before.push(o);
+        else 
+            before[b.index] = o;
+        
         interpolateInstance(list, o, a);
       }
     }
@@ -9916,10 +10110,14 @@ pv.Transition = function(mark) {
 
     /* Determine the set of properties to evaluate. */
     var seen = {};
-    for (var i = 0; i < p.length; i++) seen[p[i].name] = 1;
+    for (var i = 0; i < p.length; i++) {
+        seen[p[i].name] = 1;
+    }
+    
+    /* Add to p all optional properties in binds not in proto properties (p) */
     p = m.binds.optional
-        .filter(function(p) {return !(p.name in seen);})
-        .concat(p);
+         .filter(function(p) { return !(p.name in seen); })
+         .concat(p);
 
     /* Evaluate the properties and update any implied ones. */
     m.context(scene, index, function() {
@@ -9975,24 +10173,39 @@ pv.Transition = function(mark) {
     }
 
     // TODO allow parallel and sequenced transitions
-    if (mark.$transition) mark.$transition.stop();
+    if (mark.$transition) {
+        mark.$transition.stop();
+    }
     mark.$transition = that;
 
     // TODO clearing the scene like this forces total re-build
-    var i = pv.Mark.prototype.index, before = mark.scene, after;
+    var i = pv.Mark.prototype.index,
+        before = mark.scene,
+        after;
+    
     mark.scene = null;
     mark.bind();
     mark.build();
+    
     after = mark.scene;
     mark.scene = before;
+    
     pv.Mark.prototype.index = i;
 
-    var start = Date.now(), list = {};
+    var start = Date.now(), 
+        list = {};
+    
     interpolate(list, before, after);
+    
     timer = setInterval(function() {
       var t = Math.max(0, Math.min(1, (Date.now() - start) / duration)),
           e = ease(t);
-      for (var i = list.head; i; i = i.next) i(e);
+      
+      /* Advance every property of every mark */
+      for (var i = list.head ; i ; i = i.next) {
+          i(e);
+      }
+      
       if (t == 1) {
         cleanup(mark.scene);
         that.stop();
@@ -11886,10 +12099,10 @@ pv.Layout.Grid.prototype.buildImplied = function(s) {
  * supported streamgraph algorithms.
  *
  * <p>In the simplest case, the layer data can be specified as a two-dimensional
- * array of numbers. The <tt>x</tt> and <tt>y</tt> psuedo-properties are used to
+ * array of numbers. The <tt>x</tt> and <tt>y</tt> pseudo-properties are used to
  * define the thickness of each layer at the given position, respectively; in
  * the above example of the "bottom-left" orientation, the <tt>x</tt> and
- * <tt>y</tt> psuedo-properties are equivalent to the <tt>left</tt> and
+ * <tt>y</tt> pseudo-properties are equivalent to the <tt>left</tt> and
  * <tt>height</tt> properties that you might use if you implemented a stacked
  * area by hand.
  *
@@ -11903,10 +12116,10 @@ pv.Layout.Grid.prototype.buildImplied = function(s) {
  * <tt>x</tt> and <tt>y</tt> specify pixel sizes. To simplify scaling math, use
  * this layout in conjunction with {@link pv.Scale.linear} or similar.
  *
- * <p>In other cases, the <tt>values</tt> psuedo-property can be used to define
+ * <p>In other cases, the <tt>values</tt> pseudo-property can be used to define
  * the data more flexibly. As with a typical panel &amp; area, the
  * <tt>layers</tt> property corresponds to the data in the enclosing panel,
- * while the <tt>values</tt> psuedo-property corresponds to the data for the
+ * while the <tt>values</tt> pseudo-property corresponds to the data for the
  * area within the panel. For example, given an array of data values:
  *
  * <pre>var crimea = [
@@ -11930,7 +12143,7 @@ pv.Layout.Grid.prototype.buildImplied = function(s) {
  *     ...</pre>
  *
  * As with the panel &amp; area case, the datum that is passed to the
- * psuedo-properties <tt>x</tt> and <tt>y</tt> are the values (an element in
+ * pseudo-properties <tt>x</tt> and <tt>y</tt> are the values (an element in
  * <tt>crimea</tt>); the second argument is the layer data (a string in
  * <tt>causes</tt>). Additional arguments specify the data of enclosing panels,
  * if any.
@@ -11967,44 +12180,56 @@ pv.Layout.Stack = function() {
         dy = [];
 
     /*
-     * Iterate over the data, evaluating the values, x and y functions. The
-     * context in which the x and y psuedo-properties are evaluated is a
-     * pseudo-mark that is a grandchild of this layout.
+     * Iterate over the data, evaluating the values, x and y functions.
+     * The context in which the x and y pseudo-properties are evaluated is a
+     * pseudo-mark that is a *grandchild* of this layout.
      */
-    var stack = pv.Mark.stack, o = {parent: {parent: this}};
+    var stack = pv.Mark.stack, 
+        o = {parent: {parent: this}};
+
     stack.unshift(null);
     values = [];
-    for (var i = 0; i < n; i++) {
-      dy[i] = [];
-      y[i] = [];
-      o.parent.index = i;
-      stack[0] = data[i];
-      values[i] = this.$values.apply(o.parent, stack);
-      if (!i) m = values[i].length;
+    for (var l = 0; l < n; l++) {
+      var layerDy = dy[l] = [];
+      y[l]  = [];
+      o.parent.index = l;
+      stack[0] = data[l];
+
+      var layerData = values[l] = this.$values.apply(o.parent, stack);
+      if (!l) {
+          /* Get number of points per layer */
+          m = values[l].length;
+      }
+
       stack.unshift(null);
       for (var j = 0; j < m; j++) {
-        stack[0] = values[i][j];
+        stack[0] = layerData[j];
         o.index = j;
-        if (!i) x[j] = this.$x.apply(o, stack);
-        dy[i][j] = this.$y.apply(o, stack);
+        if (!l) {
+            /* Evaluate x on first point of each layer */
+            x[j] = this.$x.apply(o, stack);
+        }
+
+        layerDy[j] = this.$y.apply(o, stack);
       }
       stack.shift();
     }
     stack.shift();
-
-    /* order */
-    var index;
+    
+    /* Layer order */
+    var layerIndex;
     switch (s.order) {
       case "inside-out": {
-        var max = dy.map(function(v) { return pv.max.index(v); }),
-            map = pv.range(n).sort(function(a, b) { return max[a] - max[b]; }),
+        var max  = dy.map(function(v) { return pv.max.index(v); }),
+            map  = pv.range(n).sort(function(a, b) { return max[a] - max[b]; }),
             sums = dy.map(function(v) { return pv.sum(v); }),
-            top = 0,
+            top  = 0,
             bottom = 0,
             tops = [],
             bottoms = [];
-        for (var i = 0; i < n; i++) {
-          var j = map[i];
+
+        for (var l = 0; l < n; l++) {
+          var j = map[l];
           if (top < bottom) {
             top += sums[j];
             tops.push(j);
@@ -12013,80 +12238,138 @@ pv.Layout.Stack = function() {
             bottoms.push(j);
           }
         }
-        index = bottoms.reverse().concat(tops);
+        layerIndex = bottoms.reverse().concat(tops);
         break;
       }
-      case "reverse": index = pv.range(n - 1, -1, -1); break;
-      default: index = pv.range(n); break;
+      
+      case "reverse":
+          layerIndex = pv.range(n - 1, -1, -1);
+          break;
+
+      default:
+          layerIndex = pv.range(n);
+          break;
     }
 
-    /* offset */
+    /* Layer Y0 offset */
+    var y0 = y[layerIndex[0]];
     switch (s.offset) {
       case "silohouette": {
         for (var j = 0; j < m; j++) {
-          var o = 0;
-          for (var i = 0; i < n; i++) o += dy[i][j];
-          y[index[0]][j] = (h - o) / 2;
+          /* Sum across layers for this point, j */
+          var sumDy = 0;
+          for (var l = 0; l < n; l++) {
+              sumDy += dy[l][j];
+          }
+
+          y0[j] = (h - sumDy) / 2;
         }
         break;
       }
+
       case "wiggle": {
         var o = 0;
-        for (var i = 0; i < n; i++) o += dy[i][0];
-        y[index[0]][0] = o = (h - o) / 2;
+        for (var l = 0; l < n; l++) o += dy[l][0];
+        y[layerIndex[0]][0] = o = (h - o) / 2;
         for (var j = 1; j < m; j++) {
           var s1 = 0, s2 = 0, dx = x[j] - x[j - 1];
-          for (var i = 0; i < n; i++) s1 += dy[i][j];
-          for (var i = 0; i < n; i++) {
-            var s3 = (dy[index[i]][j] - dy[index[i]][j - 1]) / (2 * dx);
-            for (var k = 0; k < i; k++) {
-              s3 += (dy[index[k]][j] - dy[index[k]][j - 1]) / dx;
+          for (var l = 0; l < n; l++) s1 += dy[l][j];
+          for (var l = 0; l < n; l++) {
+            var s3 = (dy[layerIndex[l]][j] - dy[layerIndex[l]][j - 1]) / (2 * dx);
+            for (var k = 0; k < l; k++) {
+              s3 += (dy[layerIndex[k]][j] - dy[layerIndex[k]][j - 1]) / dx;
             }
-            s2 += s3 * dy[index[i]][j];
+            s2 += s3 * dy[layerIndex[l]][j];
           }
-          y[index[0]][j] = o -= s1 ? s2 / s1 * dx : 0;
+
+          y0[j] = o -= s1 ? s2 / s1 * dx : 0;
         }
         break;
       }
+      
       case "expand": {
         for (var j = 0; j < m; j++) {
-          y[index[0]][j] = 0;
-          var k = 0;
-          for (var i = 0; i < n; i++) k += dy[i][j];
-          if (k) {
-            k = h / k;
-            for (var i = 0; i < n; i++) dy[i][j] *= k;
+          y0[j] = 0;
+
+          /* Sum across layers for this point, j */
+          var sumDy = 0;
+          for (var l = 0; l < n; l++) {
+              sumDy += dy[l][j];
+          }
+
+          /* Scale dys */
+          if (sumDy) {
+            var s = h / sumDy;
+            for (var l = 0; l < n; l++) dy[l][j] *= s;
           } else {
-            k = h / n;
-            for (var i = 0; i < n; i++) dy[i][j] = k;
+            var dyi = h / n;
+            for (var l = 0; l < n; l++) dy[l][j] = dyi;
           }
         }
         break;
       }
+
       default: {
-        for (var j = 0; j < m; j++) y[index[0]][j] = 0;
+        /* All 0 offsets */
+        for (var j = 0; j < m; j++) {
+            y0[j] = 0;
+        }
         break;
       }
     }
 
     /* Propagate the offset to the other series. */
     for (var j = 0; j < m; j++) {
-      var o = y[index[0]][j];
-      for (var i = 1; i < n; i++) {
-        o += dy[index[i - 1]][j];
-        y[index[i]][j] = o;
+      var o = y[layerIndex[0]][j];
+      for (var l = 1; l < n; l++) {
+        o += dy[layerIndex[l - 1]][j];
+        y[layerIndex[l]][j] = o;
       }
     }
 
     /* Find the property definitions for dynamic substitution. */
-    var i = orient.indexOf("-"),
+    /*
+     * <layerOrder>-<pointsOrder>
+     * 
+     * (horizontal layers)
+     * bottom-left == bottom
+     * bottom-right
+     * top-left == top
+     * top-right
+     *
+     * (vertical layers)
+     * left-top
+     * left-bottom == left
+     * right-top
+     * right-bottom == right
+     *
+     * horizontal = /^(top|bottom)\b/.test(orient)
+     */
+    var i   = orient.indexOf("-"),
         pdy = horizontal ? "h" : "w",
-        px = i < 0 ? (horizontal ? "l" : "b") : orient.charAt(i + 1),
-        py = orient.charAt(0);
-    for (var p in prop) prop[p] = none;
-    prop[px] = function(i, j) { return x[j]; };
-    prop[py] = function(i, j) { return y[i][j]; };
-    prop[pdy] = function(i, j) { return dy[i][j]; };
+        px  = i < 0 ? 
+                /* Default pointsOrder 
+                 * horizontal -> left
+                 * vertical   -> bottom
+                 */
+                (horizontal ? "l" : "b") :
+                /*
+                 * -l,r,t,b ...
+                 */
+                orient.charAt(i + 1),
+
+        /*
+         * b,t,l,r
+         */
+        py  = orient.charAt(0);
+
+    for(var p in prop) {
+        prop[p] = none;
+    }
+
+    prop[px ] = function(l, j) { return x[j];     };
+    prop[py ] = function(l, j) { return y[l][j];  };
+    prop[pdy] = function(l, j) { return dy[l][j]; };
   };
 
   /**
@@ -12113,7 +12396,7 @@ pv.Layout.Stack = function() {
   this.layer.add = function(type) {
     return that.add(pv.Panel)
         .data(function() { return that.layers(); })
-      .add(type)
+        .add(type)
         .extend(this);
   };
 };
@@ -12143,7 +12426,7 @@ pv.Layout.Stack.prototype.$x
     = function() { return 0; };
 
 /**
- * The x psuedo-property; determines the position of the value within the layer.
+ * The x pseudo-property; determines the position of the value within the layer.
  * This typically corresponds to the independent variable. For example, with the
  * default "bottom-left" orientation, this function defines the "left" property.
  *
@@ -12156,7 +12439,7 @@ pv.Layout.Stack.prototype.x = function(f) {
 };
 
 /**
- * The y psuedo-property; determines the thickness of the layer at the given
+ * The y pseudo-property; determines the thickness of the layer at the given
  * value.  This typically corresponds to the dependent variable. For example,
  * with the default "bottom-left" orientation, this function defines the
  * "height" property.
@@ -12188,7 +12471,7 @@ pv.Layout.Stack.prototype.values = function(f) {
 /**
  * The layer data in row-major order. The value of this property is typically a
  * two-dimensional (i.e., nested) array, but any array can be used, provided the
- * values psuedo-property is defined accordingly.
+ * values pseudo-property is defined accordingly.
  *
  * @type array[]
  * @name pv.Layout.Stack.prototype.layers
@@ -12250,6 +12533,547 @@ pv.Layout.Stack.prototype.values = function(f) {
  * @type string
  * @name pv.Layout.Stack.prototype.offset
  */
+/**
+ * Constructs a new, empty band layout. Layouts are not typically constructed
+ * directly; instead, they are added to an existing panel via
+ * {@link pv.Mark#add}.
+ *
+ * @class Implements a layout for banded visualizations; it is
+ * mainly used for grouped bar charts.
+ *
+ * For example, given the following:
+ *
+ * <pre>var seriesByCategory = {
+ *  wounds: [1, 2, 3, 4],
+ *  other:  [2, 3, 4, 5],
+ *  ...
+ * }</pre>
+ *
+ * and a corresponding array of categories:
+ *
+ * <pre>var categories = ["wounds", "other", "disease"];</pre>
+ *
+ * Separate bands can be defined for each category like so:
+ *
+ * <pre>vis.add(pv.Layout.Band)
+ *     .layers(series)
+ *     //.bandOrder('reverse') // once per layout instance
+ *     //.itemOrder('reverse') // once per layout instance
+ *     .values(function(categ) seriesByCategoryIndex[categ]) // once per band
+ *     .w(123) // once per band
+ *     .itemWidthRatio(0.8) // once per band (percentage of total item width over band width)
+ *     .x (function(categ) xScale(categ)) // once per band -> inherited as left or top ...
+ *     .y (0) // once per band -> inherited -> ....
+ *     .dx(fixedItemWidth) // once per item -> inherited as width or height
+ *     .dy(function(value, categ) yScale(value)) // once per item -> inherited as height or width
+ *   .band.add(pv.Bar)
+ *
+ *     ...</pre>
+ * 
+ * @extends pv.Layout
+ */
+pv.Layout.Band = function() {
+    
+    pv.Layout.call(this);
+
+    var that = this,
+        buildImplied = that.buildImplied,
+        itemProps,
+        values;
+
+    /**
+     * The prototype mark of the items mark.
+     */
+    var itemProto = new pv.Mark()
+        .data  (function(){ return values[this.parent.index]; })
+        .top   (proxy("t"))
+        .left  (proxy("l"))
+        .right (proxy("r"))
+        .bottom(proxy("b"))
+        .width (proxy("w"))
+        .height(proxy("h"));
+
+    /**
+     * Proxy the given property for an item of a band.
+     * @private
+     */
+    function proxy(name) {
+        return function() {
+            /* bandIndex, layerIndex */
+            return itemProps[name](this.index, this.parent.index);
+        };
+    }
+    
+    /**
+     * Compute the layout.
+     * @private
+     */
+    this.buildImplied = function(s) {
+        buildImplied.call(this, s);
+
+        /* Update shared fields */
+        itemProps = Object.create(pv.Layout.Band.$baseItemProps);
+        values = [];
+
+        var data = s.layers,
+            L = data.length;
+        if(L > 0){
+            var orient = s.orient,
+                horizontal = /^(top|bottom)\b/.test(orient),
+                bh = this.parent[horizontal ? "height" : "width"](),
+                bands = this._readData(data, values, s),
+                B = bands.length;
+            
+            /* Band order */
+            if(s.bandOrder === "reverse") {
+                bands.reverse();
+            }
+            
+            /* Layer order */
+            if(s.order === "reverse") {
+                values.reverse();
+                
+                for (var b = 0; b < B; b++) {
+                    bands[b].items.reverse();
+                }
+            }
+
+            /* Layout kind */
+            switch(s.layout){
+                case "grouped": this._calcGrouped(bands, L, s);     break;
+                case "stacked": this._calcStacked(bands, L, bh, s); break;
+            }
+
+            this._bindItemProps(bands, itemProps, orient, horizontal);
+       }
+    };
+
+    var itemAccessor = this.item = {
+        end: this,
+
+        add: function(type) {
+            return that.add(pv.Panel)
+                    .data(function(){ return that.layers(); })
+                    .add(type)
+                    .extend(itemProto);
+        },
+
+        order: function(value){
+            that.order(value);
+            return this;
+        },
+        
+        /**
+         * The item width pseudo-property;
+         * determines the width of an item.
+         */
+        w: function(f){
+            that.$iw = pv.functor(f);
+            return this;
+        },
+
+        /**
+         * The item height pseudo-property;
+         * determines the height of an item.
+         */
+        h: function(f){
+            that.$ih = pv.functor(f);
+            return this;
+        },
+
+        /**
+         * The percentage of total item width to band width
+         * in a grouped layout.
+         * <p>
+         * The empty space is equally distributed in
+         * separating items within a band.
+         * </p>
+         * <p>
+         * Evaluated once per band
+         * (on the corresponding band's item of the first series).
+         * </p>
+         * <pre>
+         * f: (item, series) -> percentage
+         * </pre>
+         */
+        horizontalRatio: function(f){
+            that.$ihorizRatio = pv.functor(f);
+            return this;
+        },
+
+        /**
+         * The vertical margin that separates stacked items,
+         * in a stacked layout.
+         * <p>
+         * Half the specified margin is discounted
+         * from each of the items own height.
+         * </p>
+         * 
+         * <p>
+         * Evaluated once per band
+         * (on the corresponding band's item of the first series).
+         * </p>
+         * <pre>
+         * f: (item, series) -> height
+         * </pre>
+         */
+        verticalMargin: function(f){
+            that.$ivertiMargin = pv.functor(f);
+            return this;
+        }
+    };
+
+    var bandAccessor = this.band = {
+        end: this,
+        
+        /**
+         * The band width pseudo-property;
+         * determines the width of a band
+         * when the item layout grouped.
+         * <p>
+         * Evaluated once per band
+         * (on the corresponding band's item of the first series).
+         * </p>
+         * <pre>
+         * f: (item, series) -> width
+         * </pre>
+         */
+        w: function(f){
+            that.$bw = pv.functor(f);
+            return this;
+        },
+
+        /**
+         * The band x pseudo-property;
+         * determines the x center position of a band
+         * in a layer panel.
+         * 
+         * <p>
+         * Evaluated once per band
+         * (on the corresponding band's item of the first series).
+         * </p>
+         * <pre>
+         * f: (item, series) -> x
+         * </pre>
+         */
+        x: function(f){
+            that.$bx = pv.functor(f);
+            return this;
+        },
+
+        order: function(value){
+            that.bandOrder(value);
+            return this;
+        }
+    };
+
+    this.band.item = itemAccessor;
+    this.item.band = bandAccessor;
+};
+
+pv.Layout.Band.$baseItemProps = (function(){
+    var none = function() { return null; };
+    return {t: none, b: none, r: none, b: none, w: none, h: none};
+}());
+
+pv.Layout.Band.prototype = pv.extend(pv.Layout)
+    .property("orient", String)     // x-y orientation
+    .property("layout", String)     // items layout within band: "grouped", "stacked"
+    .property("layers") // data
+    .property("yZero",     Number)  // The y zero base line
+    .property("verticalMode",   String) // The vertical mode: 'expand', null
+    .property("horizontalMode", String) // The horizontal mode: 'expand', null
+    .property("order",     String)  // layer order; "reverse" or null
+    .property("bandOrder", String)  // band order;  "reverse" or null
+    ;
+
+/**
+ * Default properties for stack layouts.
+ * The default orientation is "bottom-left",
+ * the default layout is "grouped",
+ * the default y zero base line is 0, and
+ * the default layers is <tt>[[]]</tt>.
+ *
+ * @type pv.Layout.Band
+ */
+pv.Layout.Band.prototype.defaults = new pv.Layout.Band()
+    .extend(pv.Layout.prototype.defaults)
+    .orient("bottom-left")
+    .layout("grouped")
+    .yZero(0)
+    .layers([[]]);
+
+/** @private */ pv.Layout.Band.prototype.$bx =
+/** @private */ pv.Layout.Band.prototype.$bw =
+/** @private */ pv.Layout.Band.prototype.$iw =
+/** @private */ pv.Layout.Band.prototype.$ih =
+/** @private */ pv.Layout.Band.prototype.$ivertiMargin = pv.functor(0);
+
+/** @private */ pv.Layout.Band.prototype.$ihorizRatio = pv.functor(0.9);
+
+/** @private The default values function; identity. */
+pv.Layout.Band.prototype.$values = pv.identity;
+
+/**
+ * The values function; determines the values for a given band.
+ * The default value is the identity function,
+ * which assumes that the bands property is specified as
+ * a two-dimensional (i.e., nested) array.
+ *
+ * @param {function} f the values function.
+ * @returns {pv.Layout.Band} this.
+ */
+pv.Layout.Band.prototype.values = function(f) {
+  this.$values = pv.functor(f);
+  return this;
+};
+
+pv.Layout.prototype._readData = function(data, layersValues, scene){
+    var L = data.length,
+        bands = [
+            /*
+            {
+                x:   0, // x left position of each band
+                w:   0, // width of each band
+                iwr: 0, // item width ratio of each band
+                items: [ // indexed by series index
+                    {
+                        h: 0, // height of each item
+                        w: 0, // width of each item
+                        x: 0  // position of each item (within its band) (calculated)
+                    }
+                ]
+            }
+            */
+        ],
+        B;
+
+    /*
+     * Iterate over the data, evaluating the values, x and y functions.
+     * The context in which the x and y pseudo-properties are evaluated is a
+     * pseudo-mark that is a *grandchild* of this layout.
+     */
+    var stack = pv.Mark.stack,
+        o = {parent: {parent: this}};
+
+    stack.unshift(null);
+
+    for (var l = 0; l < L; l++) {
+        o.parent.index = l;
+        stack[0] = data[l];
+
+        /* Eval per-layer properties */
+
+        var layerValues = layersValues[l] = this.$values.apply(o.parent, stack);
+        if(!l){
+            B = layerValues.length;
+        }
+
+        /* Eval per-item properties */
+        stack.unshift(null);
+        for (var b = 0; b < B ; b++) {
+            stack[0] = layerValues[b];
+            o.index  = b;
+
+            /* First series evaluates band stuff, for each band */
+            var band = bands[b];
+            if(!band){
+                band = bands[b] = {
+                    horizRatio:  this.$ihorizRatio.apply(o, stack),
+                    vertiMargin: this.$ivertiMargin.apply(o, stack),
+                    w: this.$bw.apply(o, stack),
+                    x: this.$bx.apply(o, stack),
+                    items: []
+                };
+            }
+
+            var iy = (scene.yZero || 0),
+                iw = this.$iw.apply(o, stack),
+                ih = this.$ih.apply(o, stack);
+
+            /* Negative heights are transformed into a lower iy */
+            if(ih < 0){
+                ih = -ih;
+                iy -= ih;
+            }
+
+            band.items[l] = {
+                y: iy,
+                x: 0,
+                w: iw,
+                h: ih
+            };
+        }
+        stack.shift();
+    }
+    stack.shift();
+
+    return bands;
+};
+
+pv.Layout.Band.prototype._calcGrouped = function(bands, L, scene){
+    /* Compute item x positions relative to parent panel */
+    for (var b = 0, B = bands.length; b < B ; b++) {
+        var band = bands[b],
+            items = band.items,
+            w = band.w,
+            horizRatio = band.horizRatio,
+            wItems = 0;
+
+        /* Total items width */
+        for (var l = 0 ; l < L ; l++) {
+            wItems += items[l].w;
+        }
+        
+        if(L === 1){
+            /*
+             * Horizontal ratio does not apply
+             * There's no space between...
+             */
+            horizRatio = 1;
+        } else if(!(horizRatio > 0 && horizRatio <= 1)) {
+            horizRatio = 1;
+        }
+        
+        if(w == null){
+            /* Expand band width to contain all items plus ratio */
+            w = band.w = wItems / horizRatio;
+            
+        } else if(scene.horizontalMode === 'expand'){
+            /* Scale items width to fit in band's width */
+
+            var wItems2 = horizRatio * w;
+            if (wItems) {
+                var wScale = wItems2 / wItems;
+                for (var l = 0 ; l < L ; l++) {
+                    items[l].w *= wScale;
+                }
+            } else {
+                var wiavg = wItems2 / L;
+                for (var l = 0 ; l < L; l++) {
+                    items[l].w = wiavg;
+                }
+            }
+
+            wItems = wItems2;
+        }
+
+        var wItemsWithMargin = wItems / horizRatio,
+            /* items start x position */
+            ix = band.x - (wItemsWithMargin / 2),
+            margin = L > 1 ? ((wItemsWithMargin - wItems) / (L - 1)) : 0;
+
+        for (var l = 0 ; l < L ; l++) {
+            var item = items[l];
+            item.x = ix;
+            ix += item.w + margin;
+        }
+    }
+};
+
+pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
+    /*
+     * Calculate layer 0 item offset
+     * (default already is items[l].y=0)
+     */
+    var B = bands.length,
+        items;
+
+    if(scene.verticalMode === "expand") {
+        for (var b = 0; b < B; b++) {
+            items = bands[b].items;
+
+            /* Sum across layers for this band */
+            var hSum = 0;
+            for (var l = 0; l < L; l++) {
+                hSum += items[l].h;
+            }
+
+            /* Scale dys */
+            if (hSum) {
+                var hScale = bh / hSum;
+                for (var l = 0; l < L; l++) {
+                    items[l].h *= hScale;
+                }
+            } else {
+                var hAvg = bh / L;
+                for (var l = 0; l < L; l++) {
+                    items[l].h = hAvg;
+                }
+            }
+        }
+    }
+
+    /*
+     * Propagate y offset to other layers.
+     * Assign width.
+     * Calc x position.
+     * Discount vertiMargin
+     */
+    for (var b = 0; b < B; b++) {
+        var band = bands[b],
+            x = band.x, // centered on band
+            vertiMargin  = band.vertiMargin > 0 ? band.vertiMargin : 0,
+            vertiMargin2 = vertiMargin / 2;
+
+        items = band.items;
+
+        var prevItem = items[0];
+        prevItem.x = x - prevItem.w / 2;
+        if(vertiMargin2){
+            prevItem.y += vertiMargin2;
+            prevItem.h -= vertiMargin;
+        }
+        
+        var yOffset = prevItem.y;
+
+        for (var l = 1 ; l < L ; l++) {
+            var item = items[l];
+            
+            yOffset += prevItem.h + vertiMargin;
+            
+            if(vertiMargin){
+                prevItem.h -= vertiMargin;
+            }
+
+            item.y = yOffset;
+            item.x = x - item.w / 2;
+
+            prevItem = item;
+        }
+    }
+};
+
+pv.Layout.Band.prototype._bindItemProps = function(bands, itemProps, orient, horizontal){
+    /*
+     * Find the property definitions for dynamic substitution.
+     *
+     * orient = xOrientation-yOrientation
+     */
+    var index = orient.indexOf("-"),
+        ph = horizontal ? "h" : "w",
+        pw = horizontal ? "w" : "h",
+        px = index < 0 ?
+            /* Default yOrientation
+            * horizontal -> left
+            * vertical   -> bottom
+            */
+            (horizontal ? "l" : "b") :
+            /*
+            * -l,r,t,b ...
+            */
+            orient.charAt(index + 1),
+
+        /*
+        * b,t,l,r
+        */
+        py  = orient.charAt(0);
+
+    itemProps[px] = function(b, l) { return bands[b].items[l].x; };
+    itemProps[py] = function(b, l) { return bands[b].items[l].y; };
+    itemProps[pw] = function(b, l) { return bands[b].items[l].w; };
+    itemProps[ph] = function(b, l) { return bands[b].items[l].h; };
+};
 /**
  * Constructs a new, empty treemap layout. Layouts are not typically
  * constructed directly; instead, they are added to an existing panel via

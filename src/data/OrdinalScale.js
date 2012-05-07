@@ -157,7 +157,11 @@ pv.Scale.ordinal = function() {
    * between points.
    *
    * <p>This method must be called <i>after</i> the domain is set.
-   *
+   * <p>
+   * The computed step width can be retrieved from the range as
+   * <tt>scale.range().step</tt>.
+   * </p>
+   * 
    * @function
    * @name pv.Scale.ordinal.prototype.split
    * @param {number} min minimum value of the output range.
@@ -169,6 +173,100 @@ pv.Scale.ordinal = function() {
   scale.split = function(min, max) {
     var step = (max - min) / this.domain().length;
     r = pv.range(min + step / 2, max, step);
+    r.step = step;
+    return this;
+  };
+
+  /**
+   * Sets the range from the given continuous interval.
+   * The interval [<i>min</i>, <i>max</i>] is subdivided into <i>n</i> equispaced bands,
+   * where <i>n</i> is the number of (unique) values in the domain.
+   *
+   * The first and last band are offset from the edge of the range by
+   * half the distance between bands.
+   *
+   * The positions are centered in each band.
+   * <pre>
+   * m = M/2
+   *
+   *  |mBm|mBm| ... |mBm|
+   * min               max
+   *   r0 -> min + m + B/2
+   * </pre>
+   * <p>This method must be called <i>after</i> the domain is set.</p>
+   * <p>
+   * The computed absolute band width can be retrieved from the range as
+   * <tt>scale.range().band</tt>.
+   * The properties <tt>step</tt> and <tt>margin</tt> are also exposed.
+   * </p>
+   *
+   * @function
+   * @name pv.Scale.ordinal.prototype.splitBandedCenter
+   * @param {number} min minimum value of the output range.
+   * @param {number} max maximum value of the output range.
+   * @param {number} [band] the fractional band width in [0, 1]; defaults to 1.
+   * @returns {pv.Scale.ordinal} <tt>this</tt>.
+   * @see #split
+   */
+  scale.splitBandedCenter = function(min, max, band) {
+    scale.split(min, max);
+    if (band == null) {
+        band = 1;
+    }
+    r.band   = r.step * band;
+    r.margin = r.step - r.band;
+    return this;
+  };
+
+  /**
+   * Sets the range from the given continuous interval.
+   * The interval [<i>min</i>, <i>max</i>] is subdivided into <i>n</i> equispaced bands,
+   * where <i>n</i> is the number of (unique) values in the domain.
+   *
+   * The first and last bands are aligned to the edges of the range.
+   * <pre>
+   *  |Bm|mBm| ...|mB|
+   *  or
+   *  |BM |BM |... |B|
+   * min           max
+   *   r0 -> min + B/2
+   * </pre>
+   * <p>
+   * The positions are centered in each band
+   * (the first position is at <tt>min + band / 2</tt>).
+   * </p>
+   * <p>This method must be called <i>after</i> the domain is set.</p>
+   * <p>
+   * The computed absolute band width can be retrieved from the range as
+   * <tt>scale.range().band</tt>.
+   * The properties <tt>step</tt> and <tt>margin</tt> are also exposed.
+   * </p>
+   *
+   * @function
+   * @name pv.Scale.ordinal.prototype.splitBandedFlushCenter
+   * @param {number} min minimum value of the output range.
+   * @param {number} max maximum value of the output range.
+   * @param {number} [band] the fractional band width in [0, 1]; defaults to 1.
+   * @returns {pv.Scale.ordinal} <tt>this</tt>.
+   * @see #split
+   */
+  scale.splitBandedFlushCenter = function(min, max, band) {
+    if (band == null) {
+        band = 1;
+    }
+
+    // Requires N > 0
+
+    var R = (max - min),
+        N = this.domain().length,
+        B = (R * band) / N,
+        M = N > 1 ? ((R - N * B) / (N - 1)) : 0,
+        S = M + B;
+    
+    r = pv.range(min + B / 2, max, S);
+    r.step   = S;
+    r.band   = B;
+    r.margin = M;
     return this;
   };
 
@@ -207,6 +305,16 @@ pv.Scale.ordinal = function() {
    * that the band width will be equal to the padding width. The computed
    * absolute band width can be retrieved from the range as
    * <tt>scale.range().band</tt>.
+   * The properties <tt>step</tt> and <tt>margin</tt> are also exposed.
+   * </p>
+   *
+   * <pre>
+   * m = M/2
+   *
+   *  |MBm|mBm| ... |mBM|
+   * min               max
+   *   r0 -> min + M
+   * </pre>
    *
    * <p>If the band width argument is negative, this method will allocate bands
    * of a <i>fixed</i> width <tt>-band</tt>, rather than a relative fraction of
@@ -239,6 +347,8 @@ pv.Scale.ordinal = function() {
       var step = (max - min) / (this.domain().length + (1 - band));
       r = pv.range(min + step * (1 - band), max, step);
       r.band = step * band;
+      r.step = step;
+      r.margin = step - r.band;
     }
     return this;
   };

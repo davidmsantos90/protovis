@@ -18,6 +18,8 @@ pv.SvgScene.image = function(scenes) {
           "width": s.width,
           "height": s.height
         });
+      if(s.svg) this.setAttributes(e, s.svg);
+      if(s.css) this.setStyle(e, s.css);
       var c = e.firstChild || e.appendChild(document.createElementNS(this.xhtml, "canvas"));
       c.$scene = {scenes:scenes, index:i};
       c.style.width = s.width;
@@ -34,6 +36,10 @@ pv.SvgScene.image = function(scenes) {
           "width": s.width,
           "height": s.height
         });
+
+      if(s.svg) this.setAttributes(e, s.svg);
+      if(s.css) this.setStyle(e, s.css);
+
       e.setAttributeNS(this.xlink, "xlink:href", s.url);
     }
     e = this.append(e, scenes, i);

@@ -20,6 +20,10 @@ pv.SvgScene.rule = function(scenes) {
         "stroke-opacity": stroke.opacity,
         "stroke-width": s.lineWidth / this.scale
       });
+    
+    if(s.svg) this.setAttributes(e, s.svg);
+    if(s.css) this.setStyle(e, s.css);
+
     e = this.append(e, scenes, i);
   }
   return e;

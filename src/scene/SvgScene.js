@@ -99,12 +99,23 @@ pv.SvgScene.expect = function(e, type, attributes, style) {
   } else {
     e = this.create(type);
   }
-  for (var name in attributes) {
-    var value = attributes[name];
-    if (value == this.implicit.svg[name]) value = null;
-    if (value == null) e.removeAttribute(name);
-    else e.setAttribute(name, value);
-  }
+
+  if(attributes) this.setAttributes(e, attributes);
+  if(style)      this.setStyle(e, style);
+
+  return e;
+};
+
+pv.SvgScene.setAttributes = function(e, attributes){
+    for (var name in attributes) {
+        var value = attributes[name];
+        if (value == this.implicit.svg[name]) value = null;
+        if (value == null) e.removeAttribute(name);
+        else e.setAttribute(name, value);
+    }
+};
+
+pv.SvgScene.setStyle = function(e, style){
   for (var name in style) {
     var value = style[name];
     if (value == this.implicit.css[name]) value = null;
@@ -119,7 +130,6 @@ pv.SvgScene.expect = function(e, type, attributes, style) {
     else
       e.style[name] = value;
   }
-  return e;
 };
 
 /** TODO */

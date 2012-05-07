@@ -208,6 +208,10 @@ pv.Mark.prototype
     .property("visible", Boolean)
     // DATUM - an object counterpart for each value of data.
     .property("datum", Object)
+    // CSS attributes pass-through
+    .property("css", Object)
+    // SVG attributes pass-through
+    .property("svg", Object)
     .property("left", Number)
     .property("right", Number)
     .property("top", Number)

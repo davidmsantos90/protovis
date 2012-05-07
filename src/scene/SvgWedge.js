@@ -60,6 +60,10 @@ pv.SvgScene.wedge = function(scenes) {
         "stroke-opacity": stroke.opacity || null,
         "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null
       });
+
+    if(s.svg) this.setAttributes(e, s.svg);
+    if(s.css) this.setStyle(e, s.css);
+
     e = this.append(e, scenes, i);
   }
   return e;
