@@ -5,35 +5,6 @@
  *
  * @class Implements a layout for banded visualizations; it is
  * mainly used for grouped bar charts.
- *
- * For example, given the following:
- *
- * <pre>var seriesByCategory = {
- *  wounds: [1, 2, 3, 4],
- *  other:  [2, 3, 4, 5],
- *  ...
- * }</pre>
- *
- * and a corresponding array of categories:
- *
- * <pre>var categories = ["wounds", "other", "disease"];</pre>
- *
- * Separate bands can be defined for each category like so:
- *
- * <pre>vis.add(pv.Layout.Band)
- *     .layers(series)
- *     //.bandOrder('reverse') // once per layout instance
- *     //.itemOrder('reverse') // once per layout instance
- *     .values(function(categ) seriesByCategoryIndex[categ]) // once per band
- *     .w(123) // once per band
- *     .itemWidthRatio(0.8) // once per band (percentage of total item width over band width)
- *     .x (function(categ) xScale(categ)) // once per band -> inherited as left or top ...
- *     .y (0) // once per band -> inherited -> ....
- *     .dx(fixedItemWidth) // once per item -> inherited as width or height
- *     .dy(function(value, categ) yScale(value)) // once per item -> inherited as height or width
- *   .band.add(pv.Bar)
- *
- *     ...</pre>
  * 
  * @extends pv.Layout
  */
@@ -127,7 +98,7 @@ pv.Layout.Band = function() {
             that.order(value);
             return this;
         },
-        
+
         /**
          * The item width pseudo-property;
          * determines the width of an item.
@@ -229,6 +200,20 @@ pv.Layout.Band = function() {
         order: function(value){
             that.bandOrder(value);
             return this;
+        },
+
+        /**
+         * Band differential control pseudo-property.
+         *  2 - Drawn starting at previous band offset. Multiply values by  1. Don't update offset.
+         *  1 - Drawn starting at previous band offset. Multiply values by  1. Update offset.
+         *  0 - Reset offset to 0. Drawn starting at 0. Default. Leave offset at 0.
+         * -1 - Drawn starting at previous band offset. Multiply values by -1. Update offset.
+         * -2 - Drawn starting at previous band offset. Multiply values by -1. Don't update offset.
+         * @private
+         */
+        differentialControl: function(f){
+            that.$bDiffControl = pv.functor(f);
+            return this;
         }
     };
 
@@ -270,6 +255,7 @@ pv.Layout.Band.prototype.defaults = new pv.Layout.Band()
 
 /** @private */ pv.Layout.Band.prototype.$bx =
 /** @private */ pv.Layout.Band.prototype.$bw =
+/** @private */ pv.Layout.Band.prototype.$bDiffControl = 
 /** @private */ pv.Layout.Band.prototype.$iw =
 /** @private */ pv.Layout.Band.prototype.$ih =
 /** @private */ pv.Layout.Band.prototype.$ivertiMargin = pv.functor(0);
@@ -348,6 +334,7 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
                     vertiMargin: this.$ivertiMargin.apply(o, stack),
                     w: this.$bw.apply(o, stack),
                     x: this.$bx.apply(o, stack),
+                    diffControl: this.$bDiffControl ? this.$bDiffControl.apply(o, stack) : 0,
                     items: []
                 };
             }
@@ -475,36 +462,57 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
      * Calc x position.
      * Discount vertiMargin
      */
+    var yZero = scene.yZero,
+        yOffset = yZero;
+
     for (var b = 0; b < B; b++) {
         var band = bands[b],
             bx = band.x, // centered on band
+            bDiffControl = band.diffControl,
+            invertDir    = (bDiffControl < 0), // -1 or -2
             vertiMargin  = band.vertiMargin > 0 ? band.vertiMargin : 0;
 
         items = band.items;
+        
+        // diffControl
+        var resultPos = this._layoutItemsOfDir(+1, invertDir, items, vertiMargin, bx, yOffset),
+            resultNeg;
+        if(resultPos.existsOtherDir){
+            resultNeg = this._layoutItemsOfDir(-1, invertDir, items, vertiMargin, bx, yOffset);
+        }
 
-        if(this._layoutItemsOfDir(+1,  items, vertiMargin, bx)){
-            this._layoutItemsOfDir(-1, items, vertiMargin, bx);
+        if(bDiffControl){
+            if(Math.abs(bDiffControl) === 1){
+                yOffset = resultPos.yOffset;
+                if(resultNeg){
+                    yOffset -= resultNeg.yOffset;
+                }
+            } // otherwise leave offset untouched
+        } else { // ensure zero
+            yOffset = yZero;
         }
     }
 };
 
-pv.Layout.Band.prototype._layoutItemsOfDir = function(dir, items, vertiMargin, bx){
+pv.Layout.Band.prototype._layoutItemsOfDir = function(dir, invertDir, items, vertiMargin, bx, yOffset){
     var existsOtherDir = false,
         vertiMargin2 = vertiMargin / 2,
-        yOffset = 0;
+        efItemDir = (invertDir ? -dir : dir),
+        reverseLayers = invertDir;
     
     for (var l = 0, L = items.length ; l < L ; l+=1) {
-        var item = items[dir > 0 ? l : (L -l -1)];
+        var item = items[reverseLayers ? (L -l -1) : l];
 
         if(item.dir === dir){
             var h = item.h;
-            if(dir > 0){
-                item.y += (yOffset + vertiMargin2);
+            if(efItemDir > 0){
+                item.y = yOffset + vertiMargin2;
+                yOffset += h;
             } else {
-                item.y -= (yOffset + h - vertiMargin2);
+                item.y = yOffset - (h - vertiMargin2);
+                yOffset -= h;
             }
             
-            yOffset += h;
             item.h -= vertiMargin;
             item.x = bx - item.w / 2;
         } else {
@@ -512,7 +520,10 @@ pv.Layout.Band.prototype._layoutItemsOfDir = function(dir, items, vertiMargin, b
         }
     }
 
-    return existsOtherDir;
+    return {
+        existsOtherDir: existsOtherDir,
+        yOffset: yOffset
+    }
 };
 
 pv.Layout.Band.prototype._bindItemProps = function(bands, itemProps, orient, horizontal){
