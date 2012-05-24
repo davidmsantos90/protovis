@@ -1,4 +1,4 @@
-// 0db093ca10ad864bce04eebd2b0a1cf990265c4e
+// bdfda546d1a92b35bc814069f1a2c73777b60de3
 /**
  * @class The built-in Array class.
  * @name Array
@@ -15866,7 +15866,7 @@ pv.Behavior.point = function(r) {
   function search(scene, index) {
     var s = scene[index],
         point = {cost: Infinity};
-    for (var i = 0, n = s.visible && s.children.length; i < n; i++) {
+    for (var i = (s.visible ? s.children.length : 0) - 1 ; i >= 0; i--) {
       var child = s.children[i], mark = child.mark, p;
       if (mark.type == "panel") {
         mark.scene = child;
