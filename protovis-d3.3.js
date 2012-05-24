@@ -1,4 +1,4 @@
-// bdfda546d1a92b35bc814069f1a2c73777b60de3
+// 339e90fabf458051c54918c18300af084b35feaf
 /**
  * @class The built-in Array class.
  * @name Array
@@ -15870,7 +15870,7 @@ pv.Behavior.point = function(r) {
       var child = s.children[i], mark = child.mark, p;
       if (mark.type == "panel") {
         mark.scene = child;
-        for (var j = 0, m = child.length; j < m; j++) {
+        for (var j = child.length - 1 ; j >= 0; j--) {
           mark.index = j;
           p = search(child, j);
           if (p.cost < point.cost) point = p;
@@ -15879,7 +15879,7 @@ pv.Behavior.point = function(r) {
         delete mark.index;
       } else if (mark.$handlers.point) {
         var v = mark.mouse();
-        for (var j = 0, m = child.length; j < m; j++) {
+        for (var j = child.length - 1 ; j >= 0; j--) {
           var c = child[j],
               dx = v.x - c.left - (c.width || 0) / 2,
               dy = v.y - c.top - (c.height || 0) / 2,
