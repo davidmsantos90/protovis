@@ -37,18 +37,28 @@ pv.Transition = function(mark) {
     var map = {};
     for (var i = 0; i < marks.length; i++) {
       var mark = marks[i];
-      if (mark.id) map[mark.id] = mark;
+      if (mark.id) {
+          map[mark.id] = mark;
+      }
     }
+    
     return map;
   }
 
   /** @private */
   function interpolateProperty(list, name, before, after) {
+    var f;
     if (name in interpolated) {
       var i = pv.Scale.interpolator(before[name], after[name]);
-      var f = function(t) {before[name] = i(t);}
+      f = function(t) {
+          before[name] = i(t); 
+      };
     } else {
-      var f = function(t) {if (t > .5) before[name] = after[name];}
+      f = function(t) {
+          if (t > .5) {
+              before[name] = after[name];
+          }
+      };
     }
     f.next = list.head;
     list.head = f;
@@ -70,11 +80,21 @@ pv.Transition = function(mark) {
 
   /** @private */
   function interpolate(list, before, after) {
-    var mark = before.mark, bi = ids(before), ai = ids(after);
+    var mark = before.mark, 
+        bi = ids(before), 
+        ai = ids(after);
+    
     for (var i = 0; i < before.length; i++) {
-      var b = before[i], a = b.id ? ai[b.id] : after[i];
+      var b = before[i], 
+          a = b.id ? ai[b.id] : after[i];
+      
       b.index = i;
-      if (!b.visible) continue;
+      
+      if (!b.visible) { 
+          continue;
+      }
+      
+      // No after or not after.visible
       if (!(a && a.visible)) {
         var o = override(before, i, mark.$exit, after);
 
@@ -85,17 +105,25 @@ pv.Transition = function(mark) {
          * them from the scenegraph; for instances that became invisible, we
          * need to mark them invisible. See the cleanup method for details.
          */
-        b.transition = a ? 2 : (after.push(o), 1);
+        b.transition = a ? 
+                2 : 
+                (after.push(o), 1);
         a = o;
       }
       interpolateInstance(list, b, a);
     }
+    
     for (var i = 0; i < after.length; i++) {
-      var a = after[i], b = a.id ? bi[a.id] : before[i];
+      var a = after[i], 
+          b = a.id ? bi[a.id] : before[i];
+      
       if (!(b && b.visible) && a.visible) {
         var o = override(after, i, mark.$enter, before);
-        if (!b) before.push(o);
-        else before[b.index] = o;
+        if (!b) 
+            before.push(o);
+        else 
+            before[b.index] = o;
+        
         interpolateInstance(list, o, a);
       }
     }
@@ -118,10 +146,14 @@ pv.Transition = function(mark) {
 
     /* Determine the set of properties to evaluate. */
     var seen = {};
-    for (var i = 0; i < p.length; i++) seen[p[i].name] = 1;
+    for (var i = 0; i < p.length; i++) {
+        seen[p[i].name] = 1;
+    }
+    
+    /* Add to p all optional properties in binds not in proto properties (p) */
     p = m.binds.optional
-        .filter(function(p) {return !(p.name in seen);})
-        .concat(p);
+         .filter(function(p) { return !(p.name in seen); })
+         .concat(p);
 
     /* Evaluate the properties and update any implied ones. */
     m.context(scene, index, function() {
@@ -177,24 +209,39 @@ pv.Transition = function(mark) {
     }
 
     // TODO allow parallel and sequenced transitions
-    if (mark.$transition) mark.$transition.stop();
+    if (mark.$transition) {
+        mark.$transition.stop();
+    }
     mark.$transition = that;
 
     // TODO clearing the scene like this forces total re-build
-    var i = pv.Mark.prototype.index, before = mark.scene, after;
+    var i = pv.Mark.prototype.index,
+        before = mark.scene,
+        after;
+    
     mark.scene = null;
     mark.bind();
     mark.build();
+    
     after = mark.scene;
     mark.scene = before;
+    
     pv.Mark.prototype.index = i;
 
-    var start = Date.now(), list = {};
+    var start = Date.now(), 
+        list = {};
+    
     interpolate(list, before, after);
+    
     timer = setInterval(function() {
       var t = Math.max(0, Math.min(1, (Date.now() - start) / duration)),
           e = ease(t);
-      for (var i = list.head; i; i = i.next) i(e);
+      
+      /* Advance every property of every mark */
+      for (var i = list.head ; i ; i = i.next) {
+          i(e);
+      }
+      
       if (t == 1) {
         cleanup(mark.scene);
         that.stop();

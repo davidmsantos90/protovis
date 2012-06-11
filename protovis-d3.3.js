@@ -1,4 +1,4 @@
-// 339e90fabf458051c54918c18300af084b35feaf
+// 27f7a95ef570506fafeeac3e61317c77eb7f2631
 /**
  * @class The built-in Array class.
  * @name Array
@@ -6323,50 +6323,195 @@ pv.SvgScene.pathSegment = function(s1, s2) {
 /** @private Line-line intersection, per Akenine-Moller 16.16.1. */
 pv.SvgScene.lineIntersect = function(o1, d1, o2, d2) {
   return o1.plus(d1.times(o2.minus(o1).dot(d2.perp()) / d1.dot(d2.perp())));
-}
+};
+
+/* 
+  MITER / BEVEL JOIN calculation
+
+  Normal line p1->p2 bounding box points  (a-b-c-d)
+
+                    ^ w12 
+  a-----------------|--------------b       ^
+  |                 |              |       |
+  p1           <----+p12           p2      | w1
+  |                                |       |
+  d--------------------------------c       v
+  
+  Points are added in the following order:
+  d -> a -> b -> c
+  
+  Depending on the position of p0 in relation to the segment p1-p2,
+  'a' may be the outer corner and 'd' the inner corner, 
+  or the opposite:
+  
+  Ex1:
+       outer side
+       
+         p1 ---- p2
+       /   
+     p0    inner side
+     
+     a is outer, d is inner
+     
+  Ex2:
+      
+     p0    inner side
+       \
+         p1 ---- p2
+         
+       outer side
+       
+     a is inner, d is outer
+     
+  =====================
+  
+    ^ v1
+     \
+      am
+       *--a------ ... ----b
+        \ |               |
+          p1              p2
+          |\              |
+          d-*---- ... ----c
+            dm\
+               \
+                v
+                v1
+
+
+  NOTE: 
+  As yy points down, and because of the way Vector.perp() is written,
+  perp() corresponds to rotating 90º clockwise.
+  
+  -----
+  
+  The miter (ratio) limit is
+  the limit on the ratio of the miter length to the line width.
+  
+  The miter length is the distance between the 
+  outer corner and the inner corner of the miter.
+*/
+pv.strokeMiterLimit = 4;
 
 /** @private Returns the miter join path for the specified points. */
 pv.SvgScene.pathJoin = function(s0, s1, s2, s3) {
   /*
-   * P1-P2 is the current line segment. V is a vector that is perpendicular to
-   * the line segment, and has length lineWidth / 2. ABCD forms the initial
-   * bounding box of the line segment (i.e., the line segment if we were to do
-   * no joins).
+   * P1-P2 is the current line segment. 
+   * V is a vector that is perpendicular to the line segment, and has length lineWidth / 2. 
+   * ABCD forms the initial bounding box of the line segment 
+   * (i.e., the line segment if we were to do no joins).
    */
-  var p1 = pv.vector(s1.left, s1.top),
-      p2 = pv.vector(s2.left, s2.top),
-      p = p2.minus(p1),
-      v = p.perp().norm(),
-      w = v.times(s1.lineWidth / (2 * this.scale)),
-      a = p1.plus(w),
-      b = p2.plus(w),
-      c = p2.minus(w),
-      d = p1.minus(w);
-
-  /*
-   * Start join. P0 is the previous line segment's start point. We define the
-   * cutting plane as the average of the vector perpendicular to P0-P1, and
-   * the vector perpendicular to P1-P2. This insures that the cross-section of
-   * the line on the cutting plane is equal if the line-width is unchanged.
-   * Note that we don't implement miter limits, so these can get wild.
-   */
-  if (s0 && s0.visible) {
-    var v1 = p1.minus(s0.left, s0.top).perp().norm().plus(v);
-    d = this.lineIntersect(p1, v1, d, p);
-    a = this.lineIntersect(p1, v1, a, p);
-  }
-
-  /* Similarly, for end join. */
-  if (s3 && s3.visible) {
-    var v2 = pv.vector(s3.left, s3.top).minus(p2).perp().norm().plus(v);
-    c = this.lineIntersect(p2, v2, c, p);
-    b = this.lineIntersect(p2, v2, b, p);
-  }
-
-  return "M" + a.x + "," + a.y
-       + "L" + b.x + "," + b.y
-       + " " + c.x + "," + c.y
-       + " " + d.x + "," + d.y;
+    var pts = [];
+    var miterLimit, miterRatio, miterLength;
+    
+    var w1 = s1.lineWidth / this.scale;
+    var p1 = pv.vector(s1.left, s1.top);
+    var p2 = pv.vector(s2.left, s2.top);
+    
+    var p21 = p2.minus(p1);
+    var v21 = p21.perp().norm();
+    var w21 = v21.times(w1 / 2);
+    
+    var a = p1.plus (w21);
+    var d = p1.minus(w21);
+    
+    var b = p2.plus (w21);
+    var c = p2.minus(w21);
+    
+    // --------------------
+    
+    if(!s0 || !s0.visible){
+        // Starting point
+        pts.push(d, a);
+    } else {
+        var p0  = pv.vector(s0.left, s0.top);
+        var p10 = p1.minus(p0);
+        var v10 = p10.perp().norm(); // may point inwards or outwards
+        
+        // v1 points from p1 to the inner or outer corner.
+        var v1 = v10.plus(v21).norm();
+        
+        // Miter Join
+        // One is the outer corner, the other is the inner corner
+        var am = this.lineIntersect(p1, v1, a, p21);
+        var dm = this.lineIntersect(p1, v1, d, p21);
+        
+        // Check Miter Limit
+        // The line width is taken as the average of the widths
+        // of the p0-p1 segment and that of the p1-p2 segment.
+        miterLength = am.minus(dm).length();
+        var w0 = s0.lineWidth / this.scale;
+        var w10avg = (w1 + w0) / 2;
+        miterRatio = miterLength / w10avg;
+        miterLimit = s1.strokeMiterLimit || pv.strokeMiterLimit;
+        if(miterRatio <= miterLimit){
+            // Accept the miter join
+            pts.push(dm, am);
+        } else {
+            // Choose the bevel join
+            // v1Outer is parallel to v1, but always points outwards
+            var p12 = p21.times(-1);
+            var v1Outer = p10.norm().plus(p12.norm()).norm();
+            
+            // The bevel intermediate point
+            // Place it along v1Outer, at a distance w10avg/2 from p1.
+            // If it were a circumference, it would have that radius.
+            // The inner corner is am or dm.
+            // The other corner is the original d or a.
+            var bevel10 = p1.plus(v1Outer.times(w10avg / 2));
+            if(v1Outer.dot(v21) >= 0){
+                // a is outer, d is inner
+                pts.push(dm, bevel10, a);
+            } else {
+                // d is outer, a is inner
+                pts.push(d, bevel10, am);
+            }
+        }
+    }
+    
+    // -------------------
+    
+    if(!s3 || !s3.visible){
+        // Starting point
+        pts.push(b, c);
+    } else {
+        var p3  = pv.vector(s3.left, s3.top);
+        var p32 = p3.minus(p2);
+        var v32 = p32.perp().norm();
+        var v2  = v32.plus(v21).norm();
+        
+        // Miter Join
+        var bm = this.lineIntersect(p2, v2, b, p21);
+        var cm = this.lineIntersect(p2, v2, c, p21);
+        
+        miterLength = bm.minus(cm).length();
+        var w3 = s3.lineWidth / this.scale;
+        var w31avg = (w3 + w1) / 2;
+        miterRatio = miterLength / w31avg;
+        miterLimit = s2.strokeMiterLimit || pv.strokeMiterLimit;
+        if(miterRatio <= miterLimit){
+            // Accept the miter join
+            pts.push(bm, cm);
+        } else {
+            // Choose a bevel join
+            var p23 = p32.times(-1);
+            var v2Outer = p21.norm().plus(p23.norm()).norm();
+            var bevel31 = p2.plus(v2Outer.times(w31avg / 2));
+            if(v2Outer.dot(v21) >= 0){
+                // b is outer, c is inner
+                pts.push(b, bevel31, cm);
+            } else {
+                // c is outer, b is inner
+                pts.push(bm, bevel31, c);
+            }
+        }
+    }
+    
+    // Render pts to svg path
+    var pt = pts.shift();
+    return "M" + pt.x + "," + pt.y + 
+           "L" + pts.map(function(pt2){ return pt2.x + "," + pt2.y; })
+                  .join(" ");
 };
 pv.SvgScene.panel = function(scenes) {
   var g = scenes.$g, e = g && g.firstChild;
@@ -12804,13 +12949,13 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
                 };
             }
 
-            var ih = this.$ih.apply(o, stack);
+            var ih = this.$ih.apply(o, stack); // may be null
             band.items[l] = {
                 y: (scene.yZero || 0),
                 x: 0,
                 w: this.$iw.apply(o, stack),
-                h: Math.abs(ih),
-                dir: ih < 0 ? -1 : 1
+                h: ih != null ? Math.abs(ih) : ih,
+                dir: ih < 0 ? -1 : 1 // null -> 1
             };
         }
         stack.shift();
@@ -12894,7 +13039,7 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
             items = bands[b].items;
 
             /* Sum across layers for this band */
-            var hSum = 0;
+            var hSum = null, nonNullCount = 0;
             for (var l = 0; l < L; l++) {
                 /* We get rid of negative heights
                  * because it is preferable to respect the layer's order
@@ -12903,19 +13048,31 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
                  */
                 var item = items[l];
                 item.dir = 1;
-                hSum += item.h;
+                var h = item.h;
+                if(h != null){
+                    nonNullCount++;
+                    hSum += h; // null + 1 = 0 + 1
+                }
             }
 
             /* Scale hs */
-            if (hSum) {
-                var hScale = bh / hSum;
-                for (var l = 0; l < L; l++) {
-                    items[l].h *= hScale;
-                }
-            } else {
-                var hAvg = bh / L;
-                for (var l = 0; l < L; l++) {
-                    items[l].h = hAvg;
+            if(nonNullCount){
+                if (hSum) {
+                    var hScale = bh / hSum;
+                    for (var l = 0; l < L; l++) {
+                        var h = items[l].h;
+                        if(h != null){
+                            items[l].h = h * hScale;
+                        }
+                    }
+                } else {
+                    var hAvg = bh / nonNullCount;
+                    for (var l = 0; l < L; l++) {
+                        var h = items[l].h;
+                        if(h != null){
+                            items[l].h = hAvg;
+                        }
+                    }
                 }
             }
         }
@@ -12969,7 +13126,7 @@ pv.Layout.Band.prototype._layoutItemsOfDir = function(dir, invertDir, items, ver
         var item = items[reverseLayers ? (L -l -1) : l];
 
         if(item.dir === dir){
-            var h = item.h;
+            var h = item.h || 0; // null -> 0
             if(efItemDir > 0){
                 item.y = yOffset + vertiMargin2;
                 yOffset += h;
@@ -12978,7 +13135,7 @@ pv.Layout.Band.prototype._layoutItemsOfDir = function(dir, invertDir, items, ver
                 yOffset -= h;
             }
             
-            item.h -= vertiMargin;
+            item.h -= vertiMargin; // may become < 0
             item.x = bx - item.w / 2;
         } else {
             existsOtherDir = true;
@@ -12988,7 +13145,7 @@ pv.Layout.Band.prototype._layoutItemsOfDir = function(dir, invertDir, items, ver
     return {
         existsOtherDir: existsOtherDir,
         yOffset: yOffset
-    }
+    };
 };
 
 pv.Layout.Band.prototype._bindItemProps = function(bands, itemProps, orient, horizontal){
@@ -13019,7 +13176,7 @@ pv.Layout.Band.prototype._bindItemProps = function(bands, itemProps, orient, hor
     itemProps[px] = function(b, l) {return bands[b].items[l].x;};
     itemProps[py] = function(b, l) {return bands[b].items[l].y;};
     itemProps[pw] = function(b, l) {return bands[b].items[l].w;};
-    itemProps[ph] = function(b, l) {return bands[b].items[l].h;};
+    itemProps[ph] = function(b, l) {return bands[b].items[l].h || 0;}; // null -> 0
 };
 /**
  * Constructs a new, empty treemap layout. Layouts are not typically
