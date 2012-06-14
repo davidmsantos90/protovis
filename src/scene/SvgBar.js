@@ -4,7 +4,7 @@ pv.SvgScene.bar = function(scenes) {
     var s = scenes[i];
 
     /* visible */
-    if (!s.visible) continue;
+    if (!s.visible || Math.abs(s.width) <= 1E-10 || Math.abs(s.height) <= 1E-10) continue;
     var fill = s.fillStyle, stroke = s.strokeStyle;
     if (!fill.opacity && !stroke.opacity) continue;
 
