@@ -171,7 +171,7 @@ pv.listenForPageLoad = function(listener) {
             window.attachEvent( "onload", listener );
         }
     }
-}
+};
 
 /**
  * @public Returns the name of the renderer we're using -
@@ -182,7 +182,7 @@ pv.listenForPageLoad = function(listener) {
 pv.renderer = function() {
     return (typeof document.svgImplementation !== "undefined") ? document.svgImplementation:
      (typeof window.svgweb === "undefined") ? "nativesvg" : "svgweb";
-}
+};
 
 /** @private Returns a locally-unique positive id. */
 pv.id = function() {

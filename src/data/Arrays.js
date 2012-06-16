@@ -23,6 +23,25 @@ pv.repeat = function(array, n) {
 };
 
 /**
+ * Creates an array of the specified length,
+ * and, optionally, initializes it with the specified default value.
+ * 
+ * @param {number} [len] the length of the array; defaults to 0.
+ * @param {number} [dv] the default value with which to initialize each position; defaults to undefined.
+ * @returns {array} an array as specified.
+ */
+pv.array = function(len, dv){
+    var a = len >= 0 ? new Array(len) : [];
+    if(dv !== undefined){
+        for(var i = 0 ; i < len ; i++){
+            a[i] = dv;
+        }
+    }
+    
+    return a;
+};
+
+/**
  * Given two arrays <tt>a</tt> and <tt>b</tt>, <style
  * type="text/css">sub{line-height:0}</style> returns an array of all possible
  * pairs of elements [a<sub>i</sub>, b<sub>j</sub>]. The outer loop is on array

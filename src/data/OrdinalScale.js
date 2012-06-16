@@ -171,8 +171,16 @@ pv.Scale.ordinal = function() {
    * @see #splitBanded
    */
   scale.split = function(min, max) {
-    var step = (max - min) / this.domain().length;
-    r = pv.range(min + step / 2, max, step);
+    var R = max - min;
+    var N = this.domain().length;
+    var step = 0;
+    if(R === 0){
+        r = pv.array(N, min);
+    } else if(N){
+        step = (max - min) / N;
+        r = pv.range(min + step / 2, max, step);
+    }
+    
     r.step = step;
     return this;
   };
@@ -255,18 +263,25 @@ pv.Scale.ordinal = function() {
         band = 1;
     }
 
-    // Requires N > 0
-
     var R = (max - min),
         N = this.domain().length,
-        B = (R * band) / N,
-        M = N > 1 ? ((R - N * B) / (N - 1)) : 0,
+        S = 0,
+        B = 0,
+        M = 0;
+    if(R === 0){
+        r = pv.array(N, min);
+    } else if(N){
+        B = (R * band) / N;
+        M = N > 1 ? ((R - N * B) / (N - 1)) : 0;
         S = M + B;
+        
+        r = pv.range(min + B / 2, max, S);
+    }
     
-    r = pv.range(min + B / 2, max, S);
     r.step   = S;
     r.band   = B;
     r.margin = M;
+    
     return this;
   };
 
@@ -286,7 +301,9 @@ pv.Scale.ordinal = function() {
    * @see #split
    */
   scale.splitFlush = function(min, max) {
-    var n = this.domain().length, step = (max - min) / (n - 1);
+    var n = this.domain().length, 
+        step = (max - min) / (n - 1);
+    
     r = (n == 1) ? [(min + max) / 2]
         : pv.range(min, max + step / 2, step);
     return this;
