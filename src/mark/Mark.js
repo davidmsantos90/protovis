@@ -1111,8 +1111,8 @@ pv.Mark.prototype.buildImplied = function(s) {
 pv.Mark.prototype.mouse = function() {
     var n = this.root.canvas(),
         scrollOffset = pv.scrollOffset(n),
-        x = scrollOffset[0] + (pv.renderer() == 'svgweb' ? pv.event.clientX * 1 : pv.event.pageX) || 0,
-        y = scrollOffset[1] + (pv.renderer() == 'svgweb' ? pv.event.clientY * 1 : pv.event.pageY) || 0;
+        x = scrollOffset[0] + pv.event.clientX * 1,
+        y = scrollOffset[1] + pv.event.clientY * 1;
     
       /* Compute xy-coordinates relative to the panel.
        * This is not necessary if we're using svgweb, as svgweb gives us
