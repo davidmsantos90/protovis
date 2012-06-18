@@ -1109,10 +1109,11 @@ pv.Mark.prototype.buildImplied = function(s) {
  * @returns {pv.Vector} the mouse location.
  */
 pv.Mark.prototype.mouse = function() {
-  var x = (pv.renderer() == 'svgweb' ? pv.event.clientX * 1 : pv.event.pageX) || 0,
-      y = (pv.renderer() == 'svgweb' ? pv.event.clientY * 1 : pv.event.pageY) || 0,
-      n = this.root.canvas();
-
+    var n = this.root.canvas(),
+        scrollOffset = pv.scrollOffset(n),
+        x = scrollOffset[0] + (pv.renderer() == 'svgweb' ? pv.event.clientX * 1 : pv.event.pageX) || 0,
+        y = scrollOffset[1] + (pv.renderer() == 'svgweb' ? pv.event.clientY * 1 : pv.event.pageY) || 0;
+    
       /* Compute xy-coordinates relative to the panel.
        * This is not necessary if we're using svgweb, as svgweb gives us
        * the necessary relative co-ordinates anyway (well, it seems to
@@ -1271,6 +1272,8 @@ pv.Mark.prototype.context = function(scene, index, f) {
   apply(scene, index);
   try {
     f.apply(this, stack);
+  } catch (ex) {
+      pv.error(ex);
   } finally {
     clear(scene, index);
     apply(oscene, oindex);

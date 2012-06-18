@@ -38,7 +38,7 @@ try {
  * source code).
  * @returns {string} a conformant JavaScript 1.6 source code.
  */
-  pv.parse = function(js) { // hacky regex support
+ pv.parse = function(js) { // hacky regex support
     var re = new RegExp("function\\s*(\\b\\w+)?\\s*\\([^)]*\\)\\s*", "mg"), m, d, i = 0, s = "";
     while (m = re.exec(js)) {
       var j = m.index + m[0].length;
@@ -127,6 +127,8 @@ pv.listener = function(f) {
       try {
         pv.event = e;
         return f.call(this, e);
+      } catch (ex) {
+          pv.error(ex);
       } finally {
         delete pv.event;
       }
@@ -144,6 +146,22 @@ pv.ancestor = function(a, e) {
     e = e.parentNode;
   }
   return false;
+};
+
+/**
+ * @private Computes the accumulated scroll offset given an element.
+ */
+pv.scrollOffset = function(elem) {
+    var left = 0, 
+        top  = 0;
+    while(elem){
+        left += elem.scrollLeft || 0;
+        top  += elem.scrollTop  || 0;
+        
+        elem = elem.parentNode;
+    }
+    
+    return [left, top];
 };
 
 /**
