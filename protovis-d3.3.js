@@ -1,4 +1,4 @@
-// 1f239de2b863e9fc03b2159620dba6173dae1d38
+// c8b3d080899e9b16b53df1024bbc93ee4263cc67
 /**
  * @class The built-in Array class.
  * @name Array
@@ -2768,6 +2768,18 @@ pv.Vector.prototype.perp = function() {
 };
 
 /**
+ * Returns a vector which is the result of rotating this vector by the specified angle.
+ * 
+ * @returns {pv.Vector} a rotated vector.
+ */
+pv.Vector.prototype.rotate = function(angle) {
+    var c = Math.cos(angle);
+    var s = Math.sin(angle);
+    
+    return new pv.Vector(c*this.x -s*this.y, s*this.x + c*this.y);
+};
+
+/**
  * Returns a normalized copy of this vector: a vector with the same direction,
  * but unit length. If this vector has zero length this method returns a copy of
  * this vector.
@@ -3106,6 +3118,7 @@ pv.Scale.quantitative = function() {
       f = pv.identity, // default forward transform
       g = pv.identity, // default inverse transform
       tickFormat = String, // default tick formatting function
+      tickFormatter = null, // custom tick formatting function
       dateTickFormat, //custom date tick format
       dateTickPrecision; //custom date tick precision
 
@@ -3463,8 +3476,6 @@ pv.Scale.quantitative = function() {
     }
     return dateTickFormat;  };
 
-
-
   /**
    * Formats the specified tick with a defined precision for the date
    * @function
@@ -3479,7 +3490,23 @@ pv.Scale.quantitative = function() {
     return dateTickPrecision;  };
 
 
-
+    /**
+     * Gets or sets a custom tick formatter function.
+     * 
+     * @function
+     * @name pv.Scale.quantitative.prototype.tickFormatter
+     * @param {function} [f] 
+     * @returns {pv.Scale|function} a custom formatter function or this instance.
+     */
+    scale.tickFormatter = function (f) {
+      if (arguments.length) {
+        tickFormatter = f;
+        return this;
+      }
+      
+      return tickFormatter;
+   };
+    
   /**
    * Formats the specified tick value using the appropriate precision, based on
    * the step interval between tick marks. If {@link #ticks} has not been called,
@@ -3490,7 +3517,10 @@ pv.Scale.quantitative = function() {
    * @param {number} t a tick value.
    * @returns {string} a formatted tick value.
    */
-  scale.tickFormat = function (t) { return tickFormat(t); };
+  scale.tickFormat = function (t) {
+      var formatter = tickFormatter || tickFormat;
+      return formatter(t); 
+  };
 
   /**
    * "Nices" this scale, extending the bounds of the input domain to

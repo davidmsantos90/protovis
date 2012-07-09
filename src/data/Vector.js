@@ -41,6 +41,18 @@ pv.Vector.prototype.perp = function() {
 };
 
 /**
+ * Returns a vector which is the result of rotating this vector by the specified angle.
+ * 
+ * @returns {pv.Vector} a rotated vector.
+ */
+pv.Vector.prototype.rotate = function(angle) {
+    var c = Math.cos(angle);
+    var s = Math.sin(angle);
+    
+    return new pv.Vector(c*this.x -s*this.y, s*this.x + c*this.y);
+};
+
+/**
  * Returns a normalized copy of this vector: a vector with the same direction,
  * but unit length. If this vector has zero length this method returns a copy of
  * this vector.
