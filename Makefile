@@ -28,6 +28,7 @@ JS_CORE_FILES = \
 	src/data/Histogram.js \
 	src/color/Color.js \
 	src/color/Colors.js \
+	src/color/FillStyle.js \
 	src/color/Ramp.js \
 	src/scene/SvgScene.js \
 	src/scene/SvgCurve.js \

@@ -1,5 +1,8 @@
 pv.SvgScene.dot = function(scenes) {
   var e = scenes.$g.firstChild;
+  
+  this.removeFillStyleDefinitions(scenes);
+  
   for (var i = 0; i < scenes.length; i++) {
     var s = scenes[i];
 
@@ -7,6 +10,14 @@ pv.SvgScene.dot = function(scenes) {
     if (!s.visible) continue;
     var fill = s.fillStyle, stroke = s.strokeStyle;
     if (!fill.opacity && !stroke.opacity) continue;
+
+    if (fill.type && fill.type !== 'solid') {
+        this.addFillStyleDefinition(scenes,fill);
+    }
+
+    if (stroke.type && stroke.type != 'solid') {
+        this.addFillStyleDefinition(scenes,stroke);
+    }
 
     /* points */
     var radius = s.shapeRadius, path = null;
@@ -69,12 +80,12 @@ pv.SvgScene.dot = function(scenes) {
       svg.transform = "translate(" + s.left + "," + s.top + ")";
       if (s.shapeAngle) svg.transform += " rotate(" + 180 * s.shapeAngle / Math.PI + ")";
       svg.d = path;
-      e = this.expect(e, "path", svg);
+      e = this.expect(e, "path", scenes, i, svg);
     } else {
       svg.cx = s.left;
       svg.cy = s.top;
       svg.r = radius;
-      e = this.expect(e, "circle", svg);
+      e = this.expect(e, "circle", scenes, i, svg);
     }
 
     if(s.svg) this.setAttributes(e, s.svg);

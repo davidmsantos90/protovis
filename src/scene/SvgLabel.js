@@ -32,7 +32,7 @@ pv.SvgScene.label = function(scenes) {
       case "left": x = s.textMargin; break;
     }
 
-    e = this.expect(e, "text", {
+    e = this.expect(e, "text", scenes, i, {
         "pointer-events": s.events,
         "cursor": s.cursor,
         "x": x,

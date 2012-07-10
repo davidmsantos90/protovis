@@ -29,8 +29,8 @@ pv.Wedge.prototype = pv.extend(pv.Mark)
     .property("innerRadius", Number)
     .property("outerRadius", Number)
     .property("lineWidth", Number)
-    .property("strokeStyle", pv.color)
-    .property("fillStyle", pv.color);
+    .property("strokeStyle", pv.fillStyle)
+    .property("fillStyle", pv.fillStyle);
 
 pv.Wedge.prototype.type = "wedge";
 

@@ -1,5 +1,8 @@
 pv.SvgScene.line = function(scenes) {
   var e = scenes.$g.firstChild;
+
+  this.removeFillStyleDefinitions(scenes);
+  
   if (scenes.length < 2) return e;
   var s = scenes[0];
 
@@ -10,6 +13,10 @@ pv.SvgScene.line = function(scenes) {
   if (!s.visible) return e;
   var fill = s.fillStyle, stroke = s.strokeStyle;
   if (!fill.opacity && !stroke.opacity) return e;
+
+  if (stroke.type && stroke.type != 'solid') {
+      this.addFillStyleDefinition(scenes,stroke);
+  }
 
   /* points */
   var d = "M" + s.left + "," + s.top;
@@ -26,7 +33,7 @@ pv.SvgScene.line = function(scenes) {
     }
   }
 
-  e = this.expect(e, "path", {
+  e = this.expect(e, "path", scenes, 0, {
       "shape-rendering": s.antialias ? null : "crispEdges",
       "pointer-events": s.events,
       "cursor": s.cursor,
@@ -62,14 +69,14 @@ pv.SvgScene.lineSegment = function(scenes) {
 
     /* visible */
     if (!s1.visible || !s2.visible) continue;
-    var stroke = s1.strokeStyle, fill = pv.Color.transparent;
+    var stroke = s1.strokeStyle, fill = pv.FillStyle.transparent;
     if (!stroke.opacity) continue;
 
     /* interpolate */
     var d;
     if ((s1.interpolate == "linear") && (s1.lineJoin == "miter")) {
       fill = stroke;
-      stroke = pv.Color.transparent;
+      stroke = pv.FillStyle.transparent;
       d = this.pathJoin(scenes[i - 1], s1, s2, scenes[i + 2]);
     } else if(paths) {
       d = paths[i];
@@ -77,7 +84,7 @@ pv.SvgScene.lineSegment = function(scenes) {
       d = "M" + s1.left + "," + s1.top + this.pathSegment(s1, s2);
     }
 
-    e = this.expect(e, "path", {
+    e = this.expect(e, "path", scenes, i, {
         "shape-rendering": s1.antialias ? null : "crispEdges",
         "pointer-events": s1.events,
         "cursor": s1.cursor,

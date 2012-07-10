@@ -11,7 +11,7 @@ pv.SvgScene.image = function(scenes) {
 
     /* image */
     if (s.image) {
-      e = this.expect(e, "foreignObject", {
+      e = this.expect(e, "foreignObject", scenes, i, {
           "cursor": s.cursor,
           "x": s.left,
           "y": s.top,
@@ -28,7 +28,7 @@ pv.SvgScene.image = function(scenes) {
       c.height = s.imageHeight;
       c.getContext("2d").putImageData(s.image, 0, 0);
     } else {
-      e = this.expect(e, "image", {
+      e = this.expect(e, "image", scenes, i, {
           "preserveAspectRatio": "none",
           "cursor": s.cursor,
           "x": s.left,

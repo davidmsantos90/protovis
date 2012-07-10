@@ -88,10 +88,11 @@ pv.SvgScene.create = function(type) {
  * @param style an optional style map.
  * @returns a new SVG element.
  */
-pv.SvgScene.expect = function(e, type, attributes, style) {
+pv.SvgScene.expect = function(e, type, scenes, i, attributes, style) {
   if (e) {
-    if (e.tagName == "a") e = e.firstChild;
-    if (e.tagName != type) {
+    if (e.tagName === "defs") e = e.nextSibling;
+    if (e.tagName === "a") e = e.firstChild;
+    if (e.tagName !== type) {
       var n = this.create(type);
       e.parentNode.replaceChild(n, e);
       e = n;
@@ -221,10 +222,107 @@ pv.SvgScene.dispatch = pv.listener(function(e) {
 pv.SvgScene.removeSiblings = function(e) {
   while (e) {
     var n = e.nextSibling;
-    e.parentNode.removeChild(e);
+    // don't remove a sibling <defs> node
+    if (e.nodeName != 'defs') {
+      e.parentNode.removeChild(e);
+    }
     e = n;
   }
 };
 
 /** @private Do nothing when rendering undefined mark types. */
 pv.SvgScene.undefined = function() {};
+
+pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
+  var results = scenes.$g.getElementsByTagName('defs');
+  if (results.length === 1) {
+    var defs = results[0];
+    var cur = defs.firstChild;
+    while (cur) {
+      var next = cur.nextSibling;
+      if (cur.nodeName == 'linearGradient' || cur.nodeName == 'radialGradient') {
+        defs.removeChild(cur);
+      }
+      cur = next;
+    }
+  }
+};
+
+
+(function() {
+
+  var gradient_definition_id = 0;
+
+  pv.SvgScene.addFillStyleDefinition = function(scenes, fill) {
+    var isLinear = fill.type === 'lineargradient';
+    if (isLinear || fill.type === 'radialgradient') {
+      
+      var g = scenes.$g;
+      var results = g.getElementsByTagName('defs');
+      var defs;
+      if(results.length) {
+        defs = results[0];
+      } else {
+        defs = g.appendChild(this.create("defs"));
+      }
+      
+      var elem;
+      var className = '__pv_gradient' + fill.id;
+      
+      // TODO: check this check exists method. It looks wrong...
+      
+      results = defs.querySelector('.' + className);
+      if (!results) {
+        var instId = '__pv_gradient' + fill.id + '_inst_' + (++gradient_definition_id);
+        
+        elem = defs.appendChild(this.create(isLinear ? "linearGradient" : "radialGradient"));
+        elem.setAttribute("id",    instId);
+        elem.setAttribute("class", className);
+//       elem.setAttribute("gradientUnits","userSpaceOnUse");
+        
+        if(isLinear){
+          // x1,y1 -> x2,y2 form the gradient vector
+          // See http://www.w3.org/TR/css3-images/#gradients example 11 on calculating the gradient line
+          // Gradient-Top angle -> SVG angle -> From diagonal angle
+          // angle = (gradAngle - 90) - 45 = angle - 135
+          var svgAngle  = fill.angle - Math.PI/2;
+          var diagAngle = Math.abs(svgAngle % (Math.PI/2)) - Math.PI/4;
+          
+          // Radius from the center of the normalized bounding box
+          var radius = Math.abs((Math.SQRT2/2) * Math.cos(diagAngle));
+          
+          var dirx = radius * Math.cos(svgAngle);
+          var diry = radius * Math.sin(svgAngle);
+          
+          var x1 = 0.5 - dirx;
+          var y1 = 0.5 - diry;
+          var x2 = 0.5 + dirx;
+          var y2 = 0.5 + diry;
+          
+          elem.setAttribute("x1", x1);
+          elem.setAttribute("y1", y1);
+          elem.setAttribute("x2", x2);
+          elem.setAttribute("y2", y2);
+        } else {
+          // Currently using defaults
+//          elem.setAttribute("cx", fill.cx);
+//          elem.setAttribute("cy", fill.cy);
+//          elem.setAttribute("r",  fill.r );
+        }
+        
+        var stops = fill.stops;
+        for (var i = 0, S = stops.length; i < S ; i++) {
+          var stop = stops[i];
+          var stopElem = elem.appendChild(this.create("stop"));
+          var color = stop.color;
+          stopElem.setAttribute("offset",       stop.offset + '%' );
+          stopElem.setAttribute("stop-color",   color.color       );
+          stopElem.setAttribute("stop-opacity", color.opacity + '');
+        }
+
+        fill.color = 'url(#' + instId + ')';
+      }
+    }
+  };
+
+})();

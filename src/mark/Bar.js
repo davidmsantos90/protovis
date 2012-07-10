@@ -31,8 +31,8 @@ pv.Bar.prototype = pv.extend(pv.Mark)
     .property("width", Number)
     .property("height", Number)
     .property("lineWidth", Number)
-    .property("strokeStyle", pv.color)
-    .property("fillStyle", pv.color);
+    .property("strokeStyle", pv.fillStyle)
+    .property("fillStyle", pv.fillStyle);
 
 pv.Bar.prototype.type = "bar";
 

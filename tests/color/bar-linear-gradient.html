@@ -1,0 +1,43 @@
+<html>
+  <head>
+    <title>Bar Linear Gradient</title>
+    <script type="text/javascript" src="../../protovis-d3.3.js"></script>
+    <script type="text/javascript" src="../../3rdparty/protovis-msie.js"></script>
+  </head>
+<body>
+
+<script type="text/javascript+protovis">
+
+var reviews = [10, 12, 17, 15, 7, 2, 8, 5];
+
+var w = 300, 
+    h = 300,
+    x = new pv.Scale.linear(0,reviews.length ).range(0, w),
+    y = new pv.Scale.linear(0,pv.max(reviews)).range(0, h),
+    c = new pv.Scale.linear(0,pv.max(reviews)).range("rgba(0,100,0,0.3)","rgba(0,0,100,0.3)");
+    
+var panel = new pv.Panel()
+    .width(w)
+    .height(h)
+    .right(30)
+    .left(30)
+    .top(30)
+    .bottom(30)
+    ;
+ 
+var bar = panel.add(pv.Bar)
+    .data(reviews)
+    .bottom(0)
+    .left(function(d) x(this.index))
+    .height(function(d) y(d))
+    .width(w/reviews.length-2)
+    .fillStyle('linear-gradient(-45deg, rgba(255,0,0,1),rgb(0,255,0))')
+    .lineWidth(4)
+    //.strokeStyle('linear-gradient(to top right, red,blue)')
+    ;
+
+panel.render();
+
+</script>
+
+</body></html>

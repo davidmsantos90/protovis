@@ -1095,10 +1095,10 @@ pv.Mark.prototype.buildImplied = function(s) {
   if (p.width) s.width = w;
   if (p.height) s.height = h;
 
-  /* Set any null colors to pv.Color.transparent. */
-  if (p.textStyle && !s.textStyle) s.textStyle = pv.Color.transparent;
-  if (p.fillStyle && !s.fillStyle) s.fillStyle = pv.Color.transparent;
-  if (p.strokeStyle && !s.strokeStyle) s.strokeStyle = pv.Color.transparent;
+  /* Set any null colors to pv.FillStyle.transparent. */
+  if (p.textStyle && !s.textStyle) s.textStyle = pv.FillStyle.transparent;
+  if (p.fillStyle && !s.fillStyle) s.fillStyle = pv.FillStyle.transparent;
+  if (p.strokeStyle && !s.strokeStyle) s.strokeStyle = pv.FillStyle.transparent;
 };
 
 /**

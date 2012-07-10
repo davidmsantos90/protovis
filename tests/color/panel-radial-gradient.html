@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title>Panel Radial Gradient</title>
+    <script type="text/javascript" src="../../protovis-d3.3.js"></script>
+    <script type="text/javascript" src="../../3rdparty/protovis-msie.js"></script>
+  </head>
+<body>
+
+<script type="text/javascript+protovis">
+
+
+var w = 100, h = 100;
+
+
+var panel = new pv.Panel()
+	.width(w)
+	.height(h)
+	.right(30)
+	.left(30)
+	.top(30)
+	.bottom(30)
+	.fillStyle('radial-gradient(red, blue)');
+  
+panel.render();
+
+</script>
+
+</body></html>

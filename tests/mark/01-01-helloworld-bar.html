@@ -1,0 +1,45 @@
+<html><body>
+
+<div id="barchart"></div>
+<script type="text/javascript" src="../../protovis-d3.3.js"></script> 
+<script type="text/javascript" src="../../3rdparty/protovis-msie.js"></script>
+
+<script type="text/javascript+protovis">
+
+var reviews = [10, 12, 17, 15, 7, 2, 8, 5];
+
+var w = 100, h = 100,
+    x = new pv.Scale.linear(0,reviews.length).range(0,w),
+    y = new pv.Scale.linear(0,pv.max(reviews)).range(0,h),
+    c = new pv.Scale.linear(0,pv.max(reviews)).range("rgba(0,100,0,0.3)","rgba(0,0,100,0.3)");
+    
+var panel = new pv.Panel()
+    .canvas('barchart')
+    .width(w)
+    .height(h)
+    .right(30)
+    .left(30)
+    .top(30)
+    .bottom(30)
+    .fillStyle('linear-gradient(to right, rgba(100,100,0,0.1), rgba(100,0,100,0.1))')
+ 
+var bar = panel.add(pv.Bar)
+    .data(reviews)
+    .bottom(0)
+    .left(function(d) x(this.index))
+    .height(function(d) y(d))
+    .width(w/reviews.length - 2)
+    .fillStyle(function(d){
+        return new pv.FillStyle.LinearGradient(0, [
+            {offset:   0, color: c(d)},
+            {offset: 100, color: c(0)}
+        ]);
+    })
+    .lineWidth(1)
+    .strokeStyle('linear-gradient(to bottom, red, blue)')
+ 
+panel.render();
+
+</script>
+
+</body></html>

@@ -1,5 +1,8 @@
 pv.SvgScene.wedge = function(scenes) {
   var e = scenes.$g.firstChild;
+
+  this.removeFillStyleDefinitions(scenes);
+
   for (var i = 0; i < scenes.length; i++) {
     var s = scenes[i];
 
@@ -47,7 +50,15 @@ pv.SvgScene.wedge = function(scenes) {
       }
     }
 
-    e = this.expect(e, "path", {
+    if (fill.type && fill.type !== 'solid') {
+        this.addFillStyleDefinition(scenes,fill);
+    }
+
+    if (stroke.type && stroke.type != 'solid') {
+        this.addFillStyleDefinition(scenes,stroke);
+    }
+
+    e = this.expect(e, "path", scenes, i, {
         "shape-rendering": s.antialias ? null : "crispEdges",
         "pointer-events": s.events,
         "cursor": s.cursor,

@@ -1,5 +1,8 @@
 pv.SvgScene.area = function(scenes) {
   var e = scenes.$g.firstChild;
+
+  this.removeFillStyleDefinitions(scenes);
+
   if (!scenes.length) return e;
   var s = scenes[0];
 
@@ -10,6 +13,14 @@ pv.SvgScene.area = function(scenes) {
   if (!s.visible) return e;
   var fill = s.fillStyle, stroke = s.strokeStyle;
   if (!fill.opacity && !stroke.opacity) return e;
+
+  if (fill.type && fill.type !== 'solid') {
+      this.addFillStyleDefinition(scenes,fill);
+  }
+
+  if (stroke.type && stroke.type != 'solid') {
+      this.addFillStyleDefinition(scenes,stroke);
+  }
 
   /** @private Computes the straight path for the range [i, j]. */
   function path(i, j) {
@@ -86,7 +97,7 @@ pv.SvgScene.area = function(scenes) {
   }
   if (!d.length) return e;
 
-  e = this.expect(e, "path", {
+  e = this.expect(e, "path", scenes, 0, {
       "shape-rendering": s.antialias ? null : "crispEdges",
       "pointer-events": s.events,
       "cursor": s.cursor,
@@ -159,7 +170,7 @@ pv.SvgScene.areaSegment = function(scenes) {
         + "Z";
     }
 
-    e = this.expect(e, "path", {
+    e = this.expect(e, "path", scenes, i, {
         "shape-rendering": s1.antialias ? null : "crispEdges",
         "pointer-events": s1.events,
         "cursor": s1.cursor,

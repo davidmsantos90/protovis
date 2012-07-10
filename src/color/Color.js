@@ -119,6 +119,15 @@ pv.Color = function(color, opacity) {
 };
 
 /**
+ * Returns an equivalent color in the HSL color space.
+ * 
+ * @returns {pv.Color.Hsl} an HSL color.
+ */
+pv.Color.prototype.hsl = function() { 
+    return this.rgb().hsl(); 
+};
+
+/**
  * Returns a new color that is a brighter version of this color. The behavior of
  * this method may vary slightly depending on the underlying color space.
  * Although brighter and darker are inverse operations, the results of a series
@@ -307,6 +316,42 @@ pv.Color.Rgb.prototype.darker = function(k) {
 };
 
 /**
+ * Converts an RGB color value to HSL. 
+ * Conversion formula adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * 
+ * (Adapted from http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript)
+ * 
+ * @returns pv.Color.Hsl
+ */
+pv.Color.Rgb.prototype.hsl = function(){
+    var r = this.r / 255;
+    var g = this.g / 255;
+    var b = this.b / 255;
+    
+    var max = Math.max(r, g, b); 
+    var min = Math.min(r, g, b);
+    
+    var l = (max + min) / 2;
+    var h, s;
+
+    if(max === min){
+        h = s = 0; // achromatic
+    } else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch(max){
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        
+        h /= 6;
+    }
+
+    return pv.hsl(h * 360, s, l, this.a);
+};
+
+/**
  * Constructs a new HSL color with the specified values.
  *
  * @param {number} h the hue, an integer in [0, 360].
@@ -362,6 +407,14 @@ pv.Color.Hsl = function(h, s, l, a) {
   this.a = a;
 };
 pv.Color.Hsl.prototype = pv.extend(pv.Color);
+
+/**
+ * Returns this.
+ *
+ * @returns {pv.Color.Hsl} this.
+ */
+pv.Color.Hsl.prototype.hsl = function() { return this; };
+
 
 /**
  * Constructs a new HSL color with the same saturation, lightness and alpha as

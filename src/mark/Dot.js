@@ -24,9 +24,9 @@ pv.Dot.prototype = pv.extend(pv.Mark)
     .property("shapeRadius", Number)
     .property("shapeSize", Number)
     .property("lineWidth", Number)
-    .property("strokeStyle", pv.color)
+    .property("strokeStyle", pv.fillStyle)
     .property("strokeDasharray", String)
-    .property("fillStyle", pv.color);
+    .property("fillStyle", pv.fillStyle);
 
 pv.Dot.prototype.type = "dot";
 

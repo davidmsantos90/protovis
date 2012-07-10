@@ -8,7 +8,7 @@ pv.SvgScene.rule = function(scenes) {
     var stroke = s.strokeStyle;
     if (!stroke.opacity) continue;
 
-    e = this.expect(e, "line", {
+    e = this.expect(e, "line", scenes, i, {
         "shape-rendering": s.antialias ? null : "crispEdges",
         "pointer-events": s.events,
         "cursor": s.cursor,

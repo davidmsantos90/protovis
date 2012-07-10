@@ -30,8 +30,6 @@ pv.Transition = function(mark) {
 
   var defaults = new pv.Transient();
 
-  var none = pv.Color.transparent;
-
   /** @private */
   function ids(marks) {
     var map = {};
