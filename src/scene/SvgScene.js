@@ -270,8 +270,8 @@ pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
       var className = '__pv_gradient' + fill.id;
       
       // TODO: check this check exists method. It looks wrong...
-      
-      results = defs.querySelector('.' + className);
+      //1107[PVALE] - No ideia what this was supposed to do, but the method querySelector does not seem to exist
+      results = undefined; //defs.querySelector('.' + className);
       if (!results) {
         var instId = '__pv_gradient' + fill.id + '_inst_' + (++gradient_definition_id);
         
