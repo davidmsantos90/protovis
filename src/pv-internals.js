@@ -211,3 +211,20 @@ pv.id = function() {
 pv.functor = function(v) {
   return typeof v == "function" ? v : function() { return v; };
 };
+
+/**
+ * Gets the value of an existing, own or inherited, and not "nully", property of an object,
+ * or if unsatisfied, a specified default value.
+ * 
+ * @param {object} [o] The object whose property value is desired.
+ * @param {string} p The desired property name.
+ * If the value is not a string, 
+ * it is converted to one, as if String(p) were used.
+ * @param [dv=undefined] The default value.
+ * 
+ * @returns {any} The satisfying property value or the specified default value.
+ */
+pv.get = function(o, p, dv){
+    var v;
+    return o && (v = o[p]) != null ? v : dv;
+};

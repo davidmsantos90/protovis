@@ -1,4 +1,4 @@
-// 252fcce076e632b5d3492cd50e75283bce1927ce
+// c84a76b5fc52ee0fdbd02ca5e82660a0fdab5da8
 /**
  * @class The built-in Array class.
  * @name Array
@@ -418,6 +418,23 @@ pv.id = function() {
 /** @private Returns a function wrapping the specified constant. */
 pv.functor = function(v) {
   return typeof v == "function" ? v : function() { return v; };
+};
+
+/**
+ * Gets the value of an existing, own or inherited, and not "nully", property of an object,
+ * or if unsatisfied, a specified default value.
+ * 
+ * @param {object} [o] The object whose property value is desired.
+ * @param {string} p The desired property name.
+ * If the value is not a string, 
+ * it is converted to one, as if String(p) were used.
+ * @param [dv=undefined] The default value.
+ * 
+ * @returns {any} The satisfying property value or the specified default value.
+ */
+pv.get = function(o, p, dv){
+    var v;
+    return o && (v = o[p]) != null ? v : dv;
 };
 /*
  * Parses the Protovis specifications on load, allowing the use of JavaScript
@@ -3283,9 +3300,13 @@ pv.Scale.quantitative = function() {
    * @function
    * @name pv.Scale.quantitative.prototype.ticks
    * @param {number} [m] optional number of desired ticks.
+   * @param {object} [options] optional keyword arguments object.
+   * @param {boolean} [options.roundInside=true] should the ticks be ensured to be strictly inside the scale domain, or to strictly outside the scale domain.
+   * @param {boolean} [options.numberExponentMin=-Inifinity] minimum value for the step exponent.
+   * @param {boolean} [options.numberExponentMax=+Inifinity] maximum value for the step exponent.
    * @returns {number[]} an array input domain values to use as ticks.
    */
-  scale.ticks = function(m) {
+  scale.ticks = function(m, options) {
     var start = d[0],
         end = d[d.length - 1],
         reverse = end < start,
@@ -3434,7 +3455,7 @@ pv.Scale.quantitative = function() {
 
 
       if(dateTickPrecision){
-        step=1;
+        step = 1;
         increment = function(d) { d.setSeconds(d.getSeconds() + step*dateTickPrecision/1000);};
       }
 
@@ -3447,19 +3468,59 @@ pv.Scale.quantitative = function() {
       return reverse ? dates.reverse() : dates;
     }
 
-    /* Normal case: numbers. */
-    if (!arguments.length) m = 10;
-    var step = pv.logFloor(span / m, 10),
-        err = m / (span / step);
-    if (err <= .15) step *= 10;
-    else if (err <= .35) step *= 5;
-    else if (err <= .75) step *= 2;
-    var start = Math.ceil(min / step) * step,
-        end = Math.floor(max / step) * step;
-    tickFormat = pv.Format.number()
-        .fractionDigits(Math.max(0, -Math.floor(pv.log(step, 10) + .01)));
+    /* Normal case: numbers */
+    if (m == null) {
+        m = 10;
+    }
+    
+    var roundInside = pv.get(options, 'roundInside', true);
+    var exponentMin = pv.get(options, 'numberExponentMin', -Infinity);
+    var exponentMax = pv.get(options, 'numberExponentMax', +Infinity);
+    
+    //var step = pv.logFloor(span / m, 10);
+    var exponent = Math.floor(pv.log(span / m, 10));
+    var overflow = false;
+    if(exponent > exponentMax){
+        exponent = exponentMax;
+        overflow = true;
+    } else if(exponent < exponentMin){
+        exponent = exponentMin;
+        overflow = true;
+    }
+    
+    var step = Math.pow(10, exponent);
+    var mObtained = (span / step);
+    
+    var err = m / mObtained;
+    if (err <= .15 && exponent < exponentMax - 1) { 
+        step *= 10;
+    } else if (err <= .35) {
+        step *= 5; 
+    } else if (err <= .75) {
+        step *= 2;
+    }
+    
+    // Account for floating point precision errors
+    exponent = Math.floor(pv.log(step, 10) + 1e-10);
+        
+    var start = step * Math[roundInside ? 'ceil'  : 'floor'](min / step);
+    var end   = step * Math[roundInside ? 'floor' : 'ceil' ](max / step);
+    
+    tickFormat = pv.Format.number().fractionDigits(Math.max(0, -exponent));
+    
     var ticks = pv.range(start, end + step, step);
-    return reverse ? ticks.reverse() : ticks;
+    if(reverse){
+        ticks.reverse();
+    }
+    
+    ticks.roundInside = roundInside;
+    ticks.step        = step;
+    ticks.exponent    = exponent;
+    ticks.exponentOverflow = overflow;
+    ticks.exponentMin = exponentMin;
+    ticks.exponentMax = exponentMax;
+    
+    return ticks;
   };
 
 
@@ -6031,8 +6092,8 @@ pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
       var className = '__pv_gradient' + fill.id;
       
       // TODO: check this check exists method. It looks wrong...
-      
-      results = defs.querySelector('.' + className);
+      //1107[PVALE] - No ideia what this was supposed to do, but the method querySelector does not seem to exist
+      results = undefined; //defs.querySelector('.' + className);
       if (!results) {
         var instId = '__pv_gradient' + fill.id + '_inst_' + (++gradient_definition_id);
         
@@ -7685,28 +7746,55 @@ pv.Mark.prototype.property = function(name, cast) {
  */
 pv.Mark.prototype.propertyMethod = function(name, def, cast) {
   if (!cast) cast = pv.Mark.cast[name];
+  
   this[name] = function(v) {
-
-      /* If this is a def, use it rather than property. */
+      /* When arguments are specified, set the property/def value. */
+      
+      /* DEF */
       if (def && this.scene) {
         var defs = this.scene.defs;
+        
         if (arguments.length) {
           defs[name] = {
-            id: (v == null) ? 0 : pv.id(),
+            id:    (v == null) ? 0 : pv.id(),
             value: ((v != null) && cast) ? cast(v) : v
           };
+          
           return this;
         }
+        
         return defs[name] ? defs[name].value : null;
       }
-
-      /* If arguments are specified, set the property value. */
+      
+      /* PROP */
+      
       if (arguments.length) {
-        var type = !def << 1 | (typeof v == "function");
-        this.propertyValue(name, (type & 1 && cast) ? function() {
-            var x = v.apply(this, arguments);
-            return (x != null) ? cast(x) : null;
-          } : (((v != null) && cast) ? cast(v) : v)).type = type;
+        /* bit 0: 0 = value, 1 = function
+         * bit 1: 0 = def,   1 = prop
+         * ------------------------------
+         * 00 - 0 - def  - value
+         * 01 - 1 - def  - function
+         * 10 - 2 - prop - value
+         * 11 - 3 - prop - function
+         * 
+         * x << 1 <=> floor(x) * 2
+         */
+        var type = !def << 1 | (typeof v === "function");
+        var vf;
+        // A function and cast?
+        if(type & 1 && cast){
+            vf = function() {
+                var x = v.apply(this, arguments);
+                return (x != null) ? cast(x) : null;
+            };
+        } else if(v != null && cast){
+            vf = cast(v);
+        } else {
+            vf = v;
+        }
+        
+        this.propertyValue(name, vf, type);
+        
         return this;
       }
 
@@ -7715,14 +7803,22 @@ pv.Mark.prototype.propertyMethod = function(name, def, cast) {
 };
 
 /** @private Sets the value of the property <i>name</i> to <i>v</i>. */
-pv.Mark.prototype.propertyValue = function(name, v) {
-  var properties = this.$properties, p = {name: name, id: pv.id(), value: v};
+pv.Mark.prototype.propertyValue = function(name, v, type) {
+  var properties = this.$properties;
+  var p = {
+      name:  name, 
+      id:    pv.id(), 
+      value: v,
+      type:  type
+  };
+  
   for (var i = 0; i < properties.length; i++) {
-    if (properties[i].name == name) {
+    if (properties[i].name === name) {
       properties.splice(i, 1);
       break;
     }
   }
+  
   properties.push(p);
   return p;
 };
@@ -8363,31 +8459,109 @@ pv.Mark.stack = [];
  * do not need to be queried during build.
  */
 pv.Mark.prototype.bind = function() {
-  var seen = {}, types = [[], [], [], []], data, required = [],
+  var seen = {}, 
+      data,
+      
+      /* Required props (no defs) */
+      required = [],    
+      
+      /* 
+       * Optional props/defs by type
+       * 0 - def/value, 
+       * 1 - def/fun, 
+       * 2 - prop/value, 
+       * 3 - prop/fun 
+       */
+      types = [[], [], [], []], 
+      
       // DATUM - an object counterpart for each value of data.
       // Ensure that required properties are evaluated in
       // the order: id, datum, visible
+      // The reason is that the visible property function should 
+      // have access to id and datum to decide.
       requiredPositions = {id: 0, datum: 1, visible: 3};
-
-  /** Scans the proto chain for the specified mark. */
+  
+  /*
+   * **Evaluation** order (not precedence order for choosing props/defs)
+   * 0) DEF and PROP _values_ are always already "evaluated".
+   *    * Defined PROPs for which a value/fun was not specified
+   *      get the value null.
+   * 
+   * 1) DEF _functions_
+   *    * once per parent instance
+   *    * with parent instance's stack
+   *    
+   *    1.1) Defaulted
+   *        * from farthest proto mark to closest
+   *            * on each level the first defined is the first evaluated
+   *    
+   *    1.2) Explicit
+   *        * idem
+   *    
+   * 2) Data PROP _value_ or _function_
+   *    * once per all child instances
+   *    * with parent instance's stack
+   * 
+   * ONCE PER INSTANCE
+   * 
+   * 3) Required kind PROP _functions_ (id, datum, visible)
+   *    2.1) Defaulted
+   *        * idem
+   *    2.2) Explicit
+   *        * idem
+   *
+   * 3) Optional kind PROP _functions_ (when instance.visible=true)
+   *    3.1) Defaulted
+   *        * idem
+   *    3.2) Explicit
+   *        * idem
+   *
+   * 4) Implied PROPs (when instance.visible=true)
+   */
+  /** 
+   * Scans the proto chain for the specified mark.
+   */
   function bind(mark) {
     do {
       var properties = mark.$properties;
+      /*
+       * On each mark properties are traversed in reverse
+       * so that, below, when reverse() is called
+       * function props/defs recover their original defining order.
+       * 
+       * M1 -> P1_0, P1_1, P1_2, P1_3
+       * ^
+       * |
+       * M2 -> P2_0, P2_1
+       * ^
+       * |
+       * M3 -> P3_0, P3_1
+       * 
+       * List     -> P3_1, P3_0, P2_1, P2_0, P1_3, P1_2, P1_1, P1_0
+       * 
+       * Reversed -> P1_0, P1_1, P1_2, P1_3, P2_0, P2_1, P3_0, P3_1
+       */
+      
       for (var i = properties.length - 1; i >= 0 ; i--) {
         var p = properties[i];
         if (!(p.name in seen)) {
           seen[p.name] = p;
+          
           switch (p.name) {
-            case "data": data = p; break;
+            case "data": 
+              data = p; 
+              break;
 
             // DATUM - an object counterpart for each value of data.
             case "datum":
             case "visible":
             case "id":
-                required.push(p);
-                break;
+              required.push(p);
+              break;
 
-            default: types[p.type].push(p); break;
+            default: 
+              types[p.type].push(p); 
+              break;
           }
         }
       }
@@ -8397,7 +8571,7 @@ pv.Mark.prototype.bind = function() {
   /* Scan the proto chain for all defined properties. */
   bind(this);
   bind(this.defaults);
-
+  
   /*
    * DATUM - an object counterpart for each value of data.
    * Sort required properties.
@@ -8413,9 +8587,11 @@ pv.Mark.prototype.bind = function() {
 
   /* Any undefined properties are null. */
   var mark = this;
-  do for (var name in mark.properties) {
-    if (!(name in seen)) {
-      types[2].push(seen[name] = {name: name, type: 2, value: null});
+  do {
+    for (var name in mark.properties) {
+        if (!(name in seen)) {
+          types[2].push(seen[name] = {name: name, type: 2, value: null});
+        }
     }
   } while (mark = mark.proto);
 
@@ -8428,10 +8604,16 @@ pv.Mark.prototype.bind = function() {
   /* Setup binds to evaluate constants before functions. */
   this.binds = {
     properties: seen,
-    data: data,
-    defs: defs,
-    required: required,
-    optional: pv.blend(types)
+    data:       data,
+    defs:       defs,
+    required:   required,
+    
+    // NOTE: although defs are included in the optional properties
+    // they are evaluated once per parent instance, before other non-def properties.
+    // Yet, for each instance, the already evaluated's def values
+    // are copied to the instance scene - all instances share the same value...
+    // Only to satisfy this copy operation they go in the instance-props array.
+    optional:   pv.blend(types)
   };
 };
 
@@ -8530,12 +8712,21 @@ pv.Mark.prototype.build = function() {
  */
 pv.Mark.prototype.buildProperties = function(s, properties) {
   for (var i = 0, n = properties.length; i < n; i++) {
-    var p = properties[i], v = p.value; // assume case 2 (constant)
+    var p = properties[i];
+    var v = p.value; // assume case 2 (constant)
+    
     switch (p.type) {
+      // copy already evaluated def value to each instance's scene
       case 0:
-      case 1: v = this.scene.defs[p.name].value; break;
-      case 3: v = v.apply(this, pv.Mark.stack); break;
+      case 1: 
+        v = this.scene.defs[p.name].value; 
+        break;
+          
+      case 3: 
+        v = v.apply(this, pv.Mark.stack); 
+        break;
     }
+    
     s[p.name] = v;
   }
 };
