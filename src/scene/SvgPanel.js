@@ -17,14 +17,14 @@ pv.SvgScene.panel = function(scenes) {
         e = g && g.firstChild;
       }
       if (!g) {
-        g = this.create(pv.renderer() !== "batik"? "svg":"g");
+        g = this.create(pv.renderer() !== "batik" ? "svg":"g");
         g.setAttribute("font-size", "10px");
         g.setAttribute("font-family", "sans-serif");
         g.setAttribute("fill", "none");
         g.setAttribute("stroke", "none");
         g.setAttribute("stroke-width", 1.5);
 
-        if (pv.renderer() == "svgweb") { // SVGWeb requires a separate mechanism for setting event listeners.
+        if (pv.renderer() === "svgweb") { // SVGWeb requires a separate mechanism for setting event listeners.
             // width/height can't be set on the fragment
             g.setAttribute("width", s.width + s.left + s.right);
             g.setAttribute("height", s.height + s.top + s.bottom);

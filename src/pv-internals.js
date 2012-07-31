@@ -128,6 +128,7 @@ pv.listener = function(f) {
         pv.event = e;
         return f.call(this, e);
       } catch (ex) {
+          // swallow top level error
           pv.error(ex);
       } finally {
         delete pv.event;
@@ -197,9 +198,15 @@ pv.listenForPageLoad = function(listener) {
  * 'nativesvg' is the default - the native svg of the browser.
  * 'svgweb' is if we identify svgweb is there.
  */
-pv.renderer = function() {
-    return (typeof document.svgImplementation !== "undefined") ? document.svgImplementation:
-     (typeof window.svgweb === "undefined") ? "nativesvg" : "svgweb";
+
+pv.renderer = function(){
+    var renderer = (typeof document.svgImplementation !== "undefined") ? 
+                   document.svgImplementation :
+                   (typeof window.svgweb === "undefined") ? "nativesvg" : "svgweb";
+    
+    pv.renderer = function(){ return renderer; };
+    
+    return renderer;
 };
 
 /** @private Returns a locally-unique positive id. */

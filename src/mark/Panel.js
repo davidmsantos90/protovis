@@ -150,8 +150,10 @@ pv.Panel.prototype.add = function(type) {
 /** @private Bind this panel, then any child marks recursively. */
 pv.Panel.prototype.bind = function() {
   pv.Mark.prototype.bind.call(this);
-  for (var i = 0; i < this.children.length; i++) {
-    this.children[i].bind();
+  
+  var children = this.children;
+  for (var i = 0, n = children.length ; i < n ; i++) {
+    children[i].bind();
   }
 };
 
@@ -165,15 +167,15 @@ pv.Panel.prototype.bind = function() {
  */
 pv.Panel.prototype.buildInstance = function(s) {
   pv.Bar.prototype.buildInstance.call(this, s);
+  
   if (!s.visible) return;
-  if (!s.children) s.children = [];
-
+  
   /*
    * Multiply the current scale factor by this panel's transform. Also clear the
    * default index as we recurse into child marks; it will be reset to the
    * current index when the next panel instance is built.
    */
-  var scale = this.scale * s.transform.k, child, n = this.children.length;
+  var scale = this.scale * s.transform.k;
   pv.Mark.prototype.index = -1;
 
   /*
@@ -182,9 +184,12 @@ pv.Panel.prototype.buildInstance = function(s) {
    * existing scene graph, such that properties from the previous build can be
    * reused; this is largely to facilitate the recycling of SVG elements.
    */
-  for (var i = 0; i < n; i++) {
-    child = this.children[i];
-    child.scene = s.children[i]; // possibly undefined
+  var child;
+  var children = this.children;
+  var childScenes = s.children || (s.children = []);
+  for (var i = 0, n = children.length; i < n; i++) {
+    child = children[i];
+    child.scene = childScenes[i]; // possibly undefined
     child.scale = scale;
     child.build();
   }
@@ -196,14 +201,14 @@ pv.Panel.prototype.buildInstance = function(s) {
    * instantiated multiple times!
    */
   for (var i = 0; i < n; i++) {
-    child = this.children[i];
-    s.children[i] = child.scene;
+    child = children[i];
+    childScenes[i] = child.scene;
     delete child.scene;
     delete child.scale;
   }
 
   /* Delete any expired child scenes. */
-  s.children.length = n;
+  childScenes.length = n;
 };
 
 /**

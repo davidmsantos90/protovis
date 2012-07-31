@@ -90,9 +90,10 @@ pv.SvgScene.create = function(type) {
  */
 pv.SvgScene.expect = function(e, type, scenes, i, attributes, style) {
   if (e) {
-    if (e.tagName === "defs") e = e.nextSibling;
-    if (e.tagName === "a") e = e.firstChild;
-    if (e.tagName !== type) {
+    var tagName = e.tagName;
+    if (tagName === "defs") e = e.nextSibling;
+    if (tagName === "a")    e = e.firstChild;
+    if (tagName !== type) {
       var n = this.create(type);
       e.parentNode.replaceChild(n, e);
       e = n;
@@ -108,28 +109,51 @@ pv.SvgScene.expect = function(e, type, scenes, i, attributes, style) {
 };
 
 pv.SvgScene.setAttributes = function(e, attributes){
+    var implicitSvg = this.implicit.svg;
     for (var name in attributes) {
         var value = attributes[name];
-        if (value == this.implicit.svg[name]) value = null;
-        if (value == null) e.removeAttribute(name);
-        else e.setAttribute(name, value);
+        if (value == null || value == implicitSvg[name]){
+            e.removeAttribute(name);
+        }  else {
+            e.setAttribute(name, value);
+        }
     }
 };
 
 pv.SvgScene.setStyle = function(e, style){
-  for (var name in style) {
-    var value = style[name];
-    if (value == this.implicit.css[name]) value = null;
-    if (value == null) {
-      if (pv.renderer() === "batik") {
-        e.removeAttribute(name);
-      } else if (pv.renderer() != 'svgweb') // svgweb doesn't support removeproperty TODO SVGWEB
-        e.style.removeProperty(name);
-    }
-    else if (pv.renderer() == "batik")
-      e.style.setProperty(name,value);
-    else
-      e.style[name] = value;
+  var implicitCss = this.implicit.css;
+  switch(pv.renderer()){
+      case 'batik':
+          for (var name in style) {
+              var value = style[name];
+              if (value == null || value == implicitCss[name]) {
+                e.removeAttribute(name);
+              } else {
+                e.style.setProperty(name,value);
+              }
+          }
+          break;
+          
+      case 'svgweb':
+          for (var name in style) {
+              // svgweb doesn't support removeproperty TODO SVGWEB
+              var value = style[name];
+              if (value == null || value == implicitCss[name]) {
+                  continue;
+              }
+              e.style[name] = value;
+          }
+          break;
+          
+     default:
+         for (var name in style) {
+             var value = style[name];
+             if (value == null || value == implicitCss[name]){
+               e.style.removeProperty(name);
+             } else {
+                 e.style[name] = value;
+             }
+         }
   }
 };
 
