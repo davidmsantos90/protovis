@@ -312,7 +312,11 @@
     FillStyle.prototype = new pv.Color('none', 1);
     
     FillStyle.prototype.rgb = function(){
-        return pv.color(this.color).alpha(this.opacity);
+        var color = pv.color(this.color);
+        if(this.opacity !== color.opacity){
+            color = color.alpha(this.opacity);
+        }
+        return color;
     };
     
     /**

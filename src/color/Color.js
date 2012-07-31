@@ -647,5 +647,6 @@ pv.Color.names = {
 /* Initialized named colors. */
 (function() {
   var names = pv.Color.names;
+  names.none = names.transparent;
   for (var name in names) names[name] = pv.color(names[name]);
 })();
