@@ -1,5 +1,9 @@
 .DS_Store
+.externalToolBuilders
+.settings
+.project
 jsdoc
-
+build
+dist
 /nbproject
 /build.xml
