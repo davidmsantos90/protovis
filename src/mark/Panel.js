@@ -243,6 +243,7 @@ pv.Panel.prototype.buildImplied = function(s) {
     if (pv.renderer() === "batik") {
       if (c) {
         if (c.$panel != this) {
+          pv.Panel.updateCreateId(c);
           c.$panel = this;
           while (c.lastChild) c.removeChild(c.lastChild);
         }
@@ -252,6 +253,7 @@ pv.Panel.prototype.buildImplied = function(s) {
     } else if (c) {
       /* Clear the container if it's not associated with this panel. */
       if (c.$panel != this) {
+        pv.Panel.updateCreateId(c);
         c.$panel = this;
         while (c.lastChild) c.removeChild(c.lastChild);
       }
@@ -284,4 +286,8 @@ pv.Panel.prototype.buildImplied = function(s) {
   }
   if (!s.transform) s.transform = pv.Transform.identity;
   pv.Mark.prototype.buildImplied.call(this, s);
+};
+
+pv.Panel.updateCreateId = function(c){
+    c.$pvCreateId = (c.$pvCreateId || 0) + 1;
 };

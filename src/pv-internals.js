@@ -108,9 +108,29 @@ pv.listen = function(target, type, listener) {
       return pv.listenForPageLoad (pv.listener(listener));
 
   listener = pv.listener(listener);
-  return target.addEventListener
+  target.addEventListener
       ? target.addEventListener(type, listener, false)
       : target.attachEvent("on" + type, listener);
+  
+   return listener;
+};
+
+/**
+ * @private Unregisters the specified listener for events of the specified type on
+ * the specified target.
+ * 
+ * @param target a DOM element.
+ * @param {string} type the type of event, such as "click".
+ * @param {function} the event handler callback or the result of {@link pv.listen}.
+ */
+pv.unlisten = function(target, type, listener){
+    if(listener.$listener){
+        listener = listener.$listener;
+    }
+    
+    target.removeEventListener
+        ? target.removeEventListener(type, listener, false)
+        : target.detachEvent("on" + type, listener);
 };
 
 /**
