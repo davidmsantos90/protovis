@@ -1,3 +1,5 @@
+pv.SvgScene.minRuleLineWidth = 1;
+
 pv.SvgScene.rule = function(scenes) {
   var e = scenes.$g.firstChild;
   for (var i = 0; i < scenes.length; i++) {
@@ -8,6 +10,13 @@ pv.SvgScene.rule = function(scenes) {
     var stroke = s.strokeStyle;
     if (!stroke.opacity) continue;
 
+    var lineWidth = s.lineWidth;
+    if(lineWidth < 1e-10){
+        lineWidth = 0;
+    } else {
+        lineWidth = Math.max(this.minRuleLineWidth, lineWidth / this.scale);
+    }
+    
     e = this.expect(e, "line", scenes, i, {
         "shape-rendering": s.antialias ? null : "crispEdges",
         "pointer-events": s.events,
@@ -18,7 +27,7 @@ pv.SvgScene.rule = function(scenes) {
         "y2": s.top + s.height,
         "stroke": stroke.color,
         "stroke-opacity": stroke.opacity,
-        "stroke-width": s.lineWidth / this.scale,
+        "stroke-width": lineWidth,
         "stroke-dasharray": s.strokeDasharray || 'none'
       });
     
