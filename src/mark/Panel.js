@@ -103,6 +103,13 @@ pv.Panel.prototype.type = "panel";
  */
 
 /**
+ * The number of children that have a non-zero {@link pv.Mark#_zOrder}.
+ * 
+ *  @type number
+ */
+pv.Panel.prototype.zOrderChildCount = 0;
+
+/**
  * Default properties for panels. By default, the margins are zero, the fill
  * style is transparent.
  *

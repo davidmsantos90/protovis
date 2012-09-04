@@ -370,6 +370,16 @@ pv.Mark.prototype.index = -1;
 pv.Mark.prototype.scale = 1;
 
 /**
+ * Affects the drawing order amongst sibling marks.
+ * Evaluation order is not affected.
+ * A higher Z order value is drawn on top of a lower Z order value.
+ * 
+ * @type number
+ * @private
+ */
+pv.Mark.prototype._zOrder = 0;
+
+/**
  * @private The scene graph. The scene graph is an array of objects; each object
  * (or "node") corresponds to an instance of this mark and an element in the
  * data array. The scene graph can be traversed to lookup previously-evaluated
@@ -581,6 +591,37 @@ pv.Mark.prototype.add = function(type) {
 pv.Mark.prototype.def = function(name, v) {
   this.propertyMethod(name, true);
   return this[name](arguments.length > 1 ? v : null);
+};
+
+/**
+ * Affects the drawing order amongst sibling marks.
+ * Evaluation order is not affected.
+ * A higher Z order value is drawn on top of a lower Z order value. 
+ * 
+ * @param {number} zOrder the Z order of the mark. 
+ * @type number
+ */
+pv.Mark.prototype.zOrder = function(zOrder){
+    if(!arguments.length){
+        return this._zOrder;
+    }
+    
+    zOrder = (+zOrder) || 0; // NaN -> 0
+    
+    if(this._zOrder !== zOrder){
+        
+        if(this._zOrder !== 0 && this.parent){
+            this.parent.zOrderChildCount--;
+        }
+        
+        this._zOrder = zOrder;
+        
+        if(this._zOrder !== 0 && this.parent){
+            this.parent.zOrderChildCount++;
+        }
+    }
+    
+    return this;
 };
 
 /**

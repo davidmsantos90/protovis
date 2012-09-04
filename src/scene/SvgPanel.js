@@ -126,16 +126,17 @@ pv.SvgScene.panel = function(scenes) {
     this.scale *= t.k;
 
     /* children */
-    for (var j = 0; j < s.children.length; j++) {
-      s.children[j].$g = e = this.expect(e, "g", scenes, i, {
-          "transform": "translate(" + x + "," + y + ")"
-              + (t.k != 1 ? " scale(" + t.k + ")" : "")
+    this.eachChild(scenes, i, function(childScenes){
+        childScenes.$g = e = this.expect(e, "g", scenes, i, {
+            "transform": "translate(" + x + "," + y + ")" + 
+                         (t.k != 1 ? " scale(" + t.k + ")" : "")
         });
-      this.updateAll(s.children[j]);
-      if (!e.parentNode) g.appendChild(e);
-      e = e.nextSibling;
-    }
-
+        
+        this.updateAll(childScenes);
+        if (!e.parentNode) g.appendChild(e);
+        e = e.nextSibling;
+    });
+    
     /* transform (pop) */
     this.scale = k;
 
@@ -150,6 +151,18 @@ pv.SvgScene.panel = function(scenes) {
   }
   complete = true;
   return e;
+};
+
+pv.SvgScene.eachChild = function(scenes, i, fun, ctx){
+    if(scenes.mark.zOrderChildCount){
+        var sorted = scenes[i].children.slice(0);
+        sorted.sort(function(scenes1, scenes2){ // sort ascending
+            return scenes1.mark._zOrder - scenes2.mark._zOrder;
+        });
+        sorted.forEach(fun, ctx || this);
+    } else {
+        scenes[i].children.forEach(fun, ctx || this);
+    }
 };
 
 pv.SvgScene.fill = function(e, scenes, i) {
