@@ -23,7 +23,18 @@ pv.SvgScene.panel = function(scenes) {
         g.setAttribute("fill", "none");
         g.setAttribute("stroke", "none");
         g.setAttribute("stroke-width", 1.5);
-
+        
+        // Prevent selecting VML elements when dragging
+        
+        // Supported by IE10 SVG
+        g.setAttribute("style", "-webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;");
+        
+        if (typeof g.onselectstart !== 'undefined') {
+            // IE9 SVG
+            g.setAttribute('unselectable', 'on');
+            g.onselectstart = function(){ return false; };
+        }
+        
         if (pv.renderer() === "svgweb") { // SVGWeb requires a separate mechanism for setting event listeners.
             // width/height can't be set on the fragment
             g.setAttribute("width", s.width + s.left + s.right);
@@ -181,7 +192,7 @@ pv.SvgScene.fill = function(e, scenes, i) {
         "cursor": s.cursor,
         "x": s.left,
         "y": s.top,
-        "width": s.width,
+        "width":  s.width,
         "height": s.height,
         "fill": fill.color,
         "fill-opacity": fill.opacity,
@@ -206,7 +217,9 @@ pv.SvgScene.stroke = function(e, scenes, i) {
         "fill": null,
         "stroke": stroke.color,
         "stroke-opacity": stroke.opacity,
-        "stroke-width": s.lineWidth / this.scale
+        "stroke-width": s.lineWidth / this.scale,
+        "stroke-linecap":    s.lineCap,
+        "stroke-dasharray":  stroke.opacity ? this.parseDasharray(s) : null
       });
     e = this.append(e, scenes, i);
   }

@@ -103,6 +103,15 @@ pv.Panel.prototype.type = "panel";
  */
 
 /**
+ * The number of descendant marks that are animating.
+ * Only the root panel has this property set.
+ * 
+ * @type number
+ */
+pv.Panel.prototype.animatingCount = 0;
+
+
+/**
  * The number of children that have a non-zero {@link pv.Mark#_zOrder}.
  * 
  *  @type number

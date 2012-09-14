@@ -51,6 +51,7 @@ pv.Rule.prototype = pv.extend(pv.Mark)
     .property("height", Number)
     .property("lineWidth", Number)
     .property("strokeStyle", pv.fillStyle)
+    .property("lineCap",   String)
     .property("strokeDasharray", String);
 
 pv.Rule.prototype.type = "rule";
@@ -101,7 +102,8 @@ pv.Rule.prototype.defaults = new pv.Rule()
     .lineWidth(1)
     .strokeStyle("black")
     .antialias(false)
-    .strokeDasharray("");
+    .lineCap("butt")
+    .strokeDasharray("none");
 
 /**
  * Constructs a new rule anchor with default properties. Rules support five

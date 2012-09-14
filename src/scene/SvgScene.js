@@ -40,7 +40,10 @@ pv.Scene = pv.SvgScene = {
       "stroke": "none",
       "stroke-opacity": 1,
       "stroke-width": 1.5,
-      "stroke-linejoin": "miter"
+      "stroke-linejoin":   "miter",
+      "stroke-linecap":    "butt",
+      "stroke-miterlimit": 8,
+      "stroke-dasharray":  "none"
     },
     css: {
       "font": "10px sans-serif"
@@ -274,6 +277,97 @@ pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
 
 
 (function() {
+    var dashAliasMap = {
+        '-':    'shortdash',
+        '.':    'shortdot',
+        '-.':   'shortdashdot',
+        '-..':  'shortdashdotdot',
+        '. ':   'dot',
+        '- ':   'dash',
+        '--':   'longdash',
+        '- .':  'dashdot',
+        '--.':  'longdashdot',
+        '--..': 'longdashdotdot'
+    };
+    
+    var dashMap = { // SVG specific - values for cap=butt
+        'shortdash':       [3, 1],
+        'shortdot':        [1, 1],
+        'shortdashdot':    [3, 1, 1, 1],
+        'shortdashdotdot': [3, 1, 1, 1, 1, 1],
+        'dot':             [1, 3],
+        'dash':            [4, 3],
+        'longdash':        [8, 3],
+        'dashdot':         [4, 3, 1, 3],
+        'longdashdot':     [8, 3, 1, 3],
+        'longdashdotdot':  [8, 3, 1, 3, 1, 3]
+    };
+    
+    pv.SvgScene.isStandardDashStyle = function(dashArray){
+        return dashMap.hasOwnProperty(dashArray);
+    };
+    
+    pv.SvgScene.translateDashStyleAlias = function(dashArray){
+        return dashAliasMap.hasOwnProperty(dashArray) ?
+                    dashAliasMap[dashArray] :
+                    dashArray;
+    };
+    
+    pv.SvgScene.parseDasharray = function(s){
+        // This implementation tries to mimic the VML dashStyle,
+        // cause the later is more limited...
+        //
+        // cap = square and butt result in the same dash pattern
+        
+        var dashArray = s.strokeDasharray; 
+        if(dashArray && dashArray !== 'none'){
+            dashArray = this.translateDashStyleAlias(dashArray);
+            
+            var standardDashArray = dashMap[dashArray];
+            if(standardDashArray){
+                dashArray = standardDashArray;
+            } else {
+                // Make measures relative to line width
+                dashArray = 
+                    dashArray.split(/[\s,]+/);
+            }
+            
+            var lineWidth = s.lineWidth;
+            var lineCap   = s.lineCap || 'butt';
+            var isButtCap = lineCap === 'butt';
+            
+            dashArray = 
+                dashArray
+                    .map(function(num, index){
+                        num = +num;
+                        if(!isButtCap){
+                            // Steal one unit to dash and give it to the gap,
+                            // to compensate for the round/square cap
+                            if(index % 2){
+                                // gap
+                                num++;
+                            } else {
+                                // dash/dot
+                                num -= 1;
+                            }
+                        }
+                        
+                        if(num <= 0){
+                            num = .001; // SVG does not support 0-width; with cap=square/round is useful.
+                        }
+                        
+                        return num * lineWidth / this.scale; 
+                     }, this)
+                    .join(' ');
+        } else {
+            dashArray = null;
+        }
+        
+        return dashArray;
+    };
+})();
+
+(function() {
 
   var gradient_definition_id = 0;
 
@@ -348,5 +442,5 @@ pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
       }
     }
   };
-
+ 
 })();

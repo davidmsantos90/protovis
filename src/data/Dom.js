@@ -94,7 +94,10 @@ pv.Dom.prototype.nodes = function() {
  * @class Represents a <tt>Node</tt> in the W3C Document Object Model.
  */
 pv.Dom.Node = function(value) {
-  this.nodeValue = value;
+  if(value !== undefined){
+    this.nodeValue = value;
+  }
+  
   this.childNodes = [];
 };
 
@@ -113,6 +116,7 @@ pv.Dom.Node = function(value) {
  *
  * @field pv.Dom.Node.prototype.nodeValue
  */
+pv.Dom.Node.prototype.nodeValue = undefined;
 
 /**
  * The array of child nodes. This array is empty for leaf nodes. An easy way to
@@ -158,6 +162,15 @@ pv.Dom.Node.prototype.previousSibling = null;
 pv.Dom.Node.prototype.nextSibling = null;
 
 /**
+ * The index of the first child 
+ * whose {@link #_childIndex} is dirty.
+ * 
+ * @private
+ * @type number | null
+ */
+pv.Dom.Node.prototype._firstDirtyChildIndex = Infinity;
+
+/**
  * Removes the specified child node from this node.
  *
  * @throws Error if the specified child is not a child of this node.
@@ -165,16 +178,9 @@ pv.Dom.Node.prototype.nextSibling = null;
  */
 pv.Dom.Node.prototype.removeChild = function(n) {
   var i = this.childNodes.indexOf(n);
-  if (i == -1) throw new Error("child not found");
-  this.childNodes.splice(i, 1);
-  if (n.previousSibling) n.previousSibling.nextSibling = n.nextSibling;
-  else this.firstChild = n.nextSibling;
-  if (n.nextSibling) n.nextSibling.previousSibling = n.previousSibling;
-  else this.lastChild = n.previousSibling;
-  delete n.nextSibling;
-  delete n.previousSibling;
-  delete n.parentNode;
-  return n;
+  if (i === -1) throw new Error("child not found");
+  
+  return this.removeAt(i);
 };
 
 /**
@@ -184,17 +190,27 @@ pv.Dom.Node.prototype.removeChild = function(n) {
  *
  * @returns {pv.Dom.Node} the appended child.
  */
-pv.Dom.Node.prototype.appendChild = function(n) {
-  if (n.parentNode) n.parentNode.removeChild(n);
+pv.Dom.Node.prototype.appendChild = function(n){
+  var pn = n.parentNode;
+  if (pn) pn.removeChild(n);
+  
+  var lc = this.lastChild;
   n.parentNode = this;
-  n.previousSibling = this.lastChild;
-  if (this.lastChild) this.lastChild.nextSibling = n;
-  else this.firstChild = n;
+  n.previousSibling = lc;
+  if (lc) {
+      lc.nextSibling = n;
+      n._childIndex  = lc._childIndex + 1;
+  } else {
+      this.firstChild = n;
+      n._childIndex   = 0;
+  }
+  
   this.lastChild = n;
   this.childNodes.push(n);
+  
   return n;
 };
-
+  
 /**
  * Inserts the specified child <i>n</i> before the given reference child
  * <i>r</i> of this node. If <i>r</i> is null, this method is equivalent to
@@ -204,21 +220,107 @@ pv.Dom.Node.prototype.appendChild = function(n) {
  * @throws Error if <i>r</i> is non-null and not a child of this node.
  * @returns {pv.Dom.Node} the inserted child.
  */
-pv.Dom.Node.prototype.insertBefore = function(n, r) {
+pv.Dom.Node.prototype.insertBefore = function(n, r){
   if (!r) return this.appendChild(n);
-  var i = this.childNodes.indexOf(r);
-  if (i == -1) throw new Error("child not found");
-  if (n.parentNode) n.parentNode.removeChild(n);
-  n.parentNode = this;
-  n.nextSibling = r;
-  n.previousSibling = r.previousSibling;
-  if (r.previousSibling) {
-    r.previousSibling.nextSibling = n;
-  } else {
-    if (r == this.lastChild) this.lastChild = n;
-    this.firstChild = n;
+  
+  var ns = this.childNodes;
+  var i = ns.indexOf(r);
+  if (i === -1) throw new Error("child not found");
+  
+  return this.insertAt(n, i);
+};
+
+/**
+ * Inserts the specified child <i>n</i> at the given index. 
+ * Any child from the given index onwards will be moved one position to the end. 
+ * If <i>i</i> is null, this method is equivalent to
+ * {@link #appendChild}. 
+ * If <i>n</i> is already part of the DOM, it is first
+ * removed before being inserted.
+ *
+ * @throws Error if <i>i</i> is non-null and greater than the current number of children.
+ * @returns {pv.Dom.Node} the inserted child.
+ */
+pv.Dom.Node.prototype.insertAt = function(n, i) {
+    if (i == null){     
+        return this.appendChild(n);
+    }
+    
+    var ns = this.childNodes;
+    var L  = ns.length;
+    if (i === L){
+        return this.appendChild(n);
+    }
+    
+    if(i > L){
+        throw new Error("Index out of range.");
+    }
+    
+    var ni = i + 1;
+    var firstDirtyIndex = this._firstDirtyChildIndex;
+    if(ni < firstDirtyIndex){
+        this._firstDirtyChildIndex = ni;
+    }
+    
+    var pn = n.parentNode;
+    if (pn) {
+        pn.removeChild(n);
+    }
+    
+    var r = ns[i];
+    n.parentNode  = this;
+    n.nextSibling = r;
+    n._childIndex = i;
+    
+    var psib = n.previousSibling = r.previousSibling;
+    if (psib) {
+        psib.nextSibling = n;
+    } else {
+        if (r === this.lastChild) {
+            this.lastChild = n;
+        }
+        this.firstChild = n;
+    }
+    
+    this.childNodes.splice(i, 0, n);
+    return n;
+};
+
+/**
+ * Removes the child node at the specified index from this node.
+ */
+pv.Dom.Node.prototype.removeAt = function(i) {
+  var ns = this.childNodes;
+  var n = ns[i];
+  if(n){
+      ns.splice(i, 1);
+      
+      if(i < ns.length){
+          var firstDirtyIndex = this._firstDirtyChildIndex;
+          if(i < firstDirtyIndex){
+              this._firstDirtyChildIndex = i;
+          }
+      }
+      
+      var psib = n.previousSibling;
+      if (psib) { 
+          psib.nextSibling = n.nextSibling; 
+      } else { 
+          this.firstChild = n.nextSibling; 
+      }
+      
+      var nsib = n.nextSibling;
+      if (nsib) {
+          nsib.previousSibling = n.previousSibling;
+      } else {
+          this.lastChild = n.previousSibling;
+      }
+      
+      delete n.nextSibling;
+      delete n.previousSibling;
+      delete n.parentNode;
   }
-  this.childNodes.splice(i, 0, n);
+  
   return n;
 };
 
@@ -229,18 +331,56 @@ pv.Dom.Node.prototype.insertBefore = function(n, r) {
  * @throws Error if <i>r</i> is not a child of this node.
  */
 pv.Dom.Node.prototype.replaceChild = function(n, r) {
-  var i = this.childNodes.indexOf(r);
-  if (i == -1) throw new Error("child not found");
-  if (n.parentNode) n.parentNode.removeChild(n);
-  n.parentNode = this;
+  var ns = this.childNodes;
+  var i = ns.indexOf(r);
+  if (i === -1) throw new Error("child not found");
+  
+  var pn = n.parentNode;
+  if (pn) pn.removeChild(n);
+  
+  n.parentNode  = this;
   n.nextSibling = r.nextSibling;
-  n.previousSibling = r.previousSibling;
-  if (r.previousSibling) r.previousSibling.nextSibling = n;
+  n._childIndex = r._childIndex;
+  
+  var psib = n.previousSibling = r.previousSibling;
+  if (psib) psib.nextSibling = n;
   else this.firstChild = n;
-  if (r.nextSibling) r.nextSibling.previousSibling = n;
+  
+  var nsib = r.nextSibling;
+  if (nsib) nsib.previousSibling = n;
   else this.lastChild = n;
-  this.childNodes[i] = n;
+  
+  ns[i] = n;
+  
   return r;
+};
+
+
+/**
+ * Obtains the child index of this node.
+ * Returns -1, if the node has no parent.
+ * 
+ * @type number
+ */
+pv.Dom.Node.prototype.childIndex = function(){
+  var p = this.parentNode;
+  if(p){
+      var i = p._firstDirtyChildIndex;
+      if(i < Infinity){
+          var ns = p.childNodes;
+          if(i < ns.length){
+              for(var c = ns[i] ; c ; c = c.nextSibling){
+                  c._childIndex = i++;
+              }
+          }
+          
+          delete p._firstDirtyChildIndex;
+      }
+      
+      return this._childIndex;
+  }
+  
+  return -1;
 };
 
 /**
@@ -296,19 +436,28 @@ pv.Dom.Node.prototype.visitAfter = function(f) {
  */
 pv.Dom.Node.prototype.sort = function(f) {
   if (this.firstChild) {
+    delete p._firstDirtyChildIndex;
+    
     this.childNodes.sort(f);
+    
     var p = this.firstChild = this.childNodes[0], c;
     delete p.previousSibling;
+    p._childIndex = 0;
+    
     for (var i = 1; i < this.childNodes.length; i++) {
       p.sort(f);
       c = this.childNodes[i];
+      c._childIndex = i;
       c.previousSibling = p;
       p = p.nextSibling = c;
     }
+    
     this.lastChild = p;
     delete p.nextSibling;
+    
     p.sort(f);
   }
+  
   return this;
 };
 

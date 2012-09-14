@@ -43,8 +43,10 @@ pv.SvgScene.line = function(scenes) {
       "stroke": stroke.color,
       "stroke-opacity": stroke.opacity || null,
       "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null,
-      "stroke-linejoin": s.lineJoin,
-      "stroke-dasharray": s.strokeDasharray || 'none'
+      "stroke-linecap":    s.lineCap,
+      "stroke-linejoin":   s.lineJoin,
+      "stroke-miterlimit": s.strokeMiterLimit,
+      "stroke-dasharray":  stroke.opacity ? this.parseDasharray(s) : null
     });
 
   if(s.svg) this.setAttributes(e, s.svg);

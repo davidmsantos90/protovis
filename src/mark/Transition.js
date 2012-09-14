@@ -190,6 +190,8 @@ pv.Transition = function(mark) {
   };
 
   function doEnd(){
+      mark.root.animatingCount--;
+      
       if(onEndCallback){
           var cb = onEndCallback;
           onEndCallback = null;
@@ -199,37 +201,44 @@ pv.Transition = function(mark) {
 
   that.start = function(onEnd) {
     onEndCallback = onEnd;
-
+    
+    mark.root.animatingCount++;
+    
     // TODO allow partial rendering
     if (mark.parent) {
         doEnd();
-        fail();
+        throw new Error("Animated partial rendering is not supported.");
     }
-
-    // TODO allow parallel and sequenced transitions
-    if (mark.$transition) {
-        mark.$transition.stop();
+    
+    try{
+        // TODO allow parallel and sequenced transitions
+        if (mark.$transition) {
+            mark.$transition.stop();
+        }
+        mark.$transition = that;
+    
+        // TODO clearing the scene like this forces total re-build
+        var i = pv.Mark.prototype.index,
+            before = mark.scene,
+            after;
+        
+        mark.scene = null;
+        mark.bind();
+        mark.build();
+        
+        after = mark.scene;
+        mark.scene = before;
+        
+        pv.Mark.prototype.index = i;
+    
+        var start = Date.now(), 
+            list = {};
+        
+        interpolate(list, before, after);
+    } catch(ex) {
+        doEnd();
+        throw ex;
     }
-    mark.$transition = that;
-
-    // TODO clearing the scene like this forces total re-build
-    var i = pv.Mark.prototype.index,
-        before = mark.scene,
-        after;
-    
-    mark.scene = null;
-    mark.bind();
-    mark.build();
-    
-    after = mark.scene;
-    mark.scene = before;
-    
-    pv.Mark.prototype.index = i;
-
-    var start = Date.now(), 
-        list = {};
-    
-    interpolate(list, before, after);
     
     timer = setInterval(function() {
       var t = Math.max(0, Math.min(1, (Date.now() - start) / duration)),

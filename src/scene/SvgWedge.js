@@ -69,7 +69,11 @@ pv.SvgScene.wedge = function(scenes) {
         "fill-opacity": fill.opacity || null,
         "stroke": stroke.color,
         "stroke-opacity": stroke.opacity || null,
-        "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null
+        "stroke-width": stroke.opacity ? s.lineWidth / this.scale : null,
+        "stroke-linejoin":   s.lineJoin,
+        "stroke-miterlimit": s.strokeMiterLimit,
+        "stroke-linecap":    s.lineCap,
+        "stroke-dasharray":  stroke.opacity ? this.parseDasharray(s) : null
       });
 
     if(s.svg) this.setAttributes(e, s.svg);

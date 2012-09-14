@@ -32,7 +32,9 @@ pv.Bar.prototype = pv.extend(pv.Mark)
     .property("height", Number)
     .property("lineWidth", Number)
     .property("strokeStyle", pv.fillStyle)
-    .property("fillStyle", pv.fillStyle);
+    .property("fillStyle", pv.fillStyle)
+    .property("lineCap",   String)
+    .property("strokeDasharray", String);
 
 pv.Bar.prototype.type = "bar";
 
@@ -90,4 +92,6 @@ pv.Bar.prototype.type = "bar";
 pv.Bar.prototype.defaults = new pv.Bar()
     .extend(pv.Mark.prototype.defaults)
     .lineWidth(1.5)
-    .fillStyle(pv.Colors.category20().by(pv.parent));
+    .fillStyle(pv.Colors.category20().by(pv.parent))
+    .lineCap("butt")
+    .strokeDasharray("none");

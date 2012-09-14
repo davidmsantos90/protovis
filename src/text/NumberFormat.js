@@ -29,7 +29,7 @@ pv.Format.number = function() {
     /* Round the fractional part, and split on decimal separator. */
     if (Infinity > maxf) x = Math.round(x * maxk) / maxk;
     var s = String(Math.abs(x)).split(".");
-
+        
     /* Pad, truncate and group the integral part. */
     var i = s[0];
     if (i.length > maxi) i = i.substring(i.length - maxi);
@@ -40,6 +40,13 @@ pv.Format.number = function() {
 
     /* Pad the fractional part. */
     var f = s[1] || "";
+    if (f.length > maxf){
+        // In IE9 64 bit strange things happen with floating points
+        // and the above division by maxk seems to sometimes result in 
+        // floating point precision problems...
+        f = s[1] = f.substr(0, maxf);
+    }
+
     if (f.length < minf) s[1] = f + new Array(minf - f.length + 1).join(padf);
 
     return s.join(decimal);

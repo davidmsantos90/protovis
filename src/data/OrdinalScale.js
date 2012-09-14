@@ -388,7 +388,13 @@ pv.Scale.ordinal = function() {
     for (var method in scale) by[method] = scale[method];
     return by;
   };
-
+  
+  scale.by1 = function(f) {
+    function by1(x) { return scale(f.call(this, x)); }
+    for (var method in scale) by1[method] = scale[method];
+    return by1;
+  };
+    
   scale.domain.apply(scale, arguments);
   return scale;
 };

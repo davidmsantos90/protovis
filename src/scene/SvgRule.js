@@ -28,7 +28,8 @@ pv.SvgScene.rule = function(scenes) {
         "stroke": stroke.color,
         "stroke-opacity": stroke.opacity,
         "stroke-width": lineWidth,
-        "stroke-dasharray": s.strokeDasharray || 'none'
+        "stroke-linecap":    s.lineCap,
+        "stroke-dasharray":  stroke.opacity ? this.parseDasharray(s) : null
       });
     
     if(s.svg) this.setAttributes(e, s.svg);

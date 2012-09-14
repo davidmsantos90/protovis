@@ -24,7 +24,9 @@ pv.Line = function() {
 
 pv.Line.prototype = pv.extend(pv.Mark)
     .property("lineWidth", Number)
-    .property("lineJoin", String)
+    .property("lineJoin",  String)
+    .property("strokeMiterLimit", Number)
+    .property("lineCap",   String)
     .property("strokeStyle", pv.fillStyle)
     .property("strokeDasharray", String)
     .property("fillStyle", pv.fillStyle)
@@ -139,13 +141,15 @@ pv.Line.prototype.type = "line";
  */
 pv.Line.prototype.defaults = new pv.Line()
     .extend(pv.Mark.prototype.defaults)
-    .lineJoin("miter")
     .lineWidth(1.5)
     .strokeStyle(pv.Colors.category10().by(pv.parent))
-    .strokeDasharray("")
     .interpolate("linear")
     .eccentricity(0)
-    .tension(.7);
+    .tension(.7)
+    .lineJoin("miter")
+    .strokeMiterLimit(8)
+    .lineCap("butt")
+    .strokeDasharray("none");
 
 /** @private Reuse Area's implementation for segmented bind & build. */
 pv.Line.prototype.bind = pv.Area.prototype.bind;

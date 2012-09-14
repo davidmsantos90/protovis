@@ -55,7 +55,9 @@ pv.SvgScene.bar = function(scenes) {
         "fill-opacity": fill.opacity || null,
         "stroke": stroke.color,
         "stroke-opacity": stroke.opacity || null,
-        "stroke-width": lineWidth
+        "stroke-width": lineWidth,
+        "stroke-linecap":    s.lineCap,
+        "stroke-dasharray":  stroke.opacity ? this.parseDasharray(s) : null
       });
 
     if(s.svg) this.setAttributes(e, s.svg);

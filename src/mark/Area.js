@@ -27,6 +27,10 @@ pv.Area.prototype = pv.extend(pv.Mark)
     .property("width", Number)
     .property("height", Number)
     .property("lineWidth", Number)
+    .property("lineJoin",   String)
+    .property("strokeMiterLimit", Number)
+    .property("lineCap",   String)
+    .property("strokeDasharray", String)
     .property("strokeStyle", pv.fillStyle)
     .property("fillStyle", pv.fillStyle)
     .property("segmented", Boolean)
@@ -145,7 +149,11 @@ pv.Area.prototype.defaults = new pv.Area()
     .lineWidth(1.5)
     .fillStyle(pv.Colors.category20().by(pv.parent))
     .interpolate("linear")
-    .tension(.7);
+    .tension(.7)
+    .lineJoin("miter")
+    .strokeMiterLimit(8)
+    .lineCap("butt")
+    .strokeDasharray("none");
 
 /** @private Sets width and height to zero if null. */
 pv.Area.prototype.buildImplied = function(s) {
@@ -158,7 +166,10 @@ pv.Area.prototype.buildImplied = function(s) {
 pv.Area.fixed = {
   lineWidth: 1,
   lineJoin: 1,
+  strokeMiterLimit: 1,
+  lineCap: 1,
   strokeStyle: 1,
+  strokeDasharray: 1,
   fillStyle: 1,
   segmented: 1,
   interpolate: 1,
@@ -208,15 +219,21 @@ pv.Area.prototype.buildInstance = function(s) {
     /* Determine which properties are fixed. */
     if (!fixed) {
       fixed = binds.fixed = [];
+      
       function f(p) { return !p.fixed || (fixed.push(p), false); }
+      
       binds.required = binds.required.filter(f);
       if (!this.scene[0].segmented) binds.optional = binds.optional.filter(f);
     }
 
     /* Copy fixed property values from the first instance. */
-    for (var i = 0, n = fixed.length; i < n; i++) {
-      var p = fixed[i].name;
-      s[p] = this.scene[0][p];
+    var n = fixed.length;
+    if(n){
+      var firstScene = this.scene[0];
+      for (var i = 0 ; i < n ; i++) {
+        var p = fixed[i].name;
+        s[p] = firstScene[p];
+      }
     }
   }
 

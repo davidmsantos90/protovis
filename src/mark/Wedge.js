@@ -30,6 +30,10 @@ pv.Wedge.prototype = pv.extend(pv.Mark)
     .property("outerRadius", Number)
     .property("lineWidth", Number)
     .property("strokeStyle", pv.fillStyle)
+    .property("lineJoin",  String)
+    .property("strokeMiterLimit", Number)
+    .property("lineCap",   String)
+    .property("strokeDasharray", String)
     .property("fillStyle", pv.fillStyle);
 
 pv.Wedge.prototype.type = "wedge";
@@ -122,7 +126,11 @@ pv.Wedge.prototype.defaults = new pv.Wedge()
     .innerRadius(0)
     .lineWidth(1.5)
     .strokeStyle(null)
-    .fillStyle(pv.Colors.category20().by(pv.index));
+    .fillStyle(pv.Colors.category20().by(pv.index))
+    .lineJoin("miter")
+    .strokeMiterLimit(8)
+    .lineCap("butt")
+    .strokeDasharray("none");
 
 /**
  * Returns the mid-radius of the wedge, which is defined as half-way between the

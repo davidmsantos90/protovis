@@ -147,11 +147,30 @@ pv.Mark.prototype.property = function(name, cast) {
   return this;
 };
 
+// Adapted from pv.Layout#property
 /**
- * @type object
+ * Defines a local property with the specified name and cast.
+ * Note that although the property method is only defined locally,
+ * the cast function is global,
+ * which is necessary since properties are inherited!
+ *
+ * @param {string} name the property name.
+ * @param {function} [cast] the cast function for this property.
  */
-pv.propertiesDepsOf = null;
-pv.propertyEval   = null;
+pv.Mark.prototype.localProperty = function(name, cast) {
+  if (!this.hasOwnProperty("properties")) {
+    this.properties = pv.extend(this.properties);
+  }
+  this.properties[name] = true;
+  
+  var currCast = pv.Mark.cast[name];
+  if(cast){
+      pv.Mark.cast[name] = currCast = cast;
+  }
+  
+  this.propertyMethod(name, false, currCast);
+  return this;
+};
 
 /**
  * @private Defines a setter-getter for the specified property.
@@ -168,7 +187,7 @@ pv.propertyEval   = null;
 pv.Mark.prototype.propertyMethod = function(name, def, cast) {
   if (!cast) cast = pv.Mark.cast[name];
   
-  this[name] = function(v) {
+  this[name] = function(v, tag) {
       /* When arguments are specified, set the property/def value. */
       
       /* DEF */
@@ -188,34 +207,8 @@ pv.Mark.prototype.propertyMethod = function(name, def, cast) {
       }
       
       /* PROP */
-      
       if (arguments.length) {
-        /* bit 0: 0 = value, 1 = function
-         * bit 1: 0 = def,   1 = prop
-         * ------------------------------
-         * 00 - 0 - def  - value
-         * 01 - 1 - def  - function
-         * 10 - 2 - prop - value
-         * 11 - 3 - prop - function
-         * 
-         * x << 1 <=> floor(x) * 2
-         */
-        var type = !def << 1 | (typeof v === "function");
-        var vf;
-        // A function and cast?
-        if(type & 1 && cast){
-            vf = function(){
-                var x = v.apply(this, arguments);
-                return (x != null) ? cast(x) : null;
-            };
-        } else if(v != null && cast){
-            vf = cast(v);
-        } else {
-            vf = v;
-        }
-        
-        this.propertyValue(name, vf, type);
-        
+        this.setPropertyValue(name, v, def, cast, /* chain */false, tag);
         return this;
       }
       
@@ -248,35 +241,131 @@ pv.Mark.prototype.propertyMethod = function(name, def, cast) {
     };
 };
 
+/** @private Creates and returns a wrapper function to call a property function and a property cast. */
+pv.Mark.funPropertyCaller = function(fun, cast){
+    // Avoiding the use of arguments object to try to speed things up
+    var stack = pv.Mark.stack;
+    
+    return function(){
+        var value = fun.apply(this, stack);
+        return value != null ? cast(value) : null;
+    };
+};
+
 /** @private Sets the value of the property <i>name</i> to <i>v</i>. */
-pv.Mark.prototype.propertyValue = function(name, v, type) {
+pv.Mark.prototype.setPropertyValue = function(name, v, def, cast, chain, tag){
+    /* bit 0: 0 = value, 1 = function
+     * bit 1: 0 = def,   1 = prop
+     * ------------------------------
+     * 00 - 0 - def  - value
+     * 01 - 1 - def  - function
+     * 10 - 2 - prop - value
+     * 11 - 3 - prop - function
+     * 
+     * x << 1 <=> floor(x) * 2
+     * 
+     * true  << 1 -> 2 - 10
+     * false << 1 -> 0 - 00
+     */
+    var type = !def << 1 | (typeof v === "function");
+    // A function and cast?
+    if(type & 1 && cast){
+        v = pv.Mark.funPropertyCaller(v, cast);
+    } else if(v != null && cast){
+        v = cast(v);
+    }
+    
+    // ------
+    
     var propertiesMap = this.$propertiesMap;
     var properties = this.$properties;
     
     var p = {
-      name:     name, 
-      id:       pv.id(), 
-      value:    v,
-      type:     type
-  };
+        name:  name,
+        id:    pv.id(), 
+        value: v,
+        type:  type,
+        tag:   tag
+    };
   
-  var specified = propertiesMap[name];
+    var specified = propertiesMap[name];
   
-  propertiesMap[name] = p;
+    propertiesMap[name] = p;
   
-  if(specified){
-      // Find it and remove it
-      for (var i = 0; i < properties.length; i++) {
-        if (properties[i] === specified) {
-          properties.splice(i, 1);
-          break;
+    if(specified){
+        // Find it and remove it
+        for (var i = 0; i < properties.length; i++) {
+            if (properties[i] === specified) {
+                properties.splice(i, 1);
+                break;
+            }
         }
-      }
-  }
-  
-  properties.push(p);
-  return p;
+    }
+    
+    properties.push(p);
+    
+    if(chain && specified && type === 3){ // is a prop fun
+        p.proto = specified;
+        p.root  = specified.root || specified;
+    }
+    
+    return p;
 };
+
+pv.Mark.prototype.intercept = function(name, v, keyArgs){
+    this.setPropertyValue(
+            name, 
+            v, 
+            /* def */ false,
+            pv.get(keyArgs, 'noCast') ? null : pv.Mark.cast[name],
+            /* chain*/ true,
+            pv.get(keyArgs, 'tag'));
+    
+    return this;
+};
+
+/**
+ * Gets the static value of a property, without evaluation.
+ * @param {string} name the property name.
+ * @type any
+ */
+pv.Mark.prototype.propertyValue = function(name, inherit) {
+    var p = this.$propertiesMap[name];
+    if(p){
+        return p.value;
+    }
+    
+    // This mimics the way #bind works
+    if(inherit){
+        if(this.proto){
+            var value = this.proto.propertyValueRecursive(name);
+            if(value !== undefined){
+                return value;
+            }
+        }
+        
+        return this.defaults.propertyValueRecursive(name);
+    }
+    
+    //return undefined;
+};
+
+/** @private */
+pv.Mark.prototype.propertyValueRecursive = function(name) {
+    var p = this.$propertiesMap[name];
+    if(p){
+        return p.value;
+    }
+    
+    if(this.proto){
+        return this.proto.propertyValueRecursive(name);
+    }
+    //return undefined;
+};
+
+/** @private Stores the current data stack. */
+//must be declared before defaults, below
+pv.Mark.stack = [];
 
 /* Define all global properties. */
 pv.Mark.prototype
@@ -536,7 +625,7 @@ pv.Mark.prototype.defaults = new pv.Mark()
     .datum(function() {
         var parent = this.parent;
         return parent ? parent.scene[parent.index].datum : null; 
-     })
+    })
     .visible(true)
     .antialias(true)
     .events("painted");
@@ -580,7 +669,7 @@ pv.Mark.prototype.add = function(type) {
  *
  * <p>WARNING We plan on changing this feature in a future release to define
  * standard properties, as opposed to <i>fixed</i> properties that behave
- * idiosyncratically within event handlers. Furthermore, we recommend storing
+ * idiosincratically within event handlers. Furthermore, we recommend storing
  * state in an external data structure, rather than tying it to the
  * visualization specification as with defs.
  *
@@ -865,16 +954,19 @@ pv.Mark.prototype.renderCore = function() {
     mark.scale = scale;
     if (depth < indexes.length) {
       stack.unshift(null);
-      if (mark.hasOwnProperty("index")) {
-        renderInstance(mark, depth, scale);
-      } else {
-        for (var i = 0, n = mark.scene.length; i < n; i++) {
-          mark.index = i;
-          renderInstance(mark, depth, scale);
-        }
-        delete mark.index;
+      try{
+          if (mark.hasOwnProperty("index")) {
+            renderInstance(mark, depth, scale);
+          } else {
+            for (var i = 0, n = mark.scene.length; i < n; i++) {
+              mark.index = i;
+              renderInstance(mark, depth, scale);
+            }
+            delete mark.index;
+          }
+      } finally {
+          stack.shift();
       }
-      stack.shift();
     } else {
       mark.build();
 
@@ -951,10 +1043,6 @@ pv.Mark.prototype.renderCore = function() {
       parent ? parent.index : -1,
       function() { render(this.root, 0, 1); });
 };
-
-/** @private Stores the current data stack. */
-pv.Mark.stack = [];
-
 
 /** @private */ 
 pv.Mark._requiredPropsPosition = {id: 0, datum: 1, visible: 3};
@@ -1049,12 +1137,13 @@ pv.Mark.prototype.bind = function() {
       
       for (var i = properties.length - 1; i >= 0 ; i--) {
         var p = properties[i];
-        if (!(p.name in seen)) {
+        var pLeaf = seen[p.name];
+        if (!pLeaf) {
           seen[p.name] = p;
           
           switch (p.name) {
             case "data": 
-              data = p; 
+              data = p;
               break;
 
             // DATUM - an object counterpart for each value of data.
@@ -1068,6 +1157,19 @@ pv.Mark.prototype.bind = function() {
               types[p.type].push(p); 
               break;
           }
+        } else if(pLeaf.type === 3){ // prop/fun
+            // Chain properties
+            //
+            // seen[name]-> (leaf).proto-> (B).proto-> (C).proto-> (root)
+            //                    .root-------------------------------^
+            var pRoot = pLeaf.root;
+            if(!pRoot){
+                pLeaf.proto = 
+                pLeaf.root  = p;
+            } else if(!pRoot.proto){
+                pRoot.proto = p;
+                pLeaf.root  = p;
+            }
         }
       }
     } while (mark = mark.proto);
@@ -1254,71 +1356,135 @@ pv.Mark.prototype.buildProperties = function(s, properties) {
   var stack = pv.Mark.stack;
   for (var i = 0, n = properties.length; i < n; i++) {
     var p = properties[i];
-    var v = p.value; // assume case 2 (constant)
     
-    switch (p.type) {
-      // copy already evaluated def value to each instance's scene
-      case 0:
-      case 1: 
-        v = this.scene.defs[p.name].value; 
-        break;
-          
-      case 3: 
-        v = v.apply(this, stack); 
-        break;
+    // repeated here, for performance
+    var v;
+    switch(p.type){
+        /* 2 most common first */
+        case 3:
+            var oldProtoProp = pv.propertyProto;
+            try{
+                pv.propertyProto = p.proto;
+                v = p.value.apply(this, stack);
+            } finally {
+                pv.propertyProto = oldProtoProp;
+            }
+            break;
+            
+        case 2: 
+            v = p.value;
+            break;
+      
+        // copy already evaluated def value to each instance's scene
+        case 0:
+        case 1:
+            v = this.scene.defs[p.name].value;
+            break;
     }
     
     s[p.name] = v;
   }
 };
 
+pv.Mark.prototype.delegate = function(dv, tag){
+    var protoProp = pv.propertyProto;
+    if(protoProp && (!tag || protoProp.tag === tag)){ 
+        var value = this.evalProperty(protoProp);
+        if(value !== undefined){
+            return value;
+        }
+    }
+    
+    return dv;
+};
+
+pv.Mark.prototype.hasDelegate = function(tag){
+    var protoProp = pv.propertyProto;
+    return !!protoProp && (!tag || protoProp.tag === tag);
+};
+
+pv.Mark.prototype.evalProperty = function(p){
+    switch(p.type){
+        /* 2 most common first */
+        case 3:
+            var oldProtoProp = pv.propertyProto;
+            try{
+                pv.propertyProto = p.proto;
+                return p.value.apply(this,  pv.Mark.stack);
+            } finally {
+                pv.propertyProto = oldProtoProp;
+            }
+        
+        case 2: return p.value;
+      
+        // copy already evaluated def value to each instance's scene
+        case 0:
+        case 1: return this.scene.defs[p.name].value; 
+    }
+};
+
 pv.Mark.prototype.buildPropertiesWithDepTracking = function(s, properties) {
     // Current bindings
     var net = this.binds.net;
-    var netIndex, newNetIndex, netDirtyProps, prevNetDirtyProps;
+    var netIndex, newNetIndex, netDirtyProps, prevNetDirtyProps, 
+        propertyIndexes, evaluatedProps;
     var stack = pv.Mark.stack;
     
     var n = properties.length;
     try{
         while(true){
             netDirtyProps = null;
-            
+            evaluatedProps = {};
             for (var i = 0 ; i < n; i++) {
                 var p = properties[i];
                 var name = p.name;
+                evaluatedProps[name] = true;
+                
                 // Only re-evaluate properties marked dirty on the previous iteration
                 if(!prevNetDirtyProps || prevNetDirtyProps[name]){
-                    var v = p.value; // assume case 2 (constant)
-                    
+                    var v;
                     switch (p.type) {
-                        // copy already evaluated def value to each instance's scene
-                        case 0:
-                        case 1:
-                            v = this.scene.defs[name].value;
-                            break;
-                            
                         case 3:
                             pv.propertyEval = p;
                             pv.propertyEvalNetIndex = netIndex = (net[name] || 0);
                             pv.propertyEvalDependencies = null;
                             
-                            v = v.apply(this, stack);
+                            // repeated here, for performance
+                            var oldProtoProp = pv.propertyProto;
+                            try{
+                                pv.propertyProto = p.proto;
+                                v = p.value.apply(this,  stack);
+                            } finally {
+                                pv.propertyProto = oldProtoProp;
+                            }
                             
                             newNetIndex = pv.propertyEvalNetIndex;
                             if(newNetIndex > netIndex){
-                                if(!netDirtyProps){
-                                    netDirtyProps = pv.propertyEvalDependencies;
-                                } else {
-                                    var evalDeps = pv.propertyEvalDependencies;
-                                    for(var depName in evalDeps){
-                                        if(evalDeps.hasOwnProperty(depName)){
-                                            netDirtyProps[depName] = true;
+                                var evalDeps = pv.propertyEvalDependencies;
+                                for(var depName in evalDeps){
+                                    // If dependent property has not yet been evaluated
+                                    // set it as dirty
+                                    if(evalDeps.hasOwnProperty(depName) &&
+                                       !evaluatedProps.hasOwnProperty(name)){
+                                        if(!netDirtyProps){
+                                            netDirtyProps = {};
                                         }
+                                        netDirtyProps[depName] = true;
                                     }
                                 }
                                 
                                 this.updateNet(p, newNetIndex);
                             }
+                            break;
+                        
+                        case 2:
+                            v = p.value;
+                            break;
+                            
+                        // copy already evaluated def value to each instance's scene
+                        case 0:
+                        case 1:
+                            v = this.scene.defs[name].value;
                             break;
                     }
                      
@@ -1333,9 +1499,19 @@ pv.Mark.prototype.buildPropertiesWithDepTracking = function(s, properties) {
             prevNetDirtyProps = netDirtyProps;
             
             // Sort properties on net index and repeat...
+            
+            propertyIndexes = pv.numerate(properties, function(p){ return p.name; });
+            
             properties.sort(function(pa, pb){
-                return pv.naturalOrder(net[pa.name] || 0, net[pb.name] || 0);
+                var comp = pv.naturalOrder(net[pa.name] || 0, net[pb.name] || 0);
+                if(!comp){
+                    // Force mantaining original order
+                    comp = pv.naturalOrder(propertyIndexes[pa.name], propertyIndexes[pb.name]);
+                }
+                return comp;
             });
+            
+            propertyIndexes = null;
         }
     } finally {
         pv.propertyEval = null;
@@ -1393,45 +1569,58 @@ pv.Mark.prototype.buildImplied = function(s) {
   var h = p.height ? s.height : 0;
 
   /* Compute implied width, right and left. */
-  var width = this.parent ? this.parent.width() : (w + l + r);
-  if (w == null) {
-    w = width - (r = r || 0) - (l = l || 0);
-  } else if (r == null) {
-    if (l == null) {
-      l = r = (width - w) / 2;
-    } else {
-      r = width - w - l;
-    }
-  } else if (l == null) {
-    l = width - w - r;
+  var instance;
+  var checked;
+  
+  if(w == null || r == null || l == null){
+      instance = this.parent ? this.parent.instance() : null;
+      checked = true;
+      var width = instance ? instance.width : (w + l + r);
+      if (w == null) {
+        w = width - (r = r || 0) - (l = l || 0);
+      } else if (r == null) {
+        if (l == null) {
+          l = r = (width - w) / 2;
+        } else {
+          r = width - w - l;
+        }
+      } else {
+        l = width - w - r;
+      }
   }
-
+  
   /* Compute implied height, bottom and top. */
-  var height = this.parent ? this.parent.height() : (h + t + b);
-  if (h == null) {
-    h = height - (t = t || 0) - (b = b || 0);
-  } else if (b == null) {
-    if (t == null) {
-      b = t = (height - h) / 2;
-    } else {
-      b = height - h - t;
-    }
-  } else if (t == null) {
-    t = height - h - b;
+  if (h == null || b == null || t == null) {
+      if(!checked){
+          instance = this.parent ? this.parent.instance() : null;
+      }
+      
+      var height = instance ? instance.height : (h + t + b);
+      if (h == null) {
+        h = height - (t = t || 0) - (b = b || 0);
+      } else if (b == null) {
+        if (t == null) {
+          b = t = (height - h) / 2;
+        } else {
+          b = height - h - t;
+        }
+      } else {
+        t = height - h - b;
+      }
   }
-
+  
   s.left = l;
   s.right = r;
   s.top = t;
   s.bottom = b;
 
   /* Only set width and height if they are supported by this mark type. */
-  if (p.width) s.width = w;
+  if (p.width ) s.width  = w;
   if (p.height) s.height = h;
 
   /* Set any null colors to pv.FillStyle.transparent. */
-  if (p.textStyle && !s.textStyle) s.textStyle = pv.FillStyle.transparent;
-  if (p.fillStyle && !s.fillStyle) s.fillStyle = pv.FillStyle.transparent;
+  if (p.textStyle   && !s.textStyle  ) s.textStyle   = pv.FillStyle.transparent;
+  if (p.fillStyle   && !s.fillStyle  ) s.fillStyle   = pv.FillStyle.transparent;
   if (p.strokeStyle && !s.strokeStyle) s.strokeStyle = pv.FillStyle.transparent;
 };
 
@@ -1656,6 +1845,10 @@ pv.Mark.dispatch = function(type, scene, index, event) {
       p = scene.parent, 
       l = m.$handlers[type];
   
+  if(m.root.animatingCount){
+      return true;
+  }
+  
   if (!l) {
       return p && pv.Mark.dispatch(type, p, scene.parentIndex, event);
   }
@@ -1681,6 +1874,91 @@ pv.Mark.dispatch = function(type, scene, index, event) {
   });
   
   return true;
+};
+
+/**
+ * Iterates through all instances that
+ * this mark has rendered.
+ */
+pv.Mark.prototype.eachInstance = function(fun, ctx){
+    var mark = this,
+        indexes = [],
+        breakInstance = {
+            isBreak: true,
+            visible: false,
+            datum: {}
+        };
+
+    /* Go up to the root and register our way back.
+     * The root mark never "looses" its scene.
+     */
+    while(mark.parent){
+        indexes.unshift(mark.childIndex);
+        mark = mark.parent;
+    }
+
+    // mark != null
+
+    // root scene exists if rendered at least once
+    var rootScene = mark.scene;
+    if(!rootScene){
+        return;
+    }
+    
+    var L = indexes.length;
+
+    function collectRecursive(scene, level, toScreen){
+        var isLastLevel = level === L, 
+            childIndex;
+        
+        if(!isLastLevel) {
+            childIndex = indexes[level];
+        }
+        
+        var D = scene.length;
+        if(D > 0){
+            for(var index = 0 ; index < D ; index++){
+                var instance = scene[index];
+                if(level === L){
+                    fun.call(ctx, scene[index], toScreen);
+                } else if(instance.visible) {
+                    var childScene = instance.children[childIndex];
+                    
+                    // Some nodes might have not been rendered?
+                    if(childScene){
+                        var childToScreen = toScreen
+                                                .times(instance.transform)
+                                                .translate(instance.left, instance.top);
+                        
+                        collectRecursive(childScene, level + 1, childToScreen);
+                    }
+                }
+            }
+        
+            fun.call(ctx, breakInstance, null);
+        }
+    }
+
+    collectRecursive(rootScene, 0, pv.Transform.identity);
+};
+
+pv.Mark.prototype.toScreenTransform = function(){
+    var t = pv.Transform.identity;
+    
+    if(this instanceof pv.Panel) {
+        t = t.translate(this.left(), this.top())
+             .times(this.transform());
+    }
+
+    var parent = this.parent; // TODO : this.properties.transform ? this : this.parent
+    if(parent){
+        do {
+            t = t.translate(parent.left(), parent.top())
+                 .times(parent.transform());
+        } while ((parent = parent.parent));
+    }
+    
+    return t;
 };
 
 pv.Mark.prototype.transition = function() {
