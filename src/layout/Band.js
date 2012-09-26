@@ -251,7 +251,8 @@ pv.Layout.Band.prototype.defaults = new pv.Layout.Band()
     .orient("bottom-left")
     .layout("grouped")
     .yZero(0)
-    .layers([[]]);
+    .layers([[]])
+    ;
 
 /** @private */ pv.Layout.Band.prototype.$bx =
 /** @private */ pv.Layout.Band.prototype.$bw =
@@ -495,9 +496,10 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
 
         if(bDiffControl){
             if(Math.abs(bDiffControl) === 1){
+                var yOffset0 = yOffset;
                 yOffset = resultPos.yOffset;
                 if(resultNeg){
-                    yOffset -= resultNeg.yOffset;
+                    yOffset -= (yOffset0 - resultNeg.yOffset);
                 }
             } // otherwise leave offset untouched
         } else { // ensure zero
@@ -506,18 +508,18 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
     }
 };
 
-pv.Layout.Band.prototype._layoutItemsOfDir = function(dir, invertDir, items, vertiMargin, bx, yOffset){
+pv.Layout.Band.prototype._layoutItemsOfDir = function(stackDir, invertDir, items, vertiMargin, bx, yOffset){
     var existsOtherDir = false,
         vertiMargin2 = vertiMargin / 2,
-        efItemDir = (invertDir ? -dir : dir),
+        efDir = (invertDir ? -stackDir : stackDir),
         reverseLayers = invertDir;
     
     for (var l = 0, L = items.length ; l < L ; l+=1) {
         var item = items[reverseLayers ? (L -l -1) : l];
-
-        if(item.dir === dir){
+        if(item.dir === stackDir){
             var h = item.h || 0; // null -> 0
-            if(efItemDir > 0){
+            
+            if(efDir > 0){
                 item.y = yOffset + vertiMargin2;
                 yOffset += h;
             } else {

@@ -1,6 +1,6 @@
 pv.SvgScene.minBarWidth = 1;
 pv.SvgScene.minBarHeight = 1;
-pv.SvgScene.minBarLineWidth = 1;
+pv.SvgScene.minBarLineWidth = 0.2;
 
 pv.SvgScene.bar = function(scenes) {
   var e = scenes.$g.firstChild;
