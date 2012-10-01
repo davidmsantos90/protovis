@@ -65,10 +65,10 @@
      * <angle-number> := <number>[deg] 
      * 
      * examples: 
-     * "bottom, white to top, black"
+     * "bottom~white to top~black"
      *    linear-gradient(to top, white, black) 
      *   
-     * "bottom-right, white to top-left, black" 
+     * "bottom-right~white to top-left~black" 
      *    linear-gradient(to top left, white, black)
      */
     function parseLinearGradient(text) {

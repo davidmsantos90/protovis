@@ -371,6 +371,10 @@ pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
 
   var gradient_definition_id = 0;
 
+  function zeroRounding(x){
+      return Math.abs(x) <= 1e-12 ? 0 : x;
+  }
+  
   pv.SvgScene.addFillStyleDefinition = function(scenes, fill) {
     var isLinear = fill.type === 'lineargradient';
     if (isLinear || fill.type === 'radialgradient') {
@@ -396,6 +400,11 @@ pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
         elem = defs.appendChild(this.create(isLinear ? "linearGradient" : "radialGradient"));
         elem.setAttribute("id",    instId);
         elem.setAttribute("class", className);
+        // Use the default: objectBoundingBox units
+        // Coordinates are %s of the width and height of the BBox
+        // 0,0 = top, left
+        // 1,1 = bottom, right
+        
 //       elem.setAttribute("gradientUnits","userSpaceOnUse");
         
         if(isLinear){
@@ -412,17 +421,18 @@ pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
           var dirx = radius * Math.cos(svgAngle);
           var diry = radius * Math.sin(svgAngle);
           
-          var x1 = 0.5 - dirx;
-          var y1 = 0.5 - diry;
-          var x2 = 0.5 + dirx;
-          var y2 = 0.5 + diry;
+          var x1 = zeroRounding(0.5 - dirx);
+          var y1 = zeroRounding(0.5 - diry);
+          var x2 = zeroRounding(0.5 + dirx);
+          var y2 = zeroRounding(0.5 + diry);
           
           elem.setAttribute("x1", x1);
           elem.setAttribute("y1", y1);
           elem.setAttribute("x2", x2);
           elem.setAttribute("y2", y2);
         } else {
-          // Currently using defaults
+          // Currently using defaults cx = cy = r = 0.5
+            
 //          elem.setAttribute("cx", fill.cx);
 //          elem.setAttribute("cy", fill.cy);
 //          elem.setAttribute("r",  fill.r );
