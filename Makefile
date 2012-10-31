@@ -120,10 +120,6 @@ protovis-d3.3.js: $(JS_FILES)
 protovis-r3.3.js: $(JS_FILES)
 
 %-d3.3.js: Makefile
-	grep '	' -Hn $(filter %.js,$^) && echo "ERROR: tab" && exit 1 || true
-	grep '
-' -Hn $(filter %.js,$^) && echo "ERROR: dos newline" && exit 1 || true
-	grep ' $$' -Hn $(filter %.js,$^) && echo "ERROR: trailing space" && exit 1 || true
 	rm -f $@
 	echo "// $(shell git rev-parse HEAD)" >> $@
 	cat $(filter %.js,$^) >> $@

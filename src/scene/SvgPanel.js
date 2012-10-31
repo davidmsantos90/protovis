@@ -168,8 +168,14 @@ pv.SvgScene.eachChild = function(scenes, i, fun, ctx){
     if(scenes.mark.zOrderChildCount){
         var sorted = scenes[i].children.slice(0);
         sorted.sort(function(scenes1, scenes2){ // sort ascending
-            return scenes1.mark._zOrder - scenes2.mark._zOrder;
+            var compare = scenes1.mark._zOrder - scenes2.mark._zOrder;
+            if(compare === 0){
+                // Preserve original order for same zOrder childs
+                compare = scenes1.childIndex - scenes2.childIndex;
+            }
+            return compare;
         });
+        
         sorted.forEach(fun, ctx || this);
     } else {
         scenes[i].children.forEach(fun, ctx || this);

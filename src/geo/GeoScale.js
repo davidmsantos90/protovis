@@ -296,11 +296,9 @@ pv.Geo.scale = function(p) {
    * @returns {pv.Geo.scale} a view of this scale by the specified accessor
    * function.
    */
-  scale.by = function(f) {
-    function by() { return scale(f.apply(this, arguments)); }
-    for (var method in scale) by[method] = scale[method];
-    return by;
-  };
+  
+  pv.copyOwn(scale, pv.Scale.common);
+  
 
   if (arguments.length) scale.projection(p);
   return scale;

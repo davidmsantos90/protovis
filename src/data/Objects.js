@@ -76,3 +76,25 @@ pv.dict = function(keys, f) {
   }
   return m;
 };
+
+/** @private */
+pv.hasOwnProp = Object.prototype.hasOwnProperty;
+
+/**
+ * Copies own properties of <tt>b</tt> into <tt>a</tt>.
+ *
+ * @param {object} a the target object.
+ * @param {object} [b] the source object.
+ * @returns {object} the target object.
+ */
+pv.copyOwn = function(a, b){
+  if(b){
+    var hop = pv.hasOwnProp;
+      for(var p in b){
+        if(hop.call(b, p)){
+          a[p] = b[p];
+        }
+    }
+  }
+  return a;
+};

@@ -84,3 +84,30 @@ pv.Scale.interpolator = function(start, end) {
  * @param {function} f an accessor function.
  * @returns {pv.Scale} a view of this scale by the specified accessor function.
  */
+
+pv.Scale.common = {
+    by: function(f) {
+      var scale = this;
+      function by() { return scale(f.apply(scale, arguments)); }
+      for (var method in scale) by[method] = scale[method];
+      return by;
+    },
+      
+    by1: function(f) {
+      var scale = this;
+      function by1(x) { return scale(f.call(scale, x)); }
+      for (var method in scale) by1[method] = scale[method];
+      return by1;
+    },
+    
+    transform: function(t){
+      var scale = this;
+      function transfScale(){ 
+        return t.call(scale, scale.apply(scale, arguments)); 
+      }
+        
+      for (var method in scale) transfScale[method] = scale[method];
+        
+      return transfScale;
+    }
+};
