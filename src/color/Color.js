@@ -116,6 +116,8 @@ pv.Color = function(color, opacity) {
    * @type number
    */
   this.opacity = opacity;
+  
+  this.key = "solid " + color + " alpha(" + opacity + ")";
 };
 
 /**
