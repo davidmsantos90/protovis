@@ -88,26 +88,26 @@ pv.Scale.interpolator = function(start, end) {
 pv.Scale.common = {
     by: function(f) {
       var scale = this;
-      function by() { return scale(f.apply(scale, arguments)); }
+      function by() { return scale(f.apply(this, arguments)); }
       for (var method in scale) by[method] = scale[method];
       return by;
     },
       
     by1: function(f) {
       var scale = this;
-      function by1(x) { return scale(f.call(scale, x)); }
+      function by1(x) { return scale(f.call(this, x)); }
       for (var method in scale) by1[method] = scale[method];
       return by1;
     },
     
     transform: function(t){
       var scale = this;
-      function transfScale(){ 
-        return t.call(scale, scale.apply(scale, arguments)); 
+      function transfScale(){
+        return t.call(this, scale.apply(scale, arguments)); 
       }
         
       for (var method in scale) transfScale[method] = scale[method];
-        
+
       return transfScale;
     }
 };

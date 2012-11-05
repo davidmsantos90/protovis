@@ -30,7 +30,7 @@ pv.Line.prototype = pv.extend(pv.Mark)
     .property("strokeStyle", pv.fillStyle)
     .property("strokeDasharray", String)
     .property("fillStyle", pv.fillStyle)
-    .property("segmented", Boolean)
+    .property("segmented", pv.Area.castSegmented)
     .property("interpolate", String)
     .property("eccentricity", Number)
     .property("tension", Number);

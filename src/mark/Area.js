@@ -23,6 +23,23 @@ pv.Area = function() {
   pv.Mark.call(this);
 };
 
+pv.Area.castSegmented = function(v){
+  if(!v){
+    return '';
+  }
+  
+  switch(v){
+    case 'smart':
+    case 'full':
+      break;
+    
+    default:
+      v = 'full';
+  }
+  
+  return v;
+};
+
 pv.Area.prototype = pv.extend(pv.Mark)
     .property("width", Number)
     .property("height", Number)
@@ -33,7 +50,7 @@ pv.Area.prototype = pv.extend(pv.Mark)
     .property("strokeDasharray", String)
     .property("strokeStyle", pv.fillStyle)
     .property("fillStyle", pv.fillStyle)
-    .property("segmented", Boolean)
+    .property("segmented", pv.Area.castSegmented)
     .property("interpolate", String)
     .property("tension", Number);
 

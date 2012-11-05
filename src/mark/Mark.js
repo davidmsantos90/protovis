@@ -1729,6 +1729,7 @@ pv.Mark.prototype.event = function(type, handler) {
       handlers = [handlers, handler];
   }
   
+  this.$hasHandlers = true;
   this.$handlers[type] = handlers;
   return this;
 };

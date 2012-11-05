@@ -124,7 +124,7 @@
             case 1: return new pv.FillStyle.Solid(stops[0].color, 1);
         }
 
-        return new pv.FillStyle.LinearGradient(angle, stops);
+        return new pv.FillStyle.LinearGradient(angle, stops, text);
     }
 
     /*
@@ -157,7 +157,7 @@
             case 1: return new pv.FillStyle.Solid(stops[0].color, 1);
         }
 
-        return new pv.FillStyle.RadialGradient(50, 50, stops);
+        return new pv.FillStyle.RadialGradient(50, 50, stops, text);
     }
 
     function parseText(text){
@@ -189,7 +189,7 @@
     
     /*
      * COLOR STOPS 
-     * <color-stop> := <color-spec> [<percentage-offset>] 
+     * <color-stop> := <color-spec> [<percentage-position>] 
      * 
      * <percentage-position> := <number>% 
      * 
@@ -259,8 +259,8 @@
             }
         }
 
-        if (stops.length >= 2
-                && (minOffsetPercent < 0 || maxOffsetPercent > 100)) {
+        if (stops.length >= 2 && 
+            (minOffsetPercent < 0 || maxOffsetPercent > 100)) {
             // Normalize < 0 and > 100 values, cause SVG does not support them
             // TODO: what about the interpretation of an end < 100 or begin > 0?
             var colorDomain = [];
@@ -270,8 +270,9 @@
                 colorRange.push(stop.color);
             });
 
-            var colorScale = pv.scale.linear().domain(colorDomain).range(
-                    colorRange);
+            var colorScale = pv.scale.linear()
+                .domain(colorDomain)
+                .range(colorRange);
 
             if (minOffsetPercent < 0) {
                 while (stops.length && stops[0].offset <= 0) {
@@ -304,6 +305,7 @@
     
     var FillStyle = pv.FillStyle = function(type) {
         this.type = type;
+        this.key  = type;
     };
     
     /* 
@@ -328,7 +330,6 @@
      * @extends pv.FillStyle
      */
     var Solid = pv.FillStyle.Solid = function(color, opacity) {
-        
         FillStyle.call(this, 'solid');
         
         if(color.rgb){
@@ -338,6 +339,8 @@
             this.color   = color;
             this.opacity = opacity;
         }
+          
+        this.key += " " + this.color + " alpha(" + this.opacity + ")";
     };
     
     Solid.prototype = pv.extend(pv.FillStyle);
@@ -370,6 +373,16 @@
             // Default color for renderers that do not support gradients
             this.color = stops[0].color.color;
         }
+        
+        this.key +=  
+          " stops(" + 
+          stops
+          .map(function(stop){
+            var color = stop.color;
+            return color.color + " alpha(" + color.opacity + ") at(" + stop.offset + ")"; 
+          })
+          .join(", ") + 
+          ")";
     };
     
     Gradient.prototype = pv.extend(pv.FillStyle);
@@ -402,6 +415,7 @@
         Gradient.call(this, 'lineargradient', stops);
         
         this.angle = angle;
+        this.key +=  " angle(" + angle + ")";
     };
 
     LinearGradient.prototype = pv.extend(Gradient);
@@ -417,11 +431,12 @@
         
         this.cx = cx;
         this.cy = cy;
+        this.key +=  " center(" + cx + "," + cy + ")";
     };
     
     RadialGradient.prototype = pv.extend(Gradient);
     
     RadialGradient.prototype._clone = function(stops){
-        return new RadialGradient(this.cx, this.cy, stops);
+        return new RadialGradient(this.cx, this.cy);
     };
 })();

@@ -250,7 +250,7 @@ pv.SvgScene.removeSiblings = function(e) {
   while (e) {
     var n = e.nextSibling;
     // don't remove a sibling <defs> node
-    if (e.nodeName != 'defs') {
+    if (e.nodeName !== 'defs') {
       e.parentNode.removeChild(e);
     }
     e = n;
@@ -376,6 +376,10 @@ pv.SvgScene.removeFillStyleDefinitions = function(scenes) {
   }
   
   pv.SvgScene.addFillStyleDefinition = function(scenes, fill) {
+    if(!fill.type || fill.type === 'solid'){
+      return;
+    }
+    
     var isLinear = fill.type === 'lineargradient';
     if (isLinear || fill.type === 'radialgradient') {
       

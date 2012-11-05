@@ -41,7 +41,7 @@ vis.add(pv.Line)
     .left(function(d) x(d.x))
     .bottom(function(d) y(d.y))
     .interpolate("basis")
-    .segmented(true)
+    .segmented('smart')
     .strokeStyle(function() "hsl(" + this.index * 36 + ",50,50)")
     .lineWidth(function() this.index * 2);
 

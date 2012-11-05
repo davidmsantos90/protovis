@@ -46,10 +46,10 @@ pv.SvgScene.pathBasis = (function() {
         b1 = weight(basis[1], p0, p1, p2, p3),
         b2 = weight(basis[2], p0, p1, p2, p3),
         b3 = weight(basis[3], p0, p1, p2, p3);
-    return "M" + b0.x + "," + b0.y
-         + "C" + b1.x + "," + b1.y
-         + "," + b2.x + "," + b2.y
-         + "," + b3.x + "," + b3.y;
+    return ["M" + b0.x + "," + b0.y, 
+            "C" + b1.x + "," + b1.y + "," + 
+                  b2.x + "," + b2.y + "," + 
+                  b3.x + "," + b3.y];
   };
 
   return convert;
@@ -62,15 +62,25 @@ pv.SvgScene.pathBasis = (function() {
  *
  * @param points the array of points.
  */
-pv.SvgScene.curveBasis = function(points) {
-  if (points.length <= 2) return "";
+pv.SvgScene.curveBasis = function(points, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1; 
+  } else {
+    L = to - from + 1;
+  }
+  
+  if (L <= 2) return "";
+  
   var path = "",
-      p0 = points[0],
+      p0 = points[from],
       p1 = p0,
       p2 = p0,
-      p3 = points[1];
+      p3 = points[from + 1];
   path += this.pathBasis(p0, p1, p2, p3);
-  for (var i = 2; i < points.length; i++) {
+  for (var i = from + 2 ; i <= to ; i++) {
     p0 = p1;
     p1 = p2;
     p2 = p3;
@@ -92,21 +102,33 @@ pv.SvgScene.curveBasis = function(points) {
  *
  * @param points the array of points.
  */
-pv.SvgScene.curveBasisSegments = function(points) {
-  if (points.length <= 2) return "";
+pv.SvgScene.curveBasisSegments = function(points, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1; 
+  } else {
+    L = to - from + 1;
+  }
+  
+  if (L <= 2) return ""; // BUG?
+  
   var paths = [],
-      p0 = points[0],
+      p0 = points[from],
       p1 = p0,
       p2 = p0,
-      p3 = points[1],
+      p3 = points[from + 1],
       firstPath = this.pathBasis.segment(p0, p1, p2, p3);
 
   p0 = p1;
   p1 = p2;
   p2 = p3;
-  p3 = points[2];
-  paths.push(firstPath + this.pathBasis(p0, p1, p2, p3)); // merge first & second path
-  for (var i = 3; i < points.length; i++) {
+  p3 = points[from + 2];
+  firstPath[1] += this.pathBasis(p0, p1, p2, p3); // merge first & second path
+  paths.push(firstPath);
+  
+  for (var i = from + 3; i <= to ; i++) {
     p0 = p1;
     p1 = p2;
     p2 = p3;
@@ -115,7 +137,10 @@ pv.SvgScene.curveBasisSegments = function(points) {
   }
 
   // merge last & second-to-last path
-  paths.push(this.pathBasis.segment(p1, p2, p3, p3) + this.pathBasis(p2, p3, p3, p3));
+  var lastPath = this.pathBasis.segment(p1, p2, p3, p3);
+  lastPath[1] += this.pathBasis(p2, p3, p3, p3);
+  paths.push(lastPath);
+  
   return paths;
 };
 
@@ -123,52 +148,68 @@ pv.SvgScene.curveBasisSegments = function(points) {
  * @private Interpolates the given points with respective tangents using the cubic
  * Hermite spline interpolation. If points.length == tangents.length then a regular
  * Hermite interpolation is performed, if points.length == tangents.length + 2 then
- * the first and last segments are filled in with cubic bazier segments.
+ * the first and last segments are filled in with cubic bezier segments.
  * Returns an SVG path without the leading M instruction to allow path appending.
  *
  * @param points the array of points.
  * @param tangents the array of tangent vectors.
  */
-pv.SvgScene.curveHermite = function(points, tangents) {
-  if (tangents.length < 1
-      || (points.length != tangents.length
-      && points.length != tangents.length + 2)) return "";
-  var quad = points.length != tangents.length,
+pv.SvgScene.curveHermite = function(points, tangents, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1;
+  } else {
+    L = to - from + 1;
+  }
+  
+  var T = tangents.length;
+  if (T < 1 || (L !== T && L !== T + 2)) {
+    return "";
+  }
+  
+  var quad = L !== T,
       path = "",
-      p0 = points[0],
-      p = points[1],
+      p0 = points[from],
+      p  = points[from + 1],
       t0 = tangents[0],
-      t = t0,
-      pi = 1;
+      t  = t0,
+      pi = from + 1;
 
   if (quad) {
-    path += "Q" + (p.left - t0.x * 2 / 3) + ","  + (p.top - t0.y * 2 / 3)
-        + "," + p.left + "," + p.top;
-    p0 = points[1];
-    pi = 2;
+    path += "Q" + 
+            (p.left - t0.x * 2 / 3) + "," + (p.top  - t0.y * 2 / 3) + "," + 
+            p.left + "," + p.top;
+    p0 = points[from + 1];
+    pi = from + 2;
   }
 
-  if (tangents.length > 1) {
+  if (T > 1) {
     t = tangents[1];
     p = points[pi];
     pi++;
-    path += "C" + (p0.left + t0.x) + "," + (p0.top + t0.y)
-        + "," + (p.left - t.x) + "," + (p.top - t.y)
-        + "," + p.left + "," + p.top;
-    for (var i = 2; i < tangents.length; i++, pi++) {
+    path += "C" + 
+            (p0.left + t0.x) + "," + (p0.top  + t0.y) + "," + 
+            (p.left  -  t.x) + "," + (p.top   -  t.y) + "," + 
+             p.left + "," + p.top;
+    
+    for (var i = 2 ; i < T ; i++, pi++) {
       p = points[pi];
       t = tangents[i];
-      path += "S" + (p.left - t.x) + "," + (p.top - t.y)
-          + "," + p.left + "," + p.top;
+      path += "S" + 
+              (p.left - t.x) + "," + (p.top - t.y) + "," + 
+              p.left + "," + p.top;
     }
   }
 
   if (quad) {
     var lp = points[pi];
-    path += "Q" + (p.left + t.x * 2 / 3) + ","  + (p.top + t.y * 2 / 3) + ","
-        + lp.left + "," + lp.top;
+    path += "Q" + 
+            (p.left + t.x * 2 / 3) + ","  + (p.top + t.y * 2 / 3) + "," + 
+            lp.left + "," + lp.top;
   }
-
+  
   return path;
 };
 
@@ -179,42 +220,54 @@ pv.SvgScene.curveHermite = function(points, tangents) {
  * @param points the array of points.
  * @param tangents the array of tangent vectors.
  */
-pv.SvgScene.curveHermiteSegments = function(points, tangents) {
-  if (tangents.length < 1
-      || (points.length != tangents.length
-      && points.length != tangents.length + 2)) return [];
-  var quad = points.length != tangents.length,
+pv.SvgScene.curveHermiteSegments = function(points, tangents, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1;
+  } else {
+    L = to - from + 1;
+  }
+  
+  var T = tangents.length;
+  if (T < 1 || (L !== T && L !== T + 2)) {
+    return [];
+  }
+  
+  var quad = L !== T,
       paths = [],
-      p0 = points[0],
+      p0 = points[from],
       p = p0,
       t0 = tangents[0],
-      t = t0,
-      pi = 1;
+      t  = t0,
+      pi = from + 1;
 
   if (quad) {
-    p = points[1];
-    paths.push("M" + p0.left + "," + p0.top
-        + "Q" + (p.left - t.x * 2 / 3) + "," + (p.top - t.y * 2 / 3)
-        + "," + p.left + "," + p.top);
-    pi = 2;
+    p = points[from + 1];
+    paths.push(["M" + p0.left + "," + p0.top, 
+                "Q" +  (p.left - t.x * 2 / 3) + "," + 
+                       (p.top  - t.y * 2 / 3) + "," + 
+                        p.left + "," + p.top]);
+    pi = from + 2;
   }
 
-  for (var i = 1; i < tangents.length; i++, pi++) {
+  for (var i = 1; i < T; i++, pi++) {
     p0 = p;
     t0 = t;
     p = points[pi];
     t = tangents[i];
-    paths.push("M" + p0.left + "," + p0.top
-        + "C" + (p0.left + t0.x) + "," + (p0.top + t0.y)
-        + "," + (p.left - t.x) + "," + (p.top - t.y)
-        + "," + p.left + "," + p.top);
+    paths.push(["M" + p0.left + "," + p0.top, 
+                "C" + (p0.left + t0.x) + "," + (p0.top + t0.y) + "," + 
+                      (p.left  - t.x ) + "," + (p.top  -  t.y) + "," + 
+                       p.left + "," + p.top]);
   }
 
   if (quad) {
     var lp = points[pi];
-    paths.push("M" + p.left + "," + p.top
-        + "Q" + (p.left + t.x * 2 / 3) + ","  + (p.top + t.y * 2 / 3) + ","
-        + lp.left + "," + lp.top);
+    paths.push(["M" + p.left + "," + p.top,  
+                "Q" + (p.left  + t.x * 2 / 3) + ","  + (p.top + t.y * 2 / 3) + "," + 
+                       lp.left + "," + lp.top]);
   }
 
   return paths;
@@ -228,14 +281,23 @@ pv.SvgScene.curveHermiteSegments = function(points, tangents) {
  * @param points the array of points.
  * @param tension the tension of hte cardinal spline.
  */
-pv.SvgScene.cardinalTangents = function(points, tension) {
+pv.SvgScene.cardinalTangents = function(points, tension, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1;
+  } else {
+    L = to - from + 1;
+  }
+  
   var tangents = [],
       a = (1 - tension) / 2,
-      p0 = points[0],
-      p1 = points[1],
-      p2 = points[2];
+      p0 = points[from],
+      p1 = points[from + 1],
+      p2 = points[from + 2];
 
-  for (var i = 3; i < points.length; i++) {
+  for (var i = from + 3 ; i <= to ; i++) {
     tangents.push({x: a * (p2.left - p0.left), y: a * (p2.top - p0.top)});
     p0 = p1;
     p1 = p2;
@@ -243,6 +305,7 @@ pv.SvgScene.cardinalTangents = function(points, tension) {
   }
 
   tangents.push({x: a * (p2.left - p0.left), y: a * (p2.top - p0.top)});
+  
   return tangents;
 };
 
@@ -252,11 +315,20 @@ pv.SvgScene.cardinalTangents = function(points, tension) {
  * appending.
  *
  * @param points the array of points.
- * @param tension the tension of hte cardinal spline.
+ * @param tension the tension of the cardinal spline.
  */
-pv.SvgScene.curveCardinal = function(points, tension) {
-  if (points.length <= 2) return "";
-  return this.curveHermite(points, this.cardinalTangents(points, tension));
+pv.SvgScene.curveCardinal = function(points, tension, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1;
+  } else {
+    L = to - from + 1;
+  }
+  
+  if (L <= 2) return "";
+  return this.curveHermite(points, this.cardinalTangents(points, tension, from, to), from, to);
 };
 
 /**
@@ -264,11 +336,20 @@ pv.SvgScene.curveCardinal = function(points, tension) {
  * Returns an array of path strings.
  *
  * @param points the array of points.
- * @param tension the tension of hte cardinal spline.
+ * @param tension the tension of the cardinal spline.
  */
-pv.SvgScene.curveCardinalSegments = function(points, tension) {
-  if (points.length <= 2) return "";
-  return this.curveHermiteSegments(points, this.cardinalTangents(points, tension));
+pv.SvgScene.curveCardinalSegments = function(points, tension, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1;
+  } else {
+    L = to - from + 1;
+  }
+  
+  if (L <= 2) return ""; // BUG?
+  return this.curveHermiteSegments(points, this.cardinalTangents(points, tension, from, to), from, to);
 };
 
 /**
@@ -277,30 +358,41 @@ pv.SvgScene.curveCardinalSegments = function(points, tension) {
  *
  * @param points the array of points.
  */
-pv.SvgScene.monotoneTangents = function(points) {
+pv.SvgScene.monotoneTangents = function(points, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1;
+  } else {
+    L = to - from + 1;
+  }
+  
   var tangents = [],
       d = [],
       m = [],
       dx = [],
-      k = 0;
+      k = 0,
+      j;
 
   /* Compute the slopes of the secant lines between successive points. */
-  for (k = 0; k < points.length-1; k++) {
-    d[k] = (points[k+1].top - points[k].top)/(points[k+1].left - points[k].left);
+  for (k = 0 ; k < L - 1 ; k++) {
+    j = from + k;
+    d[k] = (points[j+1].top - points[j].top)/(points[j+1].left - points[j].left);
   }
 
   /* Initialize the tangents at every point as the average of the secants. */
   m[0] = d[0];
-  dx[0] = points[1].left - points[0].left;
-  for (k = 1; k < points.length - 1; k++) {
+  dx[0] = points[from + 1].left - points[from].left;
+  for (k = 1, j = from + k ; k < L - 1 ; k++, j++) {
     m[k] = (d[k-1]+d[k])/2;
-    dx[k] = (points[k+1].left - points[k-1].left)/2;
+    dx[k] = (points[j+1].left - points[j-1].left)/2;
   }
   m[k] = d[k-1];
-  dx[k] = (points[k].left - points[k-1].left);
+  dx[k] = (points[j].left - points[j-1].left);
 
   /* Step 3. Very important, step 3. Yep. Wouldn't miss it. */
-  for (k = 0; k < points.length - 1; k++) {
+  for (k = 0; k < L - 1; k++) {
     if (d[k] == 0) {
       m[ k ] = 0;
       m[k+1] = 0;
@@ -308,7 +400,7 @@ pv.SvgScene.monotoneTangents = function(points) {
   }
 
   /* Step 4 + 5. Out of 5 or more steps. */
-  for (k = 0; k < points.length - 1; k++) {
+  for (k = 0; k < L - 1; k++) {
     if ((Math.abs(m[k]) < 1e-5) || (Math.abs(m[k+1]) < 1e-5)) continue;
     var ak = m[k] / d[k],
         bk = m[k + 1] / d[k],
@@ -321,7 +413,7 @@ pv.SvgScene.monotoneTangents = function(points) {
   }
 
   var len;
-  for (var i = 0; i < points.length; i++) {
+  for (var i = 0 ; i < L ; i++) {
     len = 1 + m[i] * m[i]; // pv.vector(1, m[i]).norm().times(dx[i]/3)
     tangents.push({x: dx[i] / 3 / len, y: m[i] * dx[i] / 3 / len});
   }
@@ -336,9 +428,18 @@ pv.SvgScene.monotoneTangents = function(points) {
  *
  * @param points the array of points.
  */
-pv.SvgScene.curveMonotone = function(points) {
-  if (points.length <= 2) return "";
-  return this.curveHermite(points, this.monotoneTangents(points));
+pv.SvgScene.curveMonotone = function(points, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1;
+  } else {
+    L = to - from + 1;
+  }
+  
+  if (L <= 2) return "";
+  return this.curveHermite(points, this.monotoneTangents(points, from, to), from, to);
 };
 
 /**
@@ -348,7 +449,16 @@ pv.SvgScene.curveMonotone = function(points) {
  *
  * @param points the array of points.
  */
-pv.SvgScene.curveMonotoneSegments = function(points) {
-  if (points.length <= 2) return "";
-  return this.curveHermiteSegments(points, this.monotoneTangents(points));
+pv.SvgScene.curveMonotoneSegments = function(points, from, to) {
+  var L;
+  if(from == null){
+    L = points.length;
+    from = 0;
+    to   = L -1;
+  } else {
+    L = to - from + 1;
+  }
+  
+  if (L <= 2) return ""; // BUG?
+  return this.curveHermiteSegments(points, this.monotoneTangents(points, from, to), from, to);
 };
