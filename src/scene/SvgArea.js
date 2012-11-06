@@ -294,19 +294,20 @@ pv.SvgScene.areaSegmentStraightPaths = function(scenes, i, j){
         sl = scenes[j - 1]; // bottom line
     switch(si.interpolate){
       case 'step-before':
-        pi.push("V" + sk.top);
-        pj.push("H" + (sl.left + sl.width));
+        pi.push("V" + sk.top + "H" + sk.left);
+        //pj.push("H" + (sl.left + sl.width));
         break;
       
       case 'step-after':
-        pi.push("H" + sk.left);
-        pj.push("V" + (sl.top + sl.height));
+        pi.push("H" + sk.left + "V" + sk.top);
+        //pj.push("V" + (sl.top + sl.height));
         break;
         
      default: // linear
        pi.push("L" +  sk.left + "," + sk.top);
-       pj.push("L" + (sl.left + sl.width) + "," + (sl.top + sl.height));
     }
+    
+    pj.push("L" + (sl.left + sl.width) + "," + (sl.top + sl.height));
     
     pathsT.push(pi);
     pathsB.push(pj);

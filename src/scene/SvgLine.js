@@ -645,8 +645,6 @@ pv.SvgScene.lineAreaSceneKey = function(s, k){
 pv.SvgScene.isSceneVisible = function(s){
   return s.visible && 
         (s.fillStyle.opacity > 0 || s.strokeStyle.opacity > 0);
-//        &&
-//        (!('width' in s) || s.width || s.height);
 };
 
 pv.SvgScene.equalSceneKeys = function(ka, kb){
@@ -657,77 +655,3 @@ pv.SvgScene.equalSceneKeys = function(ka, kb){
   }
   return true;
 };
-
-
-pv.SvgScene.lineAreaParts = function(elm, scenes, lineAreaPart) {
-  var count = scenes.length;
-  
-  var ki = [];
-  var kf = [];
-  
-  var i = 0;
-  while(i < count){
-    
-    // Find the INITIAL scene
-    var si = scenes[i];
-    if(!this.isSceneVisible(si)){
-      i++;
-      continue;
-    }
-    
-    // Compute its line-area-key
-    this.lineAreaSceneKey(si, ki);
-    
-    // Find the FINAL scene
-    // the "i" in which to start the next part
-    var i2;
-    var f = i;
-    while(true){
-      var f2 = f + 1;
-      if(f2 >= count){
-        // No next scene
-        // Connect i to f (possibly, i === f)
-        // Continue with f + 1, to make it stop...
-        i2 = f2;
-        break;
-      }
-      
-      var sf = scenes[f2];
-      if(!this.isSceneVisible(sf)){
-        // f + 1 exists but is NOT visible
-        // Connect i to f (possibly, i === f)
-        // Continue with f + 2
-        i2 = f2 + 1;
-        break;
-      }
-      
-      // Accept f + 1 as final point
-      // f > i
-      f = f2;
-      
-      this.lineAreaSceneKey(sf, kf);
-      
-      if(!this.equalSceneKeys(ki, kf)){
-        // Break path due to != path properties
-        // Connect i to f
-        // Continue with f
-        i2 = f;
-        break;
-      }
-    }
-    
-    elm = lineAreaPart.call(this, elm, scenes, i, f);
-    
-    // next part
-    i = i2;
-  }
-  
-  return elm;
-};
-
-/*
-pv.SvgScene.hasEvents = function(s){
-  var events = s.events;
-  return events && events !== 'none';
-};
-*/
