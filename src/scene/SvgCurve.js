@@ -378,17 +378,18 @@ pv.SvgScene.monotoneTangents = function(points, from, to) {
   /* Compute the slopes of the secant lines between successive points. */
   for (k = 0 ; k < L - 1 ; k++) {
     j = from + k;
-    d[k] = (points[j+1].top - points[j].top)/(points[j+1].left - points[j].left);
+    var den = points[j+1].left - points[j].left;
+    d[k] = Math.abs(den) <= 1e-12 ? 0 : (points[j+1].top - points[j].top)/den;
   }
 
   /* Initialize the tangents at every point as the average of the secants. */
   m[0] = d[0];
   dx[0] = points[from + 1].left - points[from].left;
   for (k = 1, j = from + k ; k < L - 1 ; k++, j++) {
-    m[k] = (d[k-1]+d[k])/2;
+    m[k]  = (d[k-1]+d[k])/2;
     dx[k] = (points[j+1].left - points[j-1].left)/2;
   }
-  m[k] = d[k-1];
+  m[k]  = d[k-1];
   dx[k] = (points[j].left - points[j-1].left);
 
   /* Step 3. Very important, step 3. Yep. Wouldn't miss it. */

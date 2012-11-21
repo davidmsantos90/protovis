@@ -189,7 +189,7 @@ pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
           var attrs = Object.create(attrsBase);
           attrs['pointer-events'] = events;
           attrs.cursor = s.cursor;
-          attrs.d = path;
+          attrs.d = path.join("");
           
           elm = this.expect(elm, 'path', scenes, i, attrs);
           
@@ -505,6 +505,8 @@ pv.SvgScene.lineJoinPaths = function(paths, from, to) {
  * when neighbour scenes are invisible. 
  */
 pv.SvgScene.lineAreaDotAlone = function(elm, scenes, i) {
+  return elm;
+  /*
   var s = scenes[i];
   var s2;
   if(i > 0){
@@ -528,7 +530,7 @@ pv.SvgScene.lineAreaDotAlone = function(elm, scenes, i) {
   if(!style || !style.opacity){
     style = s.fillStyle;
   }
-  var radius = (s.lineWidth / this.scale) / 2;
+  var radius = Math.max(s.lineWidth  / 2, 1.5) / this.scale;
   
   var attrs = {
     'shape-rendering': s.antialias ? null : 'crispEdges',
@@ -547,6 +549,7 @@ pv.SvgScene.lineAreaDotAlone = function(elm, scenes, i) {
   if(s.svg) this.setAttributes(elm, s.svg);
   
   return this.append(elm, scenes, i);
+  */
 };
 
 pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment) {
@@ -557,12 +560,10 @@ pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment
   }
   
   // Besides breaking paths on visible, 
-  // should they break on properties as well? 
+  // should they break on properties as well?
   var breakOnKeyChange = pv.get(keyArgs, 'breakOnKeyChange', false);
   var from = pv.get(keyArgs, 'from') || 0;
   var to   = pv.get(keyArgs, 'to', scenes.length - 1);
-  
-  var count = from - to + 1;
   
   var ki, kf;
   if(breakOnKeyChange){
@@ -600,7 +601,7 @@ pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment
       }
       
       var sf = scenes[f2];
-      if(!this.isSceneVisible(sf)){
+      if(!this.isSceneVisible(sf)){  
         // f + 1 exists but is NOT strictly visible
         // Connect i to f (possibly, i === f)
         // Continue with f + 2
@@ -623,7 +624,7 @@ pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment
         }
       }
     }
-    
+  
     elm = lineAreaSegment.call(this, elm, scenes, i, f, keyArgs);
     
     // next part

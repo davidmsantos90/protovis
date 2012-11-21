@@ -215,7 +215,7 @@ pv.SvgScene.areaSegmentedSmart = function(elm, scenes) {
           var attrs = Object.create(attrsBase);
           attrs['pointer-events'] = events;
           attrs.cursor = s.cursor;
-          attrs.d = pathT + "L" + pathB[0].substr(1) + pathB[1] + "Z";
+          attrs.d = pathT.join("") + "L" + pathB[0].substr(1) + pathB[1] + "Z";
           
           elm = this.expect(elm, 'path', scenes, i, attrs);
           
