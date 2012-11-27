@@ -1643,13 +1643,12 @@ pv.Mark.prototype.mouse = function() {
        * the necessary relative co-ordinates anyway (well, it seems to
        * in my code.
        */
-      if (pv.renderer() !== 'svgweb') {
-          do {
-            x -= n.offsetLeft;
-            y -= n.offsetTop;
-          } while ((n = n.offsetParent));
+      var offset = pv.elementOffset(n);
+      if(offset){
+          x -= offset.left;
+          y -= offset.top;
       }
-
+      
       /* Compute the inverse transform of all enclosing panels. */
       var t = pv.Transform.identity,
           p = this.properties.transform ? this : this.parent,
