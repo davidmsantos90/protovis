@@ -1633,16 +1633,11 @@ pv.Mark.prototype.buildImplied = function(s) {
  */
 pv.Mark.prototype.mouse = function() {
     var n = this.root.canvas(),
-        scrollOffset = pv.scrollOffset(n),
         ev = pv.event,
-        x = scrollOffset[0] + ev.clientX * 1,
-        y = scrollOffset[1] + ev.clientY * 1;
+        x = ev.pageX,
+        y = ev.pageY;
     
-      /* Compute xy-coordinates relative to the panel.
-       * This is not necessary if we're using svgweb, as svgweb gives us
-       * the necessary relative co-ordinates anyway (well, it seems to
-       * in my code.
-       */
+      // Compute xy-coordinates relative to the panel.
       var offset = pv.elementOffset(n);
       if(offset){
           x -= offset.left;

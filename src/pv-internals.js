@@ -148,7 +148,18 @@ pv.unlisten = function(target, type, listener){
 pv.listener = function(f) {
   return f.$listener || (f.$listener = function(e) {
       try {
+        // Fix event (adapted from jQuery)
+        if(e.pageX == null && e.clientX != null) {
+            var eventDoc = e.target.ownerDocument || document;
+            var doc  = eventDoc.documentElement;
+            var body = eventDoc.body;
+
+            e.pageX = (e.clientX * 1) + ( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) - ( doc && doc.clientLeft || body && body.clientLeft || 0 );
+            e.pageY = (e.clientY * 1) + ( doc && doc.scrollTop  || body && body.scrollTop  || 0 ) - ( doc && doc.clientTop  || body && body.clientTop  || 0 );
+        }
+        
         pv.event = e;
+        
         return f.call(this, e);
       } catch (ex) {
           // swallow top level error
@@ -178,22 +189,6 @@ pv.getWindow = function(elem) {
         elem.nodeType === 9 ?
             elem.defaultView || elem.parentWindow :
             false;
-};
-
-/**
- * @private Computes the accumulated scroll offset given an element.
- */
-pv.scrollOffset = function(elem) {
-    var left = 0, 
-        top  = 0;
-    while(elem){
-        left += elem.scrollLeft || 0;
-        top  += elem.scrollTop  || 0;
-        
-        elem = elem.parentNode;
-    }
-    
-    return [left, top];
 };
 
 /* Adapted from jQuery.offset()
