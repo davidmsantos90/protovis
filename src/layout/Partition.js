@@ -3,7 +3,7 @@
  * constructed directly; instead, they are added to an existing panel via
  * {@link pv.Mark#add}.
  *
- * @class Implemeents a hierarchical layout using the partition (or sunburst,
+ * @class Implements a hierarchical layout using the partition (or sunburst,
  * icicle) algorithm. This layout provides both node-link and space-filling
  * implementations of partition diagrams. In many ways it is similar to
  * {@link pv.Layout.Cluster}, except that leaf nodes are positioned based on
@@ -131,8 +131,8 @@ pv.Layout.Partition.prototype.buildImplied = function(s) {
 
   /* Recursively compute the tree depth and node size. */
   stack.unshift(null);
-  root.visitAfter(function(n, i) {
-      if (i > maxDepth) maxDepth = i;
+  root.visitAfter(function(n, depth) {
+      if (depth > maxDepth) maxDepth = depth;
       n.size = n.firstChild
           ? pv.sum(n.childNodes, function(n) { return n.size; })
           : that.$size.apply(that, (stack[0] = n, stack));
@@ -141,26 +141,31 @@ pv.Layout.Partition.prototype.buildImplied = function(s) {
 
   /* Order */
   switch (s.order) {
-    case "ascending": root.sort(function(a, b) { return a.size - b.size; }); break;
+    case "ascending":  root.sort(function(a, b) { return a.size - b.size; }); break;
     case "descending": root.sort(function(b, a) { return a.size - b.size; }); break;
   }
 
   /* Compute the unit breadth and depth of each node. */
-  var ds = 1 / maxDepth;
   root.minBreadth = 0;
-  root.breadth = .5;
+  root.breadth    = .5;
   root.maxBreadth = 1;
+  
   root.visitBefore(function(n) {
-    var b = n.minBreadth, s = n.maxBreadth - b;
+    var b = n.minBreadth, 
+        s = n.maxBreadth - b; // span
+      
       for (var c = n.firstChild; c; c = c.nextSibling) {
         c.minBreadth = b;
-        c.maxBreadth = b += (c.size / n.size) * s;
+        b += (c.size / n.size) * s;
+        c.maxBreadth = b;
+        
         c.breadth = (b + c.minBreadth) / 2;
       }
     });
-  root.visitAfter(function(n, i) {
-      n.minDepth = (i - 1) * ds;
-      n.maxDepth = n.depth = i * ds;
+  
+  root.visitAfter(function(n, depth) {
+      n.minDepth = (depth - 1) / maxDepth;
+      n.maxDepth = (n.depth = depth / maxDepth);
     });
 
   pv.Layout.Hierarchy.NodeLink.buildImplied.call(this, s);
