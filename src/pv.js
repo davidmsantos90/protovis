@@ -79,7 +79,7 @@ pv.child = function() { return this.childIndex; };
  *
  * <pre>.fillStyle(pv.Colors.category10().by(pv.parent))</pre>
  *
- * Tthis method is equivalent to <tt>function() this.parent.index</tt>, but more
+ * This method is equivalent to <tt>function() this.parent.index</tt>, but more
  * succinct.
  *
  * @see pv.Scale

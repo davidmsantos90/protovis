@@ -250,3 +250,8 @@ pv.Wedge.prototype.buildImplied = function(s) {
   else if (s.endAngle == null) s.endAngle = s.startAngle + s.angle;
   pv.Mark.prototype.buildImplied.call(this, s);
 };
+
+pv.Wedge.prototype.getShapeCore = function(scenes, index){
+    var s = scenes[index];
+    return new pv.Shape.Wedge(s.left, s.top, s.innerRadius, s.outerRadius, s.startAngle, s.angle);
+};

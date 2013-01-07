@@ -185,11 +185,11 @@ pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
         var s = scenes[i];
         
         var events = s.events;
-        if(events && events !== "none"){
+        if(events && events !== 'none'){
           var attrs = Object.create(attrsBase);
           attrs['pointer-events'] = events;
           attrs.cursor = s.cursor;
-          attrs.d = path.join("");
+          attrs.d = path.join('');
           
           elm = this.expect(elm, 'path', scenes, i, attrs);
           

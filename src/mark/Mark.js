@@ -1834,26 +1834,58 @@ pv.Mark.prototype.context = function(scene, index, f) {
   }
 };
 
-/** @private Execute the event listener, then re-render. */
-pv.Mark.dispatch = function(type, scene, index, event) {
-  var m = scene.mark, 
-      p = scene.parent, 
-      l = m.$handlers[type];
+pv.Mark.getEventHandler = function(type, scenes, index, event){
+  var handler = scenes.mark.$handlers[type];
+  if(handler){
+    return [handler, type, scenes, index, event];
+  }
+   
+  var parentScenes = scenes.parent;
+  if(parentScenes){
+    return this.getEventHandler(type, parentScenes, scenes.parentIndex, event);
+  }
+};
+
+/** @private Execute the event listener, then re-render the returned mark. */
+pv.Mark.dispatch = function(type, scenes, index, event) {
   
-  if(m.root.animatingCount){
+  var root = scenes.mark.root;
+  if(root.animatingCount){
       return true;
   }
   
-  if (!l) {
-      return p && pv.Mark.dispatch(type, p, scene.parentIndex, event);
+  var handlerInfo;
+  var interceptors = root.$interceptors && root.$interceptors[type];
+  if(interceptors){
+    for(var i = 0, L = interceptors.length ; i < L ; i++){ 
+        handlerInfo = interceptors[i](type, event);
+        if(handlerInfo){
+            break;
   }
   
-  m.context(scene, index, function() {
-    var stack = pv.Mark.stack.concat(event);
-    if(l instanceof Array) {
-        var ms;
-        l.forEach(function(li){
-            var mi = li.apply(m, stack);
+        if(handlerInfo === false){
+            // Consider handled
+            return true;
+        }
+    }
+  }
+  
+  if(!handlerInfo){
+      handlerInfo = this.getEventHandler(type, scenes, index, event);
+  }
+  
+  return handlerInfo ? this.handle.apply(this, handlerInfo) : false;
+};
+
+pv.Mark.handle = function(handler, type, scenes, index, event){
+    var m = scenes.mark;
+    
+    m.context(scenes, index, function() {
+      var stack = pv.Mark.stack.concat(event);
+      if(handler instanceof Array) {
+          var ms;
+          handler.forEach(function(hi){
+            var mi = hi.apply(m, stack);
             if(mi && mi.render) {
                 (ms || (ms = [])).push(mi);
             }
@@ -1861,7 +1893,7 @@ pv.Mark.dispatch = function(type, scene, index, event) {
         
         if(ms) { ms.forEach(function(mi){ mi.render(); }); }
     } else {
-        m = l.apply(m, stack);
+        m = handler.apply(m, stack);
         if (m && m.render) {
             m.render();
         }
@@ -1872,17 +1904,32 @@ pv.Mark.dispatch = function(type, scene, index, event) {
 };
 
 /**
- * Iterates through all instances that
+ * Registers an event interceptor function.
+ * 
+ * @param {string} type the event type
+ * @param {function} handler the interceptor function
+ * @param {boolean} [before=false] indicates that the interceptor should be applied <i>before</i> "after" interceptors
+ */
+pv.Mark.prototype.addEventInterceptor = function(type, handler, before){
+    var root = this.root;
+    if(root){
+        var interceptors = root.$interceptors || (root.$interceptors = {});
+        var list = interceptors[type] || (interceptors[type] = []);
+        if(before){
+            list.unshift(handler);
+        } else {
+            list.push(handler);
+        }
+    }
+};
+
+/**
+ * Iterates through all visible instances that
  * this mark has rendered.
  */
 pv.Mark.prototype.eachInstance = function(fun, ctx){
     var mark = this,
-        indexes = [],
-        breakInstance = {
-            isBreak: true,
-            visible: false,
-            datum: {}
-        };
+        indexes = [];
 
     /* Go up to the root and register our way back.
      * The root mark never "looses" its scene.
@@ -1902,7 +1949,9 @@ pv.Mark.prototype.eachInstance = function(fun, ctx){
     
     var L = indexes.length;
 
-    function collectRecursive(scene, level, toScreen){
+    function mapRecursive(scene, level, toScreen){
+        var D = scene.length;
+        if(D > 0){
         var isLastLevel = level === L, 
             childIndex;
         
@@ -1910,31 +1959,27 @@ pv.Mark.prototype.eachInstance = function(fun, ctx){
             childIndex = indexes[level];
         }
         
-        var D = scene.length;
-        if(D > 0){
             for(var index = 0 ; index < D ; index++){
                 var instance = scene[index];
+                if(instance.visible){
                 if(level === L){
-                    fun.call(ctx, scene[index], toScreen);
-                } else if(instance.visible) {
+                        fun.call(ctx, scene, index, toScreen);
+                    } else {
                     var childScene = instance.children[childIndex];
-                    
-                    // Some nodes might have not been rendered?
-                    if(childScene){
+                        if(childScene){ // Some nodes might have not been rendered???
                         var childToScreen = toScreen
                                                 .times(instance.transform)
                                                 .translate(instance.left, instance.top);
                         
-                        collectRecursive(childScene, level + 1, childToScreen);
+                            mapRecursive(childScene, level + 1, childToScreen);
+                        }
                     }
                 }
             }
-        
-            fun.call(ctx, breakInstance, null);
         }
     }
 
-    collectRecursive(rootScene, 0, pv.Transform.identity);
+    mapRecursive(rootScene, 0, pv.Transform.identity);
 };
 
 pv.Mark.prototype.toScreenTransform = function(){
@@ -1950,7 +1995,7 @@ pv.Mark.prototype.toScreenTransform = function(){
         do {
             t = t.translate(parent.left(), parent.top())
                  .times(parent.transform());
-        } while ((parent = parent.parent));
+        } while((parent = parent.parent));
     }
     
     return t;
@@ -1962,4 +2007,20 @@ pv.Mark.prototype.transition = function() {
 
 pv.Mark.prototype.on = function(state) {
   return this["$" + state] = new pv.Transient(this);
+};
+
+// --------------
+
+pv.Mark.prototype.getShape = function(scenes, index){
+    var s = scenes[index];
+    if(!s.visible){
+        return null;
+    }
+    
+    return s._shape || (s._shape = this.getShapeCore(scenes, index));
+};
+
+pv.Mark.prototype.getShapeCore = function(scenes, index){
+    var s = scenes[index];
+    return new pv.Shape.Rect(s.left, s.top, s.width, s.height);
 };

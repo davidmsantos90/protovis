@@ -214,3 +214,27 @@ pv.Dot.prototype.buildImplied = function(s) {
   }
   pv.Mark.prototype.buildImplied.call(this, s);
 };
+
+pv.Dot.prototype.getShapeCore = function(scenes, index){
+    var s = scenes[index];
+    
+    var radius = s.shapeRadius,
+        cx = s.left,
+        cy = s.top;
+
+    // TODO: square and diamond break when angle is used
+    
+    switch(s.shape){
+        case 'diamond':
+            radius *= Math.SQRT2;
+            // the following comment is for jshint
+            /* falls through */
+        case 'square':
+        case 'cross':
+            return new pv.Shape.Rect(cx - radius, cy - radius, 2*radius, 2*radius);
+    }
+    
+    // 'circle' included
+    
+    return new pv.Shape.Circle(cx, cy, radius);
+};

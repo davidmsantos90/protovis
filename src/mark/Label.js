@@ -153,3 +153,70 @@ pv.Label.prototype.defaults = new pv.Label()
     .textAlign("left")
     .textBaseline("bottom")
     .textMargin(3);
+
+
+pv.Label.prototype.getShapeCore = function(scenes, index){
+    var s = scenes[index];
+    
+    var size = pv.Text.measure(s.text, s.font);
+    
+    return pv.Label.getPolygon(
+            size.width,
+            size.height,
+            s.textAlign,
+            s.textBaseline,
+            s.textAngle,
+            s.textMargin)
+            .apply(pv.Transform.identity.translate(s.left, s.top));
+};
+
+pv.Label.getPolygon = function(textWidth, textHeight, align, baseline, angle, margin){
+    // x, y are the position of the left-bottom corner
+    // of the text relative to its anchor point (at x=0,y=0)
+    // x points right, y points down
+    var x, y;
+    
+    switch (baseline) {
+        case "middle":
+            y = textHeight / 2; // estimate middle (textHeight is not em, the height of capital M)
+            break;
+          
+        case "top":
+            y = margin + textHeight;
+            break;
+      
+        case "bottom":
+            y = -margin; 
+            break;
+    }
+    
+    switch (align) {
+        case "right": 
+            x = -margin -textWidth; 
+            break;
+      
+        case "center": 
+            x = -textWidth / 2;
+            break;
+      
+        case "left": 
+            x = margin;
+            break;
+    }
+    
+    var bl = new pv.Vector(x, y);
+    var br = bl.plus(textWidth, 0);
+    var tr = br.plus(0, -textHeight);
+    var tl = bl.plus(0, -textHeight);
+    
+    // Rotate
+    
+    if(angle !== 0){
+        bl = bl.rotate(angle);
+        br = br.rotate(angle);
+        tl = tl.rotate(angle);
+        tr = tr.rotate(angle);
+    }
+    
+    return new pv.Shape.Polygon([bl, br, tr, tl]);
+};

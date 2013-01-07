@@ -300,3 +300,29 @@ pv.Area.prototype.anchor = function(name) {
         return this.scene.target[this.index].tension;
       });
 };
+
+
+pv.Area.prototype.getShapeCore = function(scenes, index){
+    var s = scenes[index];
+    var w = (s.width  || 0),
+        h = (s.height || 0),
+        x = s.left,
+        y = s.top;
+    
+    var s2 = index + 1 < scenes.length ? scenes[index + 1] : null;
+    if(!s2 || !s2.visible){
+        return new pv.Shape.Line(x, y, x + w, y + h);
+    }
+    
+    var x2 = s2.left,
+        y2 = s2.top,
+        h2 = s2.height || 0,
+        w2 = s2.width  || 0;
+    
+    return new pv.Shape.Polygon([
+        new pv.Vector(x,       y      ),
+        new pv.Vector(x2,      y2     ),
+        new pv.Vector(x2 + w2, y2 + h2),
+        new pv.Vector(x  + w,  y  + h )
+    ]);
+};

@@ -9,6 +9,7 @@ JS_CORE_FILES = \
 	src/text/DateFormat.js \
 	src/text/TimeFormat.js \
 	src/text/NumberFormat.js \
+	src/text/Font.js \
 	src/data/Arrays.js \
 	src/data/Numbers.js \
 	src/data/Objects.js \
@@ -16,7 +17,6 @@ JS_CORE_FILES = \
 	src/data/Tree.js \
 	src/data/Nest.js \
 	src/data/Flatten.js \
-	src/data/Vector.js \
 	src/data/Transform.js \
 	src/data/Scale.js \
 	src/data/QuantitativeScale.js \
@@ -26,6 +26,14 @@ JS_CORE_FILES = \
 	src/data/OrdinalScale.js \
 	src/data/QuantileScale.js \
 	src/data/Histogram.js \
+    src/shape/Shape.js \
+    src/shape/Point.js \
+    src/shape/Line.js \
+    src/shape/Polygon.js \
+    src/shape/Rect.js \
+    src/shape/Circle.js \
+    src/shape/Arc.js \
+    src/shape/Wedge.js \
 	src/color/Color.js \
 	src/color/Colors.js \
 	src/color/FillStyle.js \

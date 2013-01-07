@@ -107,13 +107,14 @@ pv.error = function(e) {
  * @param {function} the event handler callback.
  */
 pv.listen = function(target, type, listener) {
-  if (type == 'load' || type == 'onload')
-      return pv.listenForPageLoad (pv.listener(listener));
+  if (type === 'load' || type === 'onload'){
+      return pv.listenForPageLoad(pv.listener(listener));
+  }
 
   listener = pv.listener(listener);
   target.addEventListener
       ? target.addEventListener(type, listener, false)
-      : target.attachEvent("on" + type, listener);
+      : target.attachEvent('on' + type, listener);
   
    return listener;
 };
@@ -133,7 +134,7 @@ pv.unlisten = function(target, type, listener){
     
     target.removeEventListener
         ? target.removeEventListener(type, listener, false)
-        : target.detachEvent("on" + type, listener);
+        : target.detachEvent('on' + type, listener);
 };
 
 /**
@@ -150,7 +151,7 @@ pv.listener = function(f) {
       try {
         // Fix event (adapted from jQuery)
         if(e.pageX == null && e.clientX != null) {
-            var eventDoc = e.target.ownerDocument || document;
+            var eventDoc = (e.target && e.target.ownerDocument) || document;
             var doc  = eventDoc.documentElement;
             var body = eventDoc.body;
 

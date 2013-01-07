@@ -199,3 +199,13 @@ pv.Line.prototype.anchor = function(name) {
         }
       });
 };
+
+pv.Line.prototype.getShapeCore = function(scenes, index){
+    var s  = scenes[index];
+    var s2 = index + 1 < scenes.length ? scenes[index + 1] : null;
+    if(s2 == null || !s2.visible){
+        return new pv.Shape.Point(s.left, s.top);
+    }
+    
+    return new pv.Shape.Line(s.left, s.top, s2.left, s2.top);
+};

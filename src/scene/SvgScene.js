@@ -92,10 +92,21 @@ pv.SvgScene.create = function(type) {
  * @returns a new SVG element.
  */
 pv.SvgScene.expect = function(e, type, scenes, i, attributes, style) {
-  if (e) {
-    var tagName = e.tagName;
-    if (tagName === "defs") e = e.nextSibling;
-    if (tagName === "a")    e = e.firstChild;
+    var tagName;
+    if(e){
+        tagName = e.tagName;
+        if(tagName === 'defs'){
+            e = e.nextSibling; // may be null
+            if(e){
+                tagName = e.tagName;
+            }
+        } else if(tagName === 'a'){
+            e = e.firstChild;
+            // ends up replacing the "a" tag with its child
+        }
+    }
+    
+    if(e){
     if (tagName !== type) {
       var n = this.create(type);
       e.parentNode.replaceChild(n, e);
@@ -162,7 +173,7 @@ pv.SvgScene.setStyle = function(e, style){
 
 /** TODO */
 pv.SvgScene.append = function(e, scenes, index) {
-  e.$scene = {scenes:scenes, index:index};
+  e.$scene = {scenes: scenes, index: index};
   e = this.title(e, scenes[index]);
   if (!e.parentNode) scenes.$g.appendChild(e);
   return e.nextSibling;
@@ -230,18 +241,19 @@ pv.SvgScene.dispatch = pv.listener(function(e) {
 
     /* Fixes for mousewheel support on Firefox & Opera. */
     switch (type) {
-      case "DOMMouseScroll": {
+      case "DOMMouseScroll":
         type = "mousewheel";
         e.wheel = -480 * e.detail;
         break;
-      }
-      case "mousewheel": {
+
+      case "mousewheel":
         e.wheel = (window.opera ? 12 : 1) * e.wheelDelta;
         break;
       }
-    }
 
-    if (pv.Mark.dispatch(type, t.scenes, t.index, e)) e.preventDefault();
+    if (pv.Mark.dispatch(type, t.scenes, t.index, e)) {
+      e.preventDefault();
+    }
   }
 });
 

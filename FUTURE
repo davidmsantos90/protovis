@@ -13,27 +13,27 @@ data/Scale.js
 - ignore undefined values when computing min/max for domains
 
 mark/Mark.js
-- event handlers should be inherited?
+- event handlers should be inherited?  (DCL - Added multiple handlers support)
 - antialias doesn't always work as expected; requires pixel rounding?
 - allow mixin rather than single inheritance?
-- linear and radial gradient fills
-- pattern fills
-- drop shadows, blurring, other graphical effects?
+- linear and radial gradient fills (DCL - Done; still missing some radial features)
+- pattern fills  (DCL - Planned)
+- drop shadows, blurring, other graphical effects? (DCL - Planned)
 - animation
 - faster incremental rendering (detect properties)
 - remove first, last, cousin, sibling methods?
-- dot-dash strokes using stroke-dasharray
+- dot-dash strokes using stroke-dasharray  (DCL - Done)
 
 mark/Bar.js
 - rounded corners
 
 mark/Line.js
-- support fillStyle on segmented lines
+- support fillStyle on segmented lines (DCL - Done on smart segmented mode)
 - spline interpolation
 - arrows (markers)?
 
 mark/Label.js
-- text metrics API for smart label placement
+- text metrics API for smart label placement (DCL - Done)
 
 mark/Area.js
 - spline interpolation

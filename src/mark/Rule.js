@@ -145,3 +145,11 @@ pv.Rule.prototype.buildImplied = function(s) {
 
   pv.Mark.prototype.buildImplied.call(this, s);
 };
+
+pv.Rule.prototype.getShapeCore = function(scenes, index){
+    var s = scenes[index];
+    return new pv.Shape.Line(
+        s.left,           s.top, 
+        s.left + s.width, s.top + s.height);
+};
+

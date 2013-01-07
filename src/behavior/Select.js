@@ -37,7 +37,7 @@
  * allow more flexible configuration of select behavior. In some cases, such as
  * with parallel coordinates, making a selection may cause related marks to
  * change, in which case additional marks may also need to be rendered. This can
- * be accomplished by listening for the select psuedo-events:<ul>
+ * be accomplished by listening for the select pseudo-events:<ul>
  *
  * <li>selectstart (on mousedown)
  * <li>select (on mousemove)
@@ -53,48 +53,177 @@
  * configuration of the selection behavior.
  *
  * @extends pv.Behavior
+ * 
+ * @constructor
+ * @param {object}  [keyArgs] keyword arguments object  
+ * @param {boolean} [keyArgs.autoRefresh=true] whether to render the selection mark on mouse moves
+ * @param {boolean} [keyArgs.datumIsRect=true] whether the datum is where the selection rectangle coordinates are stored.
+ * When <tt>false</tt>, the selection rectangle is  
+ * published in a property created on the panel mark: 'selectionRect',
+ * of type {@link pv.Shape.Rect}.
+ * 
  * @see pv.Behavior.drag
  */
-pv.Behavior.select = function() {
+ pv.Behavior.select = function(keyArgs){
   var scene, // scene context
       index, // scene context
-      r, // region being selected
-      m1; // initial mouse position
+      m1,     // initial mouse position
+      mprev,  // the mouse position of the previous event (mouse down or mouse move)
+      events, // event registrations held during each selection
+      r,      // current selection rect
+      downElem,
+      cancelClick,
+      inited;
 
-  /** @private */
-  function mousedown(d, e) {
-    index = this.index;
-    scene = this.scene;
-    m1 = this.mouse();
-    r = d;
-    r.x = m1.x;
-    r.y = m1.y;
-    r.dx = r.dy = 0;
-    pv.Mark.dispatch("selectstart", scene, index, e);
-  }
+    // Redraw mark on mouse move - default is the same as the initial pv.Behavior.select
+    var autoRefresh = def.get(keyArgs, 'autoRefresh', true);
+    
+    // Whether the datum is where the selection rect coordinates are stored
+    var datumIsRect = def.get(keyArgs, 'datumIsRect', true);
+    
+    /** @private protovis mark event handler */
+    function mousedown(d) {
+      var ev = arguments[arguments.length - 1]; // last argument
+      
+      downElem = ev.target;
+      cancelClick = false;
+      index = this.index;
+      scene = this.scene;
+      m1 = this.mouse();
+      
+      // Initialize
+      if(!inited){
+          inited = true;
+          this.addEventInterceptor('click', eventInterceptor, /*before*/true);
+      }
+      
+      // Add event handlers to follow the selection.
+      // These are unregistered on mouse up.
+      if(!events){
+          var root = this.root.scene.$g;
+          events = [
+              // Attaching events to the canvas (instead of only to the document)
+              // allows canceling the bubbling of the events before they 
+              // reach the handlers of ascendant elements (of canvas).
+              [root,     'mousemove', pv.listen(root, 'mousemove', mousemove)],
+              [root,     'mouseup',   pv.listen(root, 'mouseup',   mouseup  )],
+              
+              // It is still necessary to receive events
+              // that are sourced outside the canvas
+              [document, 'mousemove', pv.listen(document, 'mousemove', mousemove)],
+              [document, 'mouseup',   pv.listen(document, 'mouseup',   mouseup  )]
+          ];
+      }
+      
+      if(datumIsRect){
+          r = d;
+          r.x = m1.x;
+          r.y = m1.y;
+          r.dx = r.dy = 0;
+      } else {
+          mprev = m1;
+          this.selectionRect = r = new pv.Shape.Rect(m1.x, m1.y, 0, 0);
+      }
 
-  /** @private */
-  function mousemove(e) {
-    if (!scene) return;
-    scene.mark.context(scene, index, function() {
-        var m2 = this.mouse();
-        r.x = Math.max(0, Math.min(m1.x, m2.x));
-        r.y = Math.max(0, Math.min(m1.y, m2.y));
-        r.dx = Math.min(this.width(), Math.max(m2.x, m1.x)) - r.x;
-        r.dy = Math.min(this.height(), Math.max(m2.y, m1.y)) - r.y;
-        this.render();
-      });
-    pv.Mark.dispatch("select", scene, index, e);
-  }
+      pv.Mark.dispatch('selectstart', scene, index, ev);
+    }
+    
+    /** @private DOM event handler */
+    function mousemove(ev) {
+        if (!scene) { return; }
+      
+        // Prevent the event from bubbling off the canvas 
+        // (if being handled by the root)
+        ev.stopPropagation();
+      
+        scene.mark.context(scene, index, function() {
+            // this === scene.mark
+            var m2 = this.mouse();
+      
+            if(datumIsRect){
+                r.x = Math.max(0, Math.min(m1.x, m2.x));
+                r.y = Math.max(0, Math.min(m1.y, m2.y));
+                r.dx = Math.min(this.width(), Math.max(m2.x, m1.x)) - r.x;
+                r.dy = Math.min(this.height(), Math.max(m2.y, m1.y)) - r.y;
+            } else {
+                if(mprev && m2.distance2(mprev).dist2 <= 2){
+                    return;
+                }
+      
+                mprev = m2;
+          
+                var x = m1.x;
+                var y = m1.y;
+                this.selectionRect = r = new pv.Shape.Rect(x, y, m2.x - x, m2.y - y);
+            }
+      
+            if(autoRefresh){
+                this.render();
+            }
+      
+            pv.Mark.dispatch('select', scene, index, ev);
+        });
+    }   
 
-  /** @private */
-  function mouseup(e) {
-    if (!scene) return;
-    pv.Mark.dispatch("selectend", scene, index, e);
-    scene = null;
-  }
+    /** @private DOM event handler */
+    function mouseup(ev) {
+        if (!scene) { return; }
+      
+        // A click event is generated whenever
+        // the element where the mouse goes down
+        // is the same element of where the mouse goes up.
+        // We will try to intercept the generated click event and swallow it,
+        // when a selection has occurred.
+        cancelClick = (downElem === ev.target) && (r.dx > 0 || r.dy > 0);
+        if(!cancelClick){
+            downElem = null;
+        }
+      
+        // Prevent the event from bubbling off the canvas 
+        // (if being handled by the root)
+        ev.stopPropagation();
+      
+        // Unregister events
+        if(events){
+            events.forEach(function(registration){
+                pv.unlisten.apply(pv, registration);
+            });
+            events = null;
+        }
+      
+        pv.Mark.dispatch('selectend', scene, index, ev);
+      
+        // Cleanup
+        if(!datumIsRect){
+            scene.mark.selectionRect = mprev = null;
+        }
+      
+        scene = index = m1 = r = null;
+    }
 
-  pv.listen(window, "mousemove", mousemove);
-  pv.listen(window, "mouseup", mouseup);
-  return mousedown;
+    /**
+     * Intercepts click events and, 
+     * if they were consequence
+     * of a mouse down and up of a selection,
+     * cancels them.
+     * 
+     * @returns {boolean|array} 
+     * <tt>false</tt> to indicate that the event is handled,
+     * otherwise, an event handler info array: [handler, type, scenes, index, ev].
+     * 
+     * @private
+     */
+    function eventInterceptor(type, ev){
+        if(cancelClick && downElem === ev.target){
+            // Event is handled
+            cancelClick = false;
+            downElem = null;
+            return false;
+        }
+        
+        // Let event be handled normally
+    }
+
+    return mousedown;
 };
+  
