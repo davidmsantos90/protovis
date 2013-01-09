@@ -81,5 +81,59 @@ pv.SvgScene.wedge = function(scenes) {
 
     e = this.append(e, scenes, i);
   }
+  
+  /*
+  // DEBUG BEG
+  var mark  = scenes.mark;
+  for (var i = 0; i < scenes.length; i+=2) {
+      var shape = mark.getShape(scenes, i);
+      
+      // POINTS
+      var points = shape.points();
+      points.forEach(function(p){
+          e = this.expect(e, 'circle', scenes, i, {
+              cx: p.x,
+              cy: p.y,
+              r:  2,
+              fill: 'black'
+          });
+          e = this.append(e, scenes, i);
+      }, this);
+      
+      // EDGES
+      var edges = shape.edges();
+      edges.forEach(function(edge){
+          if(edge instanceof pv.Shape.Line){
+              e = this.expect(e, 'path', scenes, 0, {
+                  d: "M" + edge.x + "," + edge.y + "L" + edge.x2 + "," + edge.y2,
+                  stroke: 'green',
+                  'stroke-width': 1
+              });
+              
+          } else if (edge instanceof pv.Shape.Arc){
+              var sa = Math.min(edge.startAngle, edge.endAngle),
+                  ea = Math.max(edge.startAngle, edge.endAngle),
+                  c1 = Math.cos(sa), c2 = Math.cos(ea),
+                  s1 = Math.sin(sa), s2 = Math.sin(ea),
+                  r  = edge.radius;
+          
+              var p = "M" + r * c1 + "," + r * s1 + 
+                      "A" + r + "," + r + " 0 "
+                      + ((edge.angleSpan < Math.PI) ? "0" : "1") + ",1 "
+                      + r * c2 + "," + r * s2;
+              
+              e = this.expect(e, 'path', scenes, 0, {
+                  d: p,
+                  transform: "translate(" + edge.x + "," + edge.y + ")",
+                  stroke: 'red',
+                  'stroke-width': 1
+              });
+          }
+          
+          e = this.append(e, scenes, i);
+      }, this);
+  }
+  // DEBUG END
+  */
   return e;
 };

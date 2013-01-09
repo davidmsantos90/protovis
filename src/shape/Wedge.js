@@ -55,7 +55,7 @@
     Wedge.prototype.intersectsRect = function(rect){
         var i, L;
         
-        // I - Any point is inside the rect?
+        // I - Any point of the wedge is inside the rect?
         var points = this.points();
         
         L = points.length;
@@ -65,7 +65,16 @@
             }
         }
         
-        // II - Any edge intersects the rect?
+        // II - Any point of the rect inside the wedge?
+        points = rect.points();
+        L = points.length;
+        for(i = 0 ; i < L ; i++){
+            if(this.containsPoint(points[i])){
+                return true;
+            }
+        }
+        
+        // III - Any edge intersects the rect?
         var edges = this.edges();
         L = edges.length;
         for(i = 0 ; i < L ; i++){
