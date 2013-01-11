@@ -63,9 +63,11 @@
             var style = div.style;
             style.position   = 'absolute';
             style.visibility = 'hidden';
-            style.width      = 'auto';
-            style.height     = 'auto';
-                
+            style.width = 0;
+            style.height = 0;
+            style.left = 0;
+            style.top = 0;
+            
             document.body.appendChild(div);
             
             return div;
