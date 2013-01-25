@@ -17,11 +17,15 @@
  * href="http://javascript.crockford.com/prototypal.html">prototypal
  * inheritance</a>.
  */
-pv.extend = function(f) {
-  function g() {}
-  g.prototype = f.prototype || f;
-  return new g();
-};
+pv.extend = Object.create ?
+    function(f){
+      return Object.create(f.prototype || f); 
+    } :
+    function(f) {
+      function g() {}
+      g.prototype = f.prototype || f;
+      return new g();
+    };
 
 // Is there any browser (still) supporting this syntax?
 // Commented cause this messes up with the debugger's break on exceptions.

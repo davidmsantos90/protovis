@@ -65,48 +65,116 @@
  * @see pv.Layout.force
  */
 pv.Behavior.drag = function() {
-  var scene, // scene context
-      index, // scene context
-      p, // particle being dragged
-      v1, // initial mouse-particle offset
-      max;
-
-  /** @private */
-  function mousedown(d, e) {
-    index = this.index;
-    scene = this.scene;
-    var m = this.mouse();
-    v1 = ((p = d).fix = pv.vector(d.x, d.y)).minus(m);
-    max = {
-      x: this.parent.width() - (d.dx || 0),
-      y: this.parent.height() - (d.dy || 0)
+    var collapse = null; // dimensions to collapse
+    var kx = 1; // x-dimension 1/0
+    var ky = 1; // y-dimension 1/0
+    
+    var v1;  // initial mouse-particle offset
+    var max;
+    
+    // Executed in context of initial mark scene
+    var shared = {
+        dragstart: function(ev){
+            var drag = ev.drag;
+            drag.type = 'drag';
+            
+            var p    = drag.d; // particle being dragged
+            var fix  = pv.vector(p.x, p.y);
+            
+            p.fix  = fix;
+            p.drag = drag;
+            
+            v1 = fix.minus(drag.m1);
+            
+            var parent = this.parent;
+            max = {
+               x: parent.width()  - (p.dx || 0),
+               y: parent.height() - (p.dy || 0)
+            };
+            
+            if(shared.autoRender){
+                this.render();
+            }
+            
+            pv.Mark.dispatch("dragstart", drag.scene, drag.index, ev);
+        },
+        
+        drag: function(ev){
+            var drag = ev.drag;
+            var m2   = drag.m2;
+            var p    = drag.d;
+            
+            drag.m = v1.plus(m2);
+            
+            var constraint = shared.positionConstraint;
+            if(constraint){
+                constraint(drag);
+            }
+            
+            var m = drag.m;
+            if(kx){
+                p.x = p.fix.x = Math.max(0, Math.min(m.x, max.x));
+            }
+            
+            if(ky){
+                p.y = p.fix.y = Math.max(0, Math.min(m.y, max.y));
+            }
+            
+            if(shared.autoRender){
+                this.render();
+            }
+            
+            pv.Mark.dispatch("drag", drag.scene, drag.index, ev);
+        },
+        
+        dragend: function(ev){
+            var drag = ev.drag;
+            var p    = drag.d;
+            
+            p.fix = null; // pv compatibility
+            v1 = null;
+             
+            if(shared.autoRender){
+                this.render();
+            }
+            
+            try {
+                pv.Mark.dispatch('dragend', drag.scene, drag.index, ev);
+            } finally {
+                delete p.drag;
+            }
+        }
     };
-    scene.mark.context(scene, index, function() { this.render(); });
-    pv.Mark.dispatch("dragstart", scene, index, e);
-  }
-
-  /** @private */
-  function mousemove(e) {
-    if (!scene) return;
-    scene.mark.context(scene, index, function() {
-        var m = this.mouse();
-        p.x = p.fix.x = Math.max(0, Math.min(v1.x + m.x, max.x));
-        p.y = p.fix.y = Math.max(0, Math.min(v1.y + m.y, max.y));
-        this.render();
-      });
-    pv.Mark.dispatch("drag", scene, index, e);
-  }
-
-  /** @private */
-  function mouseup(e) {
-    if (!scene) return;
-    p.fix = null;
-    scene.mark.context(scene, index, function() { this.render(); });
-    pv.Mark.dispatch("dragend", scene, index, e);
-    scene = null;
-  }
-
-  pv.listen(window, "mousemove", mousemove);
-  pv.listen(window, "mouseup",   mouseup);
-  return mousedown;
+    
+    var mousedown = pv.Behavior.dragBase(shared);
+    
+    /**
+     * Sets or gets the collapse parameter.
+     * By default, dragging is sensitive to both dimensions.
+     * However, with some visualizations it is desirable to
+     * consider only a single dimension, such as the <i>x</i>-dimension for an
+     * independent variable. In this case, the collapse parameter can be set to
+     * collapse the <i>y</i> dimension:
+     *
+     * <pre>    .event("mousedown", pv.Behavior.drag().collapse("y"))</pre>
+     *
+     * @function
+     * @returns {pv.Behavior.drag} this, or the current collapse parameter.
+     * @name pv.Behavior.drag.prototype.collapse
+     * @param {string} [x] the new collapse parameter
+     */
+    mousedown.collapse = function(x) {
+      if (arguments.length) {
+        collapse = String(x);
+        switch (collapse) {
+          case "y": kx = 1; ky = 0; break;
+          case "x": kx = 0; ky = 1; break;
+          default:  kx = 1; ky = 1; break;
+        }
+        return mousedown;
+      }
+      return collapse;
+    };
+    
+    return mousedown;
 };

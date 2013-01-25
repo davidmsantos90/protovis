@@ -53,177 +53,105 @@
  * configuration of the selection behavior.
  *
  * @extends pv.Behavior
- * 
- * @constructor
- * @param {object}  [keyArgs] keyword arguments object  
- * @param {boolean} [keyArgs.autoRefresh=true] whether to render the selection mark on mouse moves
- * @param {boolean} [keyArgs.datumIsRect=true] whether the datum is where the selection rectangle coordinates are stored.
- * When <tt>false</tt>, the selection rectangle is  
- * published in a property created on the panel mark: 'selectionRect',
- * of type {@link pv.Shape.Rect}.
- * 
  * @see pv.Behavior.drag
  */
- pv.Behavior.select = function(keyArgs){
-  var scene, // scene context
-      index, // scene context
-      m1,     // initial mouse position
-      mprev,  // the mouse position of the previous event (mouse down or mouse move)
-      events, // event registrations held during each selection
-      r,      // current selection rect
-      downElem,
-      cancelClick,
-      inited;
-
-    // Redraw mark on mouse move - default is the same as the initial pv.Behavior.select
-    var autoRefresh = pv.get(keyArgs, 'autoRefresh', true);
+ pv.Behavior.select = function(){
+    var collapse = null; // dimensions to collapse
+    var kx = 1; // x-dimension 1/0
+    var ky = 1; // y-dimension 1/0
     
-    // Whether the datum is where the selection rect coordinates are stored
-    var datumIsRect = pv.get(keyArgs, 'datumIsRect', true);
-    
-    /** @private protovis mark event handler */
-    function mousedown(d) {
-      var ev = arguments[arguments.length - 1]; // last argument
-      
-      downElem = ev.target;
-      cancelClick = false;
-      index = this.index;
-      scene = this.scene;
-      m1 = this.mouse();
-      
-      // Initialize
-      if(!inited){
-          inited = true;
-          this.addEventInterceptor('click', eventInterceptor, /*before*/true);
-      }
-      
-      // Add event handlers to follow the selection.
-      // These are unregistered on mouse up.
-      if(!events){
-          var root = this.root.scene.$g;
-          events = [
-              // Attaching events to the canvas (instead of only to the document)
-              // allows canceling the bubbling of the events before they 
-              // reach the handlers of ascendant elements (of canvas).
-              [root,     'mousemove', pv.listen(root, 'mousemove', mousemove)],
-              [root,     'mouseup',   pv.listen(root, 'mouseup',   mouseup  )],
-              
-              // It is still necessary to receive events
-              // that are sourced outside the canvas
-              [document, 'mousemove', pv.listen(document, 'mousemove', mousemove)],
-              [document, 'mouseup',   pv.listen(document, 'mouseup',   mouseup  )]
-          ];
-      }
-      
-      if(datumIsRect){
-          r = d;
-          r.x = m1.x;
-          r.y = m1.y;
-          r.dx = r.dy = 0;
-      } else {
-          mprev = m1;
-          this.selectionRect = r = new pv.Shape.Rect(m1.x, m1.y, 0, 0);
-      }
-
-      pv.Mark.dispatch('selectstart', scene, index, ev);
-    }
-    
-    /** @private DOM event handler */
-    function mousemove(ev) {
-        if (!scene) { return; }
-      
-        // Prevent the event from bubbling off the canvas 
-        // (if being handled by the root)
-        ev.stopPropagation();
-      
-        scene.mark.context(scene, index, function() {
-            // this === scene.mark
-            var m2 = this.mouse();
-      
-            if(datumIsRect){
-                r.x = Math.max(0, Math.min(m1.x, m2.x));
-                r.y = Math.max(0, Math.min(m1.y, m2.y));
-                r.dx = Math.min(this.width(), Math.max(m2.x, m1.x)) - r.x;
-                r.dy = Math.min(this.height(), Math.max(m2.y, m1.y)) - r.y;
-            } else {
-                if(mprev && m2.distance2(mprev).dist2 <= 2){
-                    return;
-                }
-      
-                mprev = m2;
-          
-                var x = m1.x;
-                var y = m1.y;
-                this.selectionRect = r = new pv.Shape.Rect(x, y, m2.x - x, m2.y - y);
+    // Executed in context of initial mark scene
+    var shared = {
+        dragstart: function(ev){
+            var drag = ev.drag;
+            drag.type = 'select';
+            
+            var m1 = drag.m1;
+            var r  = drag.d;
+            r.drag = drag;
+            
+            if(kx){
+                r.x  = m1.x;
+                r.dx = 0;
             }
-      
-            if(autoRefresh){
+            
+            if(ky){
+                r.y  = m1.y;
+                r.dy = 0;
+            }
+            
+            pv.Mark.dispatch('selectstart', drag.scene, drag.index, ev);
+        },
+        
+        drag: function(ev){
+            var drag = ev.drag;
+            var m1 = drag.m1;
+            var r  = drag.d;
+            
+            var constraint = shared.positionConstraint;
+            if(constraint){
+                drag.m = drag.m.clone();
+                constraint(drag);
+            }
+            
+            var m = drag.m;
+            if(kx){
+                r.x  = Math.max(0, Math.min(m1.x, m.x));
+                r.dx = Math.min(this.width(),  Math.max(m.x, m1.x)) - r.x;
+            }
+            
+            if(ky){
+                r.y  = Math.max(0, Math.min(m1.y, m.y));
+                r.dy = Math.min(this.height(), Math.max(m.y, m1.y)) - r.y;
+            }
+            
+            if(shared.autoRender){
                 this.render();
             }
       
-            pv.Mark.dispatch('select', scene, index, ev);
-        });
-    }   
-
-    /** @private DOM event handler */
-    function mouseup(ev) {
-        if (!scene) { return; }
-      
-        // A click event is generated whenever
-        // the element where the mouse goes down
-        // is the same element of where the mouse goes up.
-        // We will try to intercept the generated click event and swallow it,
-        // when a selection has occurred.
-        cancelClick = (downElem === ev.target) && (r.dx > 0 || r.dy > 0);
-        if(!cancelClick){
-            downElem = null;
-        }
-      
-        // Prevent the event from bubbling off the canvas 
-        // (if being handled by the root)
-        ev.stopPropagation();
-      
-        // Unregister events
-        if(events){
-            events.forEach(function(registration){
-                pv.unlisten.apply(pv, registration);
-            });
-            events = null;
-        }
-      
-        pv.Mark.dispatch('selectend', scene, index, ev);
-      
-        // Cleanup
-        if(!datumIsRect){
-            scene.mark.selectionRect = mprev = null;
-        }
-      
-        scene = index = m1 = r = null;
-    }
-
-    /**
-     * Intercepts click events and, 
-     * if they were consequence
-     * of a mouse down and up of a selection,
-     * cancels them.
-     * 
-     * @returns {boolean|array} 
-     * <tt>false</tt> to indicate that the event is handled,
-     * otherwise, an event handler info array: [handler, type, scenes, index, ev].
-     * 
-     * @private
-     */
-    function eventInterceptor(type, ev){
-        if(cancelClick && downElem === ev.target){
-            // Event is handled
-            cancelClick = false;
-            downElem = null;
-            return false;
-        }
+            pv.Mark.dispatch('select', drag.scene, drag.index, ev);
+        },
         
-        // Let event be handled normally
-    }
-
+        dragend: function(ev){
+            var drag = ev.drag;
+            try {
+                pv.Mark.dispatch('selectend', drag.scene, drag.index, ev);
+            } finally {
+                var r = drag.d;
+                delete r.drag;
+            }
+        }
+    };
+    
+    var mousedown = pv.Behavior.dragBase(shared);
+    
+    /**
+     * Sets or gets the collapse parameter.
+     * By default, the selection rectangle is sensitive to both dimensions.
+     * However, with some visualizations it is desirable to
+     * consider only a single dimension, such as the <i>x</i>-dimension for an
+     * independent variable. In this case, the collapse parameter can be set to
+     * collapse the <i>y</i> dimension:
+     *
+     * <pre>    .event("mousedown", pv.Behavior.select().collapse("y"))</pre>
+     *
+     * @function
+     * @returns {pv.Behavior.select} this, or the current collapse parameter.
+     * @name pv.Behavior.select.prototype.collapse
+     * @param {string} [x] the new collapse parameter
+     */
+    mousedown.collapse = function(x) {
+      if (arguments.length) {
+        collapse = String(x);
+        switch (collapse) {
+          case "y": kx = 1; ky = 0; break;
+          case "x": kx = 0; ky = 1; break;
+          default:  kx = 1; ky = 1; break;
+        }
+        return mousedown;
+      }
+      return collapse;
+    };
+    
     return mousedown;
 };
-  

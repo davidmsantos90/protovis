@@ -62,7 +62,7 @@ pv.Scale.ordinal = function() {
     if (!(x in i)) i[x] = d.push(x) - 1;
     return r[i[x] % r.length];
   }
-
+  
   /**
    * Sets or gets the input domain. This method can be invoked several ways:
    *
@@ -144,6 +144,8 @@ pv.Scale.ordinal = function() {
           ? ((arguments.length > 1) ? pv.map(array, f) : array)
           : Array.prototype.slice.call(arguments);
       if (typeof r[0] == "string") r = r.map(pv.color);
+      r.min = r[0];
+      r.max = r[r.length - 1];
       return this;
     }
     return r;
@@ -180,7 +182,8 @@ pv.Scale.ordinal = function() {
         step = (max - min) / N;
         r = pv.range(min + step / 2, max, step);
     }
-    
+    r.min = min;
+    r.max = max;
     r.step = step;
     return this;
   };
@@ -223,6 +226,8 @@ pv.Scale.ordinal = function() {
     }
     r.band   = r.step * band;
     r.margin = r.step - r.band;
+    r.min = min;
+    r.max = max;
     return this;
   };
 
@@ -281,7 +286,8 @@ pv.Scale.ordinal = function() {
     r.step   = S;
     r.band   = B;
     r.margin = M;
-    
+    r.min = min;
+    r.max = max;
     return this;
   };
 
@@ -306,6 +312,8 @@ pv.Scale.ordinal = function() {
     
     r = (n == 1) ? [(min + max) / 2]
         : pv.range(min, max + step / 2, step);
+    r.min = min;
+    r.max = max;
     return this;
   };
 
@@ -367,9 +375,53 @@ pv.Scale.ordinal = function() {
       r.step = step;
       r.margin = step - r.band;
     }
+    r.min = min;
+    r.max = max;
     return this;
   };
-
+  
+  /**
+   * Inverts the specified value in the output range, 
+   * returning the index of the closest corresponding value in the input domain.
+   * This is frequently used to convert the mouse location (see {@link pv.Mark#mouse}) 
+   * to a value in the input domain. 
+   * 
+   * The number of input domain values is returned
+   * if the specified point is closest to the end margin of the last input domain value.
+   * 
+   * @function
+   * @name pv.Scale.quantitative.prototype.invertIndex
+   * @param {number} y a value in the output range (a pixel location).
+   * @returns {number} the index of the closest input domain value.
+   */
+  scale.invertIndex = function(y) {
+    var N = this.domain().length;
+    if(N === 0){
+        return -1;
+    }
+    
+    var r = this.range();
+    var R = r.max - r.min;
+    if(R === 0){
+        return 0;
+    }
+    
+    var S = R/N;
+    if(y >= r.max){
+        return N;
+    }
+    
+    if(y < r.min){
+        return 0;
+    }
+    
+    var i  = (y - r.min) / S;
+    var il = Math.floor(i);
+    var iu = Math.ceil(i);
+    
+    return (i - il) <= (iu - i) ? il : iu;
+  };
+  
   /**
    * Returns a view of this scale by the specified accessor function <tt>f</tt>.
    * Given a scale <tt>y</tt>, <tt>y.by(function(d) d.foo)</tt> is equivalent to

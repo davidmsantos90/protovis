@@ -95,6 +95,7 @@ JS_LAYOUT_FILES = \
 	src/layout/Matrix.js \
 	src/layout/Bullet.js \
 	src/behavior/Behavior.js \
+	src/behavior/DragBase.js \
 	src/behavior/Drag.js \
 	src/behavior/Point.js \
 	src/behavior/Select.js \
