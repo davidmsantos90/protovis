@@ -46,8 +46,21 @@ pv.Scale.interpolator = function(start, end) {
   }
 
   /* For now, assume color. */
+  
+  // Gradients are not supported in animations
+  // Just show the first one if < 0.5 and the other if >= 0.5
+  var startGradient = (start.type && start.type !== 'solid');
+  var endGradient   = (end.type   && end  .type !== 'solid');
+  if (startGradient || endGradient) {
+      start = startGradient ? start : pv.color(start).rgb();
+      end   = endGradient   ? end   : pv.color(end  ).rgb();
+      return function(t){
+          return t < 0.5 ? start : end;
+      };
+  }
+  
   start = pv.color(start).rgb();
-  end = pv.color(end).rgb();
+  end   = pv.color(end  ).rgb();
   return function(t) {
     var a = start.a * (1 - t) + end.a * t;
     if (a < 1e-5) a = 0; // avoid scientific notation

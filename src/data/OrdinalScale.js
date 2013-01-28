@@ -392,9 +392,10 @@ pv.Scale.ordinal = function() {
    * @function
    * @name pv.Scale.quantitative.prototype.invertIndex
    * @param {number} y a value in the output range (a pixel location).
+   * @param {boolean} [noRound=false] returns an un-rounded result.
    * @returns {number} the index of the closest input domain value.
    */
-  scale.invertIndex = function(y) {
+  scale.invertIndex = function(y, noRound) {
     var N = this.domain().length;
     if(N === 0){
         return -1;
@@ -415,11 +416,8 @@ pv.Scale.ordinal = function() {
         return 0;
     }
     
-    var i  = (y - r.min) / S;
-    var il = Math.floor(i);
-    var iu = Math.ceil(i);
-    
-    return (i - il) <= (iu - i) ? il : iu;
+    var i = (y - r.min) / S;
+    return noRound ? i : Math.round(i);
   };
   
   /**

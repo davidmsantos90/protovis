@@ -59,6 +59,7 @@
     var collapse = null; // dimensions to collapse
     var kx = 1; // x-dimension 1/0
     var ky = 1; // y-dimension 1/0
+    var preserveLength = false;
     
     // Executed in context of initial mark scene
     var shared = {
@@ -66,18 +67,38 @@
             var drag = ev.drag;
             drag.type = 'select';
             
-            var m1 = drag.m1;
             var r  = drag.d;
             r.drag = drag;
             
+            drag.max = {
+                x: this.width(),
+                y: this.height()
+            };
+            
+            drag.min = {
+                x: 0,
+                y: 0
+            };
+                
+            var constraint = shared.positionConstraint;
+            if(constraint){
+                drag.m = drag.m.clone();
+                constraint(drag);
+            }
+            
+            var m = drag.m;
             if(kx){
-                r.x  = m1.x;
-                r.dx = 0;
+                r.x = shared.bound(m.x, 'x');
+                if(!preserveLength){
+                    r.dx = 0;
+                }
             }
             
             if(ky){
-                r.y  = m1.y;
-                r.dy = 0;
+                r.y = shared.bound(m.y, 'y');
+                if(!preserveLength){
+                    r.dy = 0;
+                }
             }
             
             pv.Mark.dispatch('selectstart', drag.scene, drag.index, ev);
@@ -88,6 +109,9 @@
             var m1 = drag.m1;
             var r  = drag.d;
             
+            drag.max.x = this.width();
+            drag.max.y = this.height();
+            
             var constraint = shared.positionConstraint;
             if(constraint){
                 drag.m = drag.m.clone();
@@ -95,14 +119,29 @@
             }
             
             var m = drag.m;
+            
             if(kx){
-                r.x  = Math.max(0, Math.min(m1.x, m.x));
-                r.dx = Math.min(this.width(),  Math.max(m.x, m1.x)) - r.x;
+                var bx = Math.min(m1.x, m.x);
+                bx  = shared.bound(bx, 'x');
+                r.x = bx;
+                
+                if(!preserveLength){
+                    var ex = Math.max(m.x,  m1.x);
+                    ex = shared.bound(ex, 'x');
+                    r.dx = ex - bx;
+                }
             }
             
             if(ky){
-                r.y  = Math.max(0, Math.min(m1.y, m.y));
-                r.dy = Math.min(this.height(), Math.max(m.y, m1.y)) - r.y;
+                var by = Math.min(m1.y, m.y);
+                by  = shared.bound(by, 'y');
+                r.y = by;
+                
+                if(!preserveLength){
+                    var ey = Math.max(m.y,  m1.y);
+                    ey = shared.bound(ey, 'y');
+                    r.dy = ey - by;
+                }
             }
             
             if(shared.autoRender){
@@ -151,6 +190,14 @@
         return mousedown;
       }
       return collapse;
+    };
+    
+    mousedown.preserveLength = function(_) {
+      if (arguments.length) {
+        preserveLength = !!_;
+        return mousedown;
+      }
+       return preserveLength;
     };
     
     return mousedown;

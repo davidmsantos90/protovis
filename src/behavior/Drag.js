@@ -70,7 +70,6 @@ pv.Behavior.drag = function() {
     var ky = 1; // y-dimension 1/0
     
     var v1;  // initial mouse-particle offset
-    var max;
     
     // Executed in context of initial mark scene
     var shared = {
@@ -78,8 +77,8 @@ pv.Behavior.drag = function() {
             var drag = ev.drag;
             drag.type = 'drag';
             
-            var p    = drag.d; // particle being dragged
-            var fix  = pv.vector(p.x, p.y);
+            var p   = drag.d; // particle being dragged
+            var fix = pv.vector(p.x, p.y);
             
             p.fix  = fix;
             p.drag = drag;
@@ -87,9 +86,14 @@ pv.Behavior.drag = function() {
             v1 = fix.minus(drag.m1);
             
             var parent = this.parent;
-            max = {
+            drag.max = {
                x: parent.width()  - (p.dx || 0),
                y: parent.height() - (p.dy || 0)
+            };
+            
+            drag.min = {
+                x: 0,
+                y: 0
             };
             
             if(shared.autoRender){
@@ -113,11 +117,11 @@ pv.Behavior.drag = function() {
             
             var m = drag.m;
             if(kx){
-                p.x = p.fix.x = Math.max(0, Math.min(m.x, max.x));
+                p.x = p.fix.x = shared.bound(m.x, 'x');
             }
             
             if(ky){
-                p.y = p.fix.y = Math.max(0, Math.min(m.y, max.y));
+                p.y = p.fix.y = shared.bound(m.y, 'y');
             }
             
             if(shared.autoRender){

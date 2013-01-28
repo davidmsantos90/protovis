@@ -9,6 +9,9 @@
     
     shared.autoRender = true;
     shared.positionConstraint = null;
+    shared.bound = function(v, a_p){
+        return Math.max(drag.min[a_p], Math.min(drag.max[a_p], v));
+    };
     
     /** @private protovis mark event handler */
     function mousedown(d) {
@@ -65,6 +68,12 @@
         };
         
         shared.dragstart.call(this, ev);
+        
+        var m = drag.m;
+        if(m !== m1){
+            m1.x = m.x;
+            m1.y = m.y;
+        }
     }
     
     /** @private DOM event handler */
@@ -96,6 +105,11 @@
             shared.drag.call(this, ev);
             
             // m2 may have changed
+            var m = drag.m;
+            if(m !== m2){
+                m2.x = m.x;
+                m2.y = m.y;
+            }
         });
     }
 

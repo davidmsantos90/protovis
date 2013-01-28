@@ -57,7 +57,6 @@
  * @see pv.Behavior.drag
  */
 pv.Behavior.resize = function(side) {
-    var max;
     var preserveOrtho = false;
     
     var isLeftRight = (side === 'left' || side === 'right');
@@ -82,10 +81,16 @@ pv.Behavior.resize = function(side) {
             }
             
             // Capture parent's dimensions once
+            // These can be overridden to change the bounds checking behavior
             var parent = this.parent;
-            max = {
+            drag.max = {
                 x: parent.width(),
                 y: parent.height()
+            };
+            
+            drag.min = {
+                x: 0,
+                y: 0
             };
             
             pv.Mark.dispatch("resizestart", drag.scene, drag.index, ev);
@@ -101,18 +106,29 @@ pv.Behavior.resize = function(side) {
                 constraint(drag);
             }
             
-            var m  = drag.m;
-            var r  = drag.d;
-            var parent = this.parent;
+            var m = drag.m;
+            var r = drag.d;
             
             if(!preserveOrtho || isLeftRight){
-                r.x  = Math.max(0,     Math.min(m1.x, m.x));
-                r.dx = Math.min(max.x, Math.max(m.x,  m1.x)) - r.x;
+                var bx = Math.min(m1.x, m.x );
+                var ex = Math.max(m.x,  m1.x);
+                
+                bx = shared.bound(bx, 'x');
+                ex = shared.bound(ex, 'x');
+                
+                r.x  = bx;
+                r.dx = ex - bx;
             }
             
             if(!preserveOrtho || !isLeftRight){
-                r.y  = Math.max(0,     Math.min(m1.y, m.y));
-                r.dy = Math.min(max.y, Math.max(m.y, m1.y)) - r.y;
+                var by = Math.min(m1.y, m.y );
+                var ey = Math.max(m.y,  m1.y);
+                
+                bx = shared.bound(by, 'y');
+                ex = shared.bound(ey, 'y');
+                
+                r.y  = by;
+                r.dy = ey - by;
             }
             
             if(shared.autoRender){
