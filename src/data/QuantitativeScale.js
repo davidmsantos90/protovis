@@ -423,7 +423,7 @@ pv.Scale.quantitative = function() {
         overflow = true;
     }
     
-    var step = Math.pow(10, exponent);
+    step = Math.pow(10, exponent);
     var mObtained = (span / step);
     
     var err = m / mObtained;
@@ -438,8 +438,8 @@ pv.Scale.quantitative = function() {
     // Account for floating point precision errors
     exponent = Math.floor(pv.log(step, 10) + 1e-10);
         
-    var start = step * Math[roundInside ? 'ceil'  : 'floor'](min / step);
-    var end   = step * Math[roundInside ? 'floor' : 'ceil' ](max / step);
+    start = step * Math[roundInside ? 'ceil'  : 'floor'](min / step);
+    end   = step * Math[roundInside ? 'floor' : 'ceil' ](max / step);
     
     usedNumberExponent = Math.max(0, -exponent);
     

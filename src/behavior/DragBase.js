@@ -3,8 +3,6 @@
         downElem,
         cancelClick,
         inited,
-        autoRender = true,
-        positionConstraint,
         drag;
     
     shared.autoRender = true;
@@ -49,15 +47,12 @@
         
         // --------------
         
-        ev = pv.extend(ev);
-        
         var m1    = this.mouse();
         var scene = this.scene;
         var index = this.index;
         
         drag = 
-        scene[index].drag = 
-        ev.drag = {
+        scene[index].drag = {
             phase: 'start',
             m:     m1,    // current relevant mouse position
             m1:    m1,    // the mouse position of the mousedown
@@ -66,7 +61,9 @@
             scene: scene, // scene context
             index: index  // scene index
         };
-        
+
+        ev = wrapEvent(ev, drag);
+
         shared.dragstart.call(this, ev);
         
         var m = drag.m;
@@ -86,8 +83,7 @@
         // (if being handled by the root)
         ev.stopPropagation();
         
-        ev = pv.extend(ev);
-        ev.drag = drag;
+        ev = wrapEvent(ev, drag);
         
         // In the context of the mousedown scene
         var scene = drag.scene;
@@ -138,8 +134,7 @@
         // (if being handled by the root)
         ev.stopPropagation();
         
-        ev = pv.extend(ev);
-        ev.drag = drag;
+        ev = wrapEvent(ev, drag);
         
         // Unregister events
         if(events){
@@ -159,6 +154,32 @@
             drag = null;
             delete scene[index].drag;
         }
+    }
+
+    function wrapEvent(ev, drag){
+        try{
+            ev.drag = drag;
+            return ev;
+        } catch(ex) {
+            // SWALLOW
+        }
+
+        // wrap
+        var ev2 = {};
+        for(var p in ev){
+            var v = ev[p];
+            ev2[p] = typeof v !== 'function' ? v : bindEventFun(f, ev);
+        }
+        
+        ev2._sourceEvent = ev;
+
+        return ev2;
+    }
+
+    function bindEventFun(f, ctx){
+        return function(){
+            return f.apply(ctx, arguments);
+        };
     }
 
     /**

@@ -116,7 +116,6 @@
     Polygon.prototype.containsPoint = function(p){
         var bbox = this.bbox();
         if(!bbox.containsPoint(p)){
-            //console.log("Polygon point out of bbox");
             return false;
         }
         
@@ -131,8 +130,6 @@
                 intersectCount++;
             }
         });
-        
-        //console.log("Polygon intersects=" + intersectCount + "/" + edges.length);
         
         // Inside if odd number of intersections
         return (intersectCount & 1) === 1;
