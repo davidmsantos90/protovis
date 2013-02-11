@@ -284,7 +284,7 @@ pv.Color.Rgb.prototype.rgb = function() { return this; };
  * @returns {pv.Color.Rgb} a brighter color.
  */
 pv.Color.Rgb.prototype.brighter = function(k) {
-  k = Math.pow(0.7, arguments.length ? k : 1);
+  k = Math.pow(0.7, k != null ? k : 1);
   var r = this.r, g = this.g, b = this.b, i = 30;
   if (!r && !g && !b) return pv.rgb(i, i, i, this.a);
   if (r && (r < i)) r = i;
@@ -309,7 +309,7 @@ pv.Color.Rgb.prototype.brighter = function(k) {
  * @returns {pv.Color.Rgb} a darker color.
  */
 pv.Color.Rgb.prototype.darker = function(k) {
-  k = Math.pow(0.7, arguments.length ? k : 1);
+  k = Math.pow(0.7, k != null ? k : 1);
   return pv.rgb(
       Math.max(0, Math.floor(k * this.r)),
       Math.max(0, Math.floor(k * this.g)),

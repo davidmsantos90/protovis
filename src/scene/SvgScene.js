@@ -59,8 +59,8 @@ pv.Scene = pv.SvgScene = {
 pv.SvgScene.updateAll = function(scenes) {
   if (scenes.length
       && scenes[0].reverse
-      && (scenes.type != "line")
-      && (scenes.type != "area")) {
+      && (scenes.type !== "line")
+      && (scenes.type !== "area")) {
     var reversed = pv.extend(scenes);
     for (var i = 0, j = scenes.length - 1; j >= 0; i++, j--) {
       reversed[i] = scenes[j];
@@ -249,7 +249,7 @@ pv.SvgScene.dispatch = pv.listener(function(e) {
       case "mousewheel":
         e.wheel = (window.opera ? 12 : 1) * e.wheelDelta;
         break;
-      }
+    }
 
     if (pv.Mark.dispatch(type, t.scenes, t.index, e)) {
       e.preventDefault();

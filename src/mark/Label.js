@@ -155,19 +155,31 @@ pv.Label.prototype.defaults = new pv.Label()
     .textMargin(3);
 
 
-pv.Label.prototype.getShapeCore = function(scenes, index){
+pv.Label.prototype.getShapeCore = function(scenes, index, inset){
     var s = scenes[index];
-    
+
     var size = pv.Text.measure(s.text, s.font);
+    var l = s.left;
+    var t = s.top;
+    var w = size.width;
+    var h = size.height;
+    if(inset > 0 && inset <= 1){
+        var dw = inset * w;
+        var dh = inset * h;
+        l -= dw;
+        t -= dh;
+        w -= dw*2;
+        h -= dh*2;
+    }
     
     return pv.Label.getPolygon(
-            size.width,
-            size.height,
+            w,
+            h,
             s.textAlign,
             s.textBaseline,
             s.textAngle,
             s.textMargin)
-            .apply(pv.Transform.identity.translate(s.left, s.top));
+            .apply(pv.Transform.identity.translate(l, t));
 };
 
 pv.Label.getPolygon = function(textWidth, textHeight, align, baseline, angle, margin){

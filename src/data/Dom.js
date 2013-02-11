@@ -242,7 +242,7 @@ pv.Dom.Node.prototype.insertBefore = function(n, r){
  * @returns {pv.Dom.Node} the inserted child.
  */
 pv.Dom.Node.prototype.insertAt = function(n, i) {
-    if (i == null){     
+    if (i == null){
         return this.appendChild(n);
     }
     
@@ -255,16 +255,16 @@ pv.Dom.Node.prototype.insertAt = function(n, i) {
     if(i > L){
         throw new Error("Index out of range.");
     }
+
+    var pn = n.parentNode;
+    if (pn) { // may be that: pn === this, but should i be corrected in case n is below i?
+        pn.removeChild(n);
+    }
     
     var ni = i + 1;
     var firstDirtyIndex = this._firstDirtyChildIndex;
     if(ni < firstDirtyIndex){
         this._firstDirtyChildIndex = ni;
-    }
-    
-    var pn = n.parentNode;
-    if (pn) {
-        pn.removeChild(n);
     }
     
     var r = ns[i];
@@ -273,6 +273,7 @@ pv.Dom.Node.prototype.insertAt = function(n, i) {
     n._childIndex = i;
     
     var psib = n.previousSibling = r.previousSibling;
+    r.previousSibling = n;
     if (psib) {
         psib.nextSibling = n;
     } else {
@@ -303,22 +304,22 @@ pv.Dom.Node.prototype.removeAt = function(i) {
       }
       
       var psib = n.previousSibling;
-      if (psib) { 
-          psib.nextSibling = n.nextSibling; 
-      } else { 
-          this.firstChild = n.nextSibling; 
-      }
-      
       var nsib = n.nextSibling;
-      if (nsib) {
-          nsib.previousSibling = n.previousSibling;
+      if (psib) { 
+          psib.nextSibling = nsib;
       } else {
-          this.lastChild = n.previousSibling;
+          this.firstChild = nsib;
       }
       
-      delete n.nextSibling;
-      delete n.previousSibling;
-      delete n.parentNode;
+      if (nsib) {
+          nsib.previousSibling = psib;
+      } else {
+          this.lastChild = psib;
+      }
+      
+      n.nextSibling = null;
+      n.previousSibling = null;
+      n.parentNode = null;
   }
   
   return n;

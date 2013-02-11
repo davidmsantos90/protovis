@@ -1,9 +1,49 @@
 pv.SvgScene.panel = function(scenes) {
-  var g = scenes.$g, e = g && g.firstChild;
+  /* With clipping:
+   * <g> scenes.$g -> g
+   *     group for panel content
+   *
+   *     instance 0
+   *     <g clip-path="url(#123)"> -> c -> g -> scenes.$g
+   *        <clipPath id="123"> -> e
+   *            <rect x="s.left" y="s.top" width="s.width" height="s.height" />
+   *        </clipPath>
+   *        <rect fill="" /> -> e
+   *        <g>child 0 - childScenes $g</g>
+   *        <g>child 1 - childScenes.$g</g>
+   *        ...
+   *        <rect stroke="" /> -> e
+   *
+   *        restore initial group
+   *        scenes.$g <- g <- c.parentNode,
+   *     </g>
+   *
+   *     instance 1
+   *     
+   * </g>
+   *
+   * Without clipping:
+   * <g> -> g
+   *     group for panel content
+   *
+   *     instance 0
+   *     <rect fill="" /> -> e
+   *     <g>child 0</g>
+   *     <g>child 1</g>
+   *     ...
+   *     <rect stroke="" /> -> e
+   *     
+   *     instance 1
+   *     <rect fill="" />
+   *     ...
+   * </g>
+   */
+  var g = scenes.$g,
+      e = g && g.firstChild;
   var complete = false;
   for (var i = 0; i < scenes.length; i++) {
     var s = scenes[i];
-
+    
     /* visible */
     if (!s.visible) continue;
 
@@ -109,7 +149,7 @@ pv.SvgScene.panel = function(scenes) {
     }
 
     /* clip (nest children) */
-    if (s.overflow == "hidden") {
+    if (s.overflow === "hidden") {
       var id = pv.id().toString(36),
           c = this.expect(e, "g", scenes, i, {"clip-path": "url(#" + id + ")"});
       if (!c.parentNode) g.appendChild(c);
@@ -133,21 +173,25 @@ pv.SvgScene.panel = function(scenes) {
     var k = this.scale,
         t = s.transform,
         x = s.left + t.x,
-        y = s.top + t.y;
+        y = s.top  + t.y;
     this.scale *= t.k;
 
     /* children */
-    this.eachChild(scenes, i, function(childScenes){
-        childScenes.$g = e = this.expect(e, "g", scenes, i, {
-            "transform": "translate(" + x + "," + y + ")" + 
+    if(scenes[i].children.length){
+        var attrs = {
+            "transform": "translate(" + x + "," + y + ")" +
                          (t.k != 1 ? " scale(" + t.k + ")" : "")
-        });
+        };
         
-        this.updateAll(childScenes);
-        if (!e.parentNode) g.appendChild(e);
-        e = e.nextSibling;
-    });
-    
+        this.eachChild(scenes, i, function(childScenes){
+            childScenes.$g = e = this.expect(e, "g", scenes, i, attrs);
+
+            this.updateAll(childScenes);
+            if (!e.parentNode) g.appendChild(e);
+            e = e.nextSibling;
+        });
+    }
+
     /* transform (pop) */
     this.scale = k;
 
@@ -155,11 +199,12 @@ pv.SvgScene.panel = function(scenes) {
     e = this.stroke(e, scenes, i);
 
     /* clip (restore group) */
-    if (s.overflow == "hidden") {
+    if (s.overflow === "hidden") {
       scenes.$g = g = c.parentNode;
       e = c.nextSibling;
     }
-  }
+  } // for next panel instance
+  
   complete = true;
   return e;
 };
@@ -183,7 +228,7 @@ pv.SvgScene.eachChild = function(scenes, i, fun, ctx){
 };
 
 pv.SvgScene.fill = function(e, scenes, i) {
-    this.removeFillStyleDefinitions(scenes);
+  this.removeFillStyleDefinitions(scenes);
 
   var s = scenes[i], fill = s.fillStyle;
   if (fill.opacity || s.events == "all") {

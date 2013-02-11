@@ -123,7 +123,23 @@ pv.SvgScene.areaFixed = function(elm, scenes, from, to, addEvents) {
 };
 
 pv.SvgScene.areaSegmentedSmart = function(elm, scenes) {
+  if(!elm){
+    elm = scenes.$g.appendChild(this.create("g"));
+  }
+  var gg = elm;
   
+  // Create colored/no-events group
+  elm = gg.firstChild;
+  
+  var g1 = this.expect(elm, "g", scenes, 0, {'pointer-events': 'none'});
+  if (!g1.parentNode) {
+      gg.appendChild(g1);
+  }
+  
+  // Set current default parent
+  scenes.$g = g1;
+  elm = g1.firstChild;
+
   var eventsSegments = scenes.mark.$hasHandlers ? [] : null;
   
   /* Visual only */
@@ -188,9 +204,24 @@ pv.SvgScene.areaSegmentedSmart = function(elm, scenes) {
       return this.append(elm, scenes, from);
     });
   });
-  
+
+  // Remove any excess segments from previous render
+  this.removeSiblings(elm);
+
   /* Events */
+  var g2;
   if(eventsSegments){
+    // Create colored/no-events group
+    elm = g1.nextSibling;
+    g2 = this.expect(elm, "g", scenes, 0);
+    if (!g2.parentNode) {
+        gg.appendChild(g2);
+    }
+
+    // Set current default parent
+    scenes.$g = g2;
+    elm = g2.firstChild;
+
     eventsSegments.forEach(function(segment){
       var from  = segment.from;
       var pathsT = segment.top;
@@ -223,9 +254,15 @@ pv.SvgScene.areaSegmentedSmart = function(elm, scenes) {
         }
       }, this); 
     }, this);
+
+    // Remove any excess paths from previous render
+    this.removeSiblings(elm);
   }
   
-  return elm;
+  // Restore initial current parent
+  scenes.$g = gg;
+
+  return (g2 || g1).nextSibling;
 };
 
 pv.SvgScene.areaSegmentPaths = function(scenes, from, to) {

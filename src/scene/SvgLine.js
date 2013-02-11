@@ -1,3 +1,29 @@
+/* not segmented
+ * <g> <-> scenes.$g
+ *    <path ... /> only segment
+ * </g>
+ *
+ * segmented full
+ * <g> <-> scenes.$g
+ *    <path ... /> instance 0
+ *    <path ... /> instance 1
+ *    ...
+ * </g>
+ *
+ * segmented smart
+ * <g> <-> scenes.$g
+ *    <g> colored, no events
+ *        <path /> segment 0
+ *        <path /> segment 1
+ *        ...
+ *    </g>
+ *    <g> transparent, fully segmented, events
+ *        <path /> instance 0
+ *        <path /> instance 1
+ *        ...
+ *    </g>
+ * </g>
+ */
 pv.SvgScene.line = function(scenes) {
   var e = scenes.$g.firstChild;
 
@@ -98,7 +124,39 @@ pv.SvgScene.lineFixed = function(elm, scenes) {
 };
 
 pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
-   
+  /*
+   * <g> <-> scenes.$g <-> elm --> gg
+   *    <g> colored, no events
+   *        <path /> segment 0
+   *        <path /> segment 1
+   *        ...
+   *    </g>
+   *    <g> transparent, fully segmented, events (wen existent)
+   *        <path /> instance 0
+   *        <path /> instance 1
+   *        ...
+   *    </g>
+   * </g>
+   */
+
+  if(!elm){
+    elm = scenes.$g.appendChild(this.create("g"));
+  }
+  
+  var gg = elm;
+
+  // Create colored/no-events group
+  elm = gg.firstChild;
+  
+  var g1 = this.expect(elm, "g", scenes, 0, {'pointer-events': 'none'});
+  if (!g1.parentNode) {
+      gg.appendChild(g1);
+  }
+
+  // Set current default parent
+  scenes.$g = g1;
+  elm = g1.firstChild;
+  
   var eventsSegments = scenes.mark.$hasHandlers ? [] : null;
   
   /* Visual only */
@@ -164,9 +222,24 @@ pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
       return this.append(elm, scenes, from);
     });
   });
+
+  // Remove any excess segments from previous render
+  this.removeSiblings(elm);
   
   /* Events */
+  var g2;
   if(eventsSegments){
+    // Create colored/no-events group
+    elm = g1.nextSibling;
+    g2 = this.expect(elm, "g", scenes, 0);
+    if (!g2.parentNode) {
+        gg.appendChild(g2);
+    }
+   
+    // Set current default parent
+    scenes.$g = g2;
+    elm = g2.firstChild;
+    
     eventsSegments.forEach(function(segment){
       var from  = segment.from;
       var paths = segment.paths;
@@ -177,7 +250,8 @@ pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
           'fill-opacity':      0.005, // VML requires this much to fire events
           'stroke':            'rgb(127,127,127)',
           'stroke-opacity':    0.005, // VML idem
-          'stroke-width':      5
+          'stroke-width':      10,
+          'stroke-dasharray':  null
         };
       
       paths.forEach(function(path, j){
@@ -197,9 +271,15 @@ pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
         }
       }, this); 
     }, this);
+
+    // Remove any excess paths from previous render
+    this.removeSiblings(elm);
   }
+
+  // Restore initial current parent
+  scenes.$g = gg;
   
-  return elm;
+  return (g2 || g1).nextSibling;
 };
 
 pv.SvgScene.lineSegmentedFull = function(e, scenes) {
@@ -351,7 +431,7 @@ pv.SvgScene.lineSegmentPaths = function(scenes, from, to) {
 
   NOTE: 
   As yy points down, and because of the way Vector.perp() is written,
-  perp() corresponds to rotating 90º clockwise.
+  perp() corresponds to rotating 90ï¿½ clockwise.
   
   -----
   

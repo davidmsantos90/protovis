@@ -111,16 +111,23 @@ pv.error = function(e) {
  * @param {function} the event handler callback.
  */
 pv.listen = function(target, type, listener) {
+  listener = pv.listener(listener);
+
   if (type === 'load' || type === 'onload'){
-      return pv.listenForPageLoad(pv.listener(listener));
+      return pv.listenForPageLoad(listener);
   }
 
-  listener = pv.listener(listener);
-  target.addEventListener
-      ? target.addEventListener(type, listener, false)
-      : target.attachEvent('on' + type, listener);
+  if(target.addEventListener){
+    target.addEventListener(type, listener, false);
+  } else {
+      if (target === window) {
+        target = document.documentElement;
+      }
+
+      target.attachEvent('on' + type, listener);
+  }
   
-   return listener;
+  return listener;
 };
 
 /**
@@ -151,28 +158,32 @@ pv.unlisten = function(target, type, listener){
  * @returns {function} the wrapped event handler.
  */
 pv.listener = function(f) {
-  return f.$listener || (f.$listener = function(e) {
+  return f.$listener || (f.$listener = function(ev) {
       try {
-        // Fix event (adapted from jQuery)
-        if(e.pageX == null && e.clientX != null) {
-            var eventDoc = (e.target && e.target.ownerDocument) || document;
-            var doc  = eventDoc.documentElement;
-            var body = eventDoc.body;
-
-            e.pageX = (e.clientX * 1) + ( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) - ( doc && doc.clientLeft || body && body.clientLeft || 0 );
-            e.pageY = (e.clientY * 1) + ( doc && doc.scrollTop  || body && body.scrollTop  || 0 ) - ( doc && doc.clientTop  || body && body.clientTop  || 0 );
-        }
+        pv.event = ev = pv.fixEvent(ev);
         
-        pv.event = e;
-        
-        return f.call(this, e);
+        return f.call(this, ev);
       } catch (ex) {
           // swallow top level error
           pv.error(ex);
       } finally {
         delete pv.event;
       }
-    });
+  });
+};
+
+pv.fixEvent = function(ev){
+    // Fix event (adapted from jQuery)
+    if(ev.pageX == null && ev.clientX != null) {
+        var eventDoc = (ev.target && ev.target.ownerDocument) || document;
+        var doc  = eventDoc.documentElement;
+        var body = eventDoc.body;
+
+        ev.pageX = (ev.clientX * 1) + ( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) - ( doc && doc.clientLeft || body && body.clientLeft || 0 );
+        ev.pageY = (ev.clientY * 1) + ( doc && doc.scrollTop  || body && body.scrollTop  || 0 ) - ( doc && doc.clientTop  || body && body.clientTop  || 0 );
+    }
+
+    return ev;
 };
 
 /**
@@ -242,17 +253,17 @@ pv.listenForPageLoad = function(listener) {
         listener();
     }
 
-    if (pv.renderer() == "svgweb") {
+    if (pv.renderer() === "svgweb") {
         // SVG web adds addEventListener to IE.
-        window.addEventListener( "SVGLoad", listener, false );
+        window.addEventListener("SVGLoad", listener, false);
     } else {
         // Mozilla, Opera and webkit nightlies currently support this event
         if ( document.addEventListener ) {
-            window.addEventListener( "load", listener, false );
+            window.addEventListener("load", listener, false);
 
         // If IE event model is used
         } else if ( document.attachEvent ) {
-            window.attachEvent( "onload", listener );
+            window.attachEvent("onload", listener);
         }
     }
 };
