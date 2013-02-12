@@ -166,8 +166,8 @@ pv.Label.prototype.getShapeCore = function(scenes, index, inset){
     if(inset > 0 && inset <= 1){
         var dw = inset * w;
         var dh = inset * h;
-        l -= dw;
-        t -= dh;
+        l += dw;
+        t += dh;
         w -= dw*2;
         h -= dh*2;
     }

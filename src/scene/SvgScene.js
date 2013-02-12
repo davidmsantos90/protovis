@@ -253,6 +253,7 @@ pv.SvgScene.dispatch = pv.listener(function(e) {
 
     if (pv.Mark.dispatch(type, t.scenes, t.index, e)) {
       e.preventDefault();
+      e.stopPropagation();
     }
   }
 });

@@ -1,4 +1,4 @@
-// aea5a8324f80880a0304cd03e84737e59ffb4c36
+// 7c7ae453d39a7ca8ba4f419820fe14b6722f21e0
 /**
  * @class The built-in Array class.
  * @name Array
@@ -7631,6 +7631,7 @@ pv.SvgScene.dispatch = pv.listener(function(e) {
 
     if (pv.Mark.dispatch(type, t.scenes, t.index, e)) {
       e.preventDefault();
+      e.stopPropagation();
     }
   }
 });
@@ -13322,8 +13323,8 @@ pv.Label.prototype.getShapeCore = function(scenes, index, inset){
     if(inset > 0 && inset <= 1){
         var dw = inset * w;
         var dh = inset * h;
-        l -= dw;
-        t -= dh;
+        l += dw;
+        t += dh;
         w -= dw*2;
         h -= dh*2;
     }

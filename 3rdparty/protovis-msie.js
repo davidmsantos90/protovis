@@ -1153,6 +1153,7 @@ pv.VmlScene.dispatch = pv.listener(function(e){
     if(events === 'none' ||
        pv.Mark.dispatch(e.type, t.scenes, t.index, e)){
       e.preventDefault();
+      e.stopPropagation();
     }
   }
 });
