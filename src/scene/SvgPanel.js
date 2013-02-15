@@ -177,7 +177,7 @@ pv.SvgScene.panel = function(scenes) {
     this.scale *= t.k;
 
     /* children */
-    if(scenes[i].children.length){
+    if(s.children.length){
         var attrs = {
             "transform": "translate(" + x + "," + y + ")" +
                          (t.k != 1 ? " scale(" + t.k + ")" : "")
@@ -203,7 +203,7 @@ pv.SvgScene.panel = function(scenes) {
       scenes.$g = g = c.parentNode;
       e = c.nextSibling;
     }
-  } // for next panel instance
+  } // end for panel instance
   
   complete = true;
   return e;

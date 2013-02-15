@@ -163,8 +163,19 @@ var vml = {
       //var t = /translate\((\d+(?:\.\d+)?)(?:,(\d+(?:\.\d+)?))?\)/.exec(attr.transform);
       if (t && t[1]) { o.translate_x = parseFloat(t[1]); }
       if (t && t[2]) { o.translate_y = parseFloat(t[2]); }
-      var r = /rotate\((\d+\.\d+|\d+)\)/.exec(attr.transform);
-      if (r) { o.rotation = parseFloat(r[1]) % 360; }
+      
+      var r = /rotate\((-?\d+\.\d+|-?\d+)\)/.exec(attr.transform);
+      if (r) { 
+          var r = parseFloat(r[1]) % 360;
+          if(r < 0){
+              r += 360;
+          }
+          
+          r *= vml.d2r;
+      }
+      
+      o.rotation = r || 0;
+      
       // var scale_x = 1, scale_y = 1,
       // var s = /scale\((\d+)(?:,(\d+))?\)/i.exec(value);
       // if (s && s[1]) { scale[0] = parseInt(s[1], 10); }
@@ -239,18 +250,32 @@ var vml = {
     "path": {
       rewrite: 'shape',
       attr: function (attr, style, elm, scenes, i) {
-        var d = vml.get_dim(attr),
+        var d  = vml.get_dim(attr),
             es = elm.style;
+        
+        es.visibility = "hidden";
+        
         es.left = (d.translate_x + d.x) + "px";
         es.top  = (d.translate_y + d.y) + "px";
+        
         elm.coordorigin = "0,0";
-        elm.coordsize = "21600,21600";
+        elm.coordsize   = "21600,21600";
+        
         elm._events = attr["pointer-events"] || 'none';
         vml.path  (elm, attr.d);
+        
+        var skew = vml.rotate(elm, d.rotation);
+        if(skew){
+            // No science. Just tried and it worked...
+            skew.origin = "-0.5,-0.5";
+        }
+        
         vml.fill  (elm, attr, scenes, i);
         vml.stroke(elm, attr, scenes, i);
+        
+        es.visibility = "visible";
       },
-      css: "top:0px;left:0px;width:1000px;height:1000px"
+      css: "top:0px;left:0px;width:1000px;height:1000px;"
     },
 
     "circle": {
@@ -291,7 +316,6 @@ var vml = {
     "text": {
       rewrite: 'shape',
       attr: function (attr, style, elm, scenes, i) {
-        var d  = vml.get_dim(attr);
         var es = elm.style;
         
 //        es.left = (d.translate_x + d.x) + "px";
@@ -325,22 +349,7 @@ var vml = {
         vml.path(elm)
            .textpathok = 'True';
         
-        // Need to set the rotation matrix
-        var r = attr.rotation;
-        if (r){
-            r = 180 * r / Math.PI;
-            r = - (~~r % 360) * vml.d2r;
-            
-            if (r) {
-                var ct = Math.cos(r).toFixed(8),
-                    st = Math.sin(r).toFixed(8);
-                
-                var skew = vml.skew(elm);
-                skew.on = 'true';
-                skew.matrix= ct + "," + st + "," + -st + "," + ct + ",0,0";
-                //elm.rotation = ~~(r / vml.d2r); // does not work
-            }
-        }
+        vml.rotate(elm, attr.rotation && -attr.rotation);
         
         var s = scenes[i];
         s.fillStyle = vml.solidFillStyle;
@@ -517,6 +526,23 @@ var vml = {
              (sk = elm.appendChild(vml.createElement('vml:skew')));
     sk.on = "false";
     return sk; 
+  },
+  
+  rotate: function(elm, r /*radians*/){
+      if (r){
+          r = 180 * r / Math.PI;
+          r = (~~r % 360) * vml.d2r;
+          if (r) {
+              var ct = Math.cos(r).toFixed(8),
+                  st = Math.sin(r).toFixed(8);
+              
+              var skew = vml.skew(elm);
+              skew.on = 'true';
+              skew.matrix = ct + "," + st + "," + -st + "," + ct + ",0,0";
+              //elm.rotation = ~~(r / vml.d2r); // does not work
+              return skew;
+          }
+      }
   },
   
   textpath: function (elm) {
@@ -907,7 +933,7 @@ pv.VmlScene.panel = function(scenes){
       
       scenes.$g = g;
       
-      var w = (s.width  + s.left + s.right),
+      var w = (s.width  + s.left + s.right ),
           h = (s.height + s.top  + s.bottom);
       
       with(g.style){
@@ -916,6 +942,25 @@ pv.VmlScene.panel = function(scenes){
           clip   = "rect(0px " + w + "px " + h + "px 0px)";
       }
     } // end if top level element
+    
+    /* clip (nest children) */
+    var c;
+    if (s.overflow === "hidden") {
+      c = this.expect(e, "g", scenes, i);
+      c.style.position = "absolute";
+      c.style.clip = "rect(" + 
+                  s.top.toFixed(2) + "px " + 
+                  (s.left + s.width).toFixed(2) + "px " + 
+                  (s.top + s.height).toFixed(2) + "px " + 
+                  s.left.toFixed(2) + "px)";
+      
+      if (!c.parentNode) { 
+          g.appendChild(c); 
+      }
+      
+      scenes.$g = g = c;
+      e = c.firstChild;
+    }
     
     /* fill */
     e = this.fill(e, scenes, i);
@@ -929,32 +974,42 @@ pv.VmlScene.panel = function(scenes){
     this.scale *= t.k;
     
     /* children */
-    this.eachChild(scenes, i, function(child){
-      child.$g = e = this.expect(e, "g", scenes, i, {
-            "transform": "translate(" + x + "," + y + ")" + 
+    if(s.children.length){
+        var attrs = {
+            "transform": "translate(" + x + "," + y + ")" +
                          (t.k != 1 ? " scale(" + t.k + ")" : "")
-      });
-    
-      this.updateAll(child);
-    
-      var parentNode = e.parentNode;
-      if (!parentNode || parentNode.nodeType === 11) {
-        g.appendChild(e);
-        var helper = vml.elm_defaults[e.svgtype];
-        if (helper && typeof helper.onappend === 'function') {
-          helper.onappend(e, scenes[i]);
-        }
-      }
+        };
         
-      e = e.nextSibling;
-    }); // end eachChild
+        this.eachChild(scenes, i, function(child){
+          child.$g = e = this.expect(e, "g", scenes, i, attrs);
+          
+          this.updateAll(child);
+        
+          var parentNode = e.parentNode;
+          if (!parentNode || parentNode.nodeType === 11) {
+            g.appendChild(e);
+            var helper = vml.elm_defaults[e.svgtype];
+            if (helper && typeof helper.onappend === 'function') {
+              helper.onappend(e, scenes[i]);
+            }
+          }
+            
+          e = e.nextSibling;
+        }); // end eachChild
+    }
     
     /* transform (pop) */
     this.scale = k;
     
     /* stroke */
     e = this.stroke(e, scenes, i);
-  } // end for
+    
+    /* clip (restore group) */
+    if (c) {
+      scenes.$g = g = c.parentNode;
+      e = c.nextSibling;
+    }
+  } // end for panel instance
   
   if(inited){
     this.removeSiblings(e);
