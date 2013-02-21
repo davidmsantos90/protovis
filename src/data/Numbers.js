@@ -1,7 +1,7 @@
 /**
  * Returns an array of numbers, starting at <tt>start</tt>, incrementing by
  * <tt>step</tt>, until <tt>stop</tt> is reached. The stop value is
- * exclusive. If only a single argument is specified, this value is interpeted
+ * exclusive. If only a single argument is specified, this value is interpreted
  * as the <i>stop</i> value, with the <i>start</i> value as zero. If only two
  * arguments are specified, the step value is implied to be one.
  *

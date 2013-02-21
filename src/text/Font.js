@@ -73,7 +73,8 @@
             style.top  = 0;
             
             var svgElem = pv.SvgScene.create('svg');
-            svgElem.setAttribute('font', _lastFont);
+            svgElem.setAttribute('font-size',   '10px');
+            svgElem.setAttribute('font-family', 'sans-serif');
             div.appendChild(svgElem);
             
             
