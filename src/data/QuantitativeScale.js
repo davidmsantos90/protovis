@@ -521,12 +521,15 @@ pv.Scale.quantitative = function() {
    * @returns {string} a formatted tick value.
    */
   scale.tickFormat = function (t) {
+      var text;
       if(tickFormatter){
-          return tickFormatter(t, type !== Number ? usedDateTickPrecision : usedNumberExponent);
+          text = tickFormatter(t, type !== Number ? usedDateTickPrecision : usedNumberExponent);
+      } else {
+          text = tickFormat(t); 
       }
       
-      var formatter = tickFormatter || tickFormat;
-      return formatter(t);
+      // Make sure it is a string
+      return text == null ? '' : ('' + text);
   };
 
   /**
