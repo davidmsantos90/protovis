@@ -437,7 +437,7 @@ pv.Dom.Node.prototype.visitAfter = function(f) {
  */
 pv.Dom.Node.prototype.sort = function(f) {
   if (this.firstChild) {
-    delete p._firstDirtyChildIndex;
+    delete this._firstDirtyChildIndex;
     
     this.childNodes.sort(f);
     
@@ -470,6 +470,8 @@ pv.Dom.Node.prototype.sort = function(f) {
 pv.Dom.Node.prototype.reverse = function() {
   var childNodes = [];
   this.visitAfter(function(n) {
+      delete this._firstDirtyChildIndex;
+      
       while (n.lastChild) childNodes.push(n.removeChild(n.lastChild));
       for (var c; c = childNodes.pop();) n.insertBefore(c, n.firstChild);
     });
