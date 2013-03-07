@@ -321,6 +321,18 @@
         return color;
     };
     
+    FillStyle.prototype.alphaBlend = function(mate) {
+        return this.rgb().alphaBlend(mate);
+    };
+      
+    FillStyle.prototype.rgbDecimal = function(mate) {
+        return this.rgb().rgbDecimal(mate);
+    };
+
+    FillStyle.prototype.isDark = function() {
+        return this.rgb().isDark();
+    };
+    
     /**
      * Constructs a solid fill style. This constructor should not be invoked
      * directly; use {@link pv.fillStyle} instead.
@@ -355,6 +367,10 @@
 
     Solid.prototype.darker = function(k){
         return new Solid(this.rgb().darker(k));
+    };
+    
+    Solid.prototype.complementary = function() {
+        return new Solid(this.rgb().complementary());
     };
     
     pv.FillStyle.transparent = new Solid(pv.Color.transparent);
@@ -409,6 +425,18 @@
         }));
     };
     
+    Gradient.prototype.complementary = function(){
+        return this._clone(this.stops.map(function(stop){
+            return {offset: stop.offset, color: stop.color.complementary()};
+        }));
+    };
+    
+    Gradient.prototype.alphaBlend = function(mate) {
+        return this._clone(this.stops.map(function(stop){
+            return {offset: stop.offset, color: stop.color.alphaBlend(mate)};
+        }));
+    };
+        
     // ----------------
     
     var LinearGradient = pv.FillStyle.LinearGradient = function(angle, stops) {
