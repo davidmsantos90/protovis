@@ -151,11 +151,11 @@ pv.Panel.prototype.anchor = function(name) {
  * it is always possible to change this behavior by calling {@link Mark#extend}
  * explicitly.
  *
- * @param {function} type the type of the new mark to add.
+ * @param {function} Type the type of the new mark to add.
  * @returns {pv.Mark} the new mark.
  */
-pv.Panel.prototype.add = function(type) {
-  var child = new type();
+pv.Panel.prototype.add = function(Type) {
+  var child = new Type();
   child.parent = this;
   child.root = this.root;
   child.childIndex = this.children.length;
