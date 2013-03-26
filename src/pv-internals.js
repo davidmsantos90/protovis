@@ -207,6 +207,31 @@ pv.getWindow = function(elem) {
             false;
 };
 
+pv._getElementsByClass = function(searchClass, node) {
+  if(node == null) { node = document; }
+    
+  var classElements = [],
+      els = node.getElementsByTagName("*"),
+      L = els.length,
+      pattern = new RegExp("(^|\\s)" + searchClass + "(\\s|$)"), i, j;
+
+  for (i = 0, j = 0 ; i < L ; i++) {
+    if (pattern.test(els[i].className)) {
+      classElements[j] = els[i];
+      j++;
+    }
+  }
+
+  return classElements;
+};
+
+pv.getElementsByClassName = function(node, classname) {
+  // use native implementation if available
+  return node.getElementsByClassName ? 
+         node.getElementsByClassName(classname) :
+         pv._getElementsByClass(classname, node);
+};
+
 /* Adapted from jQuery.offset()
  */
 pv.elementOffset = function(elem) {

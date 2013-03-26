@@ -202,7 +202,6 @@ pv.Color.prototype.rgbDecimal = function(mate) {
  * Adapted from {@link http://us2.php.net/manual/en/function.hexdec.php#74092}.
  */
 pv.Color.prototype.isDark = function() {
-  // TODO: How should alpha be accounted for?
   return this.rgbDecimal() < 0xffffff/2;
 };
 

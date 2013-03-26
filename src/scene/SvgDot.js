@@ -1,8 +1,6 @@
 pv.SvgScene.dot = function(scenes) {
   var e = scenes.$g.firstChild;
   
-  this.removeFillStyleDefinitions(scenes);
-  
   for (var i = 0; i < scenes.length; i++) {
     var s = scenes[i];
 
@@ -11,14 +9,9 @@ pv.SvgScene.dot = function(scenes) {
     var fill = s.fillStyle, stroke = s.strokeStyle;
     if (!fill.opacity && !stroke.opacity) continue;
 
-    if (fill.type && fill.type !== 'solid') {
-        this.addFillStyleDefinition(scenes,fill);
-    }
-
-    if (stroke.type && stroke.type != 'solid') {
-        this.addFillStyleDefinition(scenes,stroke);
-    }
-
+    this.addFillStyleDefinition(scenes, fill);
+    this.addFillStyleDefinition(scenes, stroke);
+    
     /* points */
     var radius = s.shapeRadius, path = null;
     switch (s.shape) {

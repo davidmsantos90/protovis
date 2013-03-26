@@ -1,8 +1,6 @@
 pv.SvgScene.area = function(scenes) {
   var e = scenes.$g.firstChild;
 
-  this.removeFillStyleDefinitions(scenes);
-
   var count = scenes.length;
   if (!count){
     return e;

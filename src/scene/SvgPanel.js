@@ -40,22 +40,23 @@ pv.SvgScene.panel = function(scenes) {
    */
   var g = scenes.$g,
       e = g && g.firstChild;
+  
   var complete = false;
   for (var i = 0; i < scenes.length; i++) {
     var s = scenes[i];
     
     /* visible */
     if (!s.visible) continue;
-
+    
     /* svg */
     if (!scenes.parent) {
-      if(pv.renderer() !== "batik") {
-        s.canvas.style.display = "inline-block";
-      }
+      if(pv.renderer() !== "batik") { s.canvas.style.display = "inline-block"; }
+      
       if (g && (g.parentNode != s.canvas)) {
         g = s.canvas.firstChild;
         e = g && g.firstChild;
       }
+      
       if (!g) {
         g = this.create(pv.renderer() !== "batik" ? "svg":"g");
         g.setAttribute("font-size", "10px");
@@ -72,7 +73,7 @@ pv.SvgScene.panel = function(scenes) {
         if (typeof g.onselectstart !== 'undefined') {
             // IE9 SVG
             g.setAttribute('unselectable', 'on');
-            g.onselectstart = function(){ return false; };
+            g.onselectstart = function() { return false; };
         }
         
         if (pv.renderer() === "svgweb") { // SVGWeb requires a separate mechanism for setting event listeners.
@@ -129,7 +130,7 @@ pv.SvgScene.panel = function(scenes) {
 
             }, false);
 
-            svgweb.appendChild (g, s.canvas);
+            svgweb.appendChild(g, s.canvas);
             g = frag;
         } else {
             for (var j = 0; j < this.events.length; j++) {
@@ -138,12 +139,18 @@ pv.SvgScene.panel = function(scenes) {
             g = s.canvas.appendChild(g);
             g.__ready = true;
         }
-
-        e = g.firstChild;
+        
+        // Create the global defs element
+        g.$defs = g.appendChild(this.create("defs"));
+        
+        e = null;
       }
+      
+      if(e && e.tagName === 'defs') { e = e.nextSibling; }
+      
       scenes.$g = g;
       if (g.__ready) {
-        g.setAttribute("width", s.width + s.left + s.right);
+        g.setAttribute("width",  s.width + s.left + s.right );
         g.setAttribute("height", s.height + s.top + s.bottom);
       }
     }
@@ -165,7 +172,7 @@ pv.SvgScene.panel = function(scenes) {
       if (!e.parentNode) g.appendChild(e);
       e = e.nextSibling;
     }
-
+    
     /* fill */
     e = this.fill(e, scenes, i);
 
@@ -197,7 +204,7 @@ pv.SvgScene.panel = function(scenes) {
 
     /* stroke */
     e = this.stroke(e, scenes, i);
-
+    
     /* clip (restore group) */
     if (s.overflow === "hidden") {
       scenes.$g = g = c.parentNode;
@@ -228,14 +235,9 @@ pv.SvgScene.eachChild = function(scenes, i, fun, ctx){
 };
 
 pv.SvgScene.fill = function(e, scenes, i) {
-  this.removeFillStyleDefinitions(scenes);
-
   var s = scenes[i], fill = s.fillStyle;
   if (fill.opacity || s.events == "all") {
-
-    if (fill.type && fill.type !== 'solid') {
-        this.addFillStyleDefinition(scenes,fill);
-    }
+    this.addFillStyleDefinition(scenes, fill);
 
     e = this.expect(e, "rect", scenes, i, {
         "shape-rendering": s.antialias ? null : "crispEdges",

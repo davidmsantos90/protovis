@@ -96,9 +96,9 @@ pv.Layout.Horizon = function() {
 pv.Layout.Horizon.prototype = pv.extend(pv.Layout)
     .property("bands", Number)
     .property("mode", String)
-    .property("backgroundStyle", pv.color)
-    .property("positiveStyle", pv.color)
-    .property("negativeStyle", pv.color);
+    .property("backgroundStyle", pv.fillStyle)
+    .property("positiveStyle", pv.fillStyle)
+    .property("negativeStyle", pv.fillStyle);
 
 /**
  * Default properties for horizon layouts. By default, there are two bands, the

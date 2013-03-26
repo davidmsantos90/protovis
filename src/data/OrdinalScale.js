@@ -143,7 +143,7 @@ pv.Scale.ordinal = function() {
       r = (array instanceof Array)
           ? ((arguments.length > 1) ? pv.map(array, f) : array)
           : Array.prototype.slice.call(arguments);
-      if (typeof r[0] == "string") r = r.map(pv.color);
+      if (typeof r[0] == "string") r = r.map(pv.fillStyle);
       r.min = r[0];
       r.max = r[r.length - 1];
       return this;
