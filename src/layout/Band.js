@@ -21,7 +21,7 @@ pv.Layout.Band = function() {
      * The prototype mark of the items mark.
      */
     var itemProto = new pv.Mark()
-        .data  (function(){return values[this.parent.index];})
+        .data  (function() { return values[this.parent.index]; })
         .top   (proxy("t"))
         .left  (proxy("l"))
         .right (proxy("r"))
@@ -315,7 +315,7 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
         stack[0] = data[l];
 
         /* Eval per-layer properties */
-
+        
         var layerValues = layersValues[l] = this.$values.apply(o.parent, stack);
         if(!l){
             B = layerValues.length;
@@ -329,7 +329,7 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
 
             /* First series evaluates band stuff, for each band */
             var band = bands[b];
-            if(!band){
+            if(!band) {
                 band = bands[b] = {
                     horizRatio:  this.$ihorizRatio.apply(o, stack),
                     vertiMargin: this.$ivertiMargin.apply(o, stack),
@@ -366,11 +366,9 @@ pv.Layout.Band.prototype._calcGrouped = function(bands, L, scene){
             wItems = 0;
 
         /* Total items width */
-        for (var l = 0 ; l < L ; l++) {
-            wItems += items[l].w;
-        }
+        for (var l = 0 ; l < L ; l++) { wItems += items[l].w; }
         
-        if(L === 1){
+        if(L === 1) {
             /*
              * Horizontal ratio does not apply
              * There's no space between...
@@ -482,44 +480,46 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
         var band = bands[b],
             bx = band.x, // centered on band
             bDiffControl = band.diffControl,
-            invertDir    = (bDiffControl < 0), // -1 or -2
-            vertiMargin  = band.vertiMargin > 0 ? band.vertiMargin : 0;
+            positiveGoesDown = (bDiffControl < 0), // -1 or -2
+            vertiMargin = Math.max(0, band.vertiMargin);
 
         items = band.items;
         
         // diffControl
-        var resultPos = this._layoutItemsOfDir(+1, invertDir, items, vertiMargin, bx, yOffset),
-            resultNeg;
-        if(resultPos.existsOtherDir){
-            resultNeg = this._layoutItemsOfDir(-1, invertDir, items, vertiMargin, bx, yOffset);
+        var resultPos = this._layoutItemsOfDir(+1, positiveGoesDown, items, vertiMargin, bx, yOffset),
+            resultNeg = null; // reset on each iteration
+        if(resultPos.existsOtherDir) {
+            resultNeg = this._layoutItemsOfDir(-1, positiveGoesDown, items, vertiMargin, bx, yOffset);
         }
 
-        if(bDiffControl){
-            if(Math.abs(bDiffControl) === 1){
+        if(bDiffControl) {
+            // Update offset?
+            if(Math.abs(bDiffControl) === 1) {
                 var yOffset0 = yOffset;
                 yOffset = resultPos.yOffset;
-                if(resultNeg){
+                if(resultNeg) {
                     yOffset -= (yOffset0 - resultNeg.yOffset);
                 }
-            } // otherwise leave offset untouched
-        } else { // ensure zero
+            }
+        } else {
+            // reset offset afterwards
             yOffset = yZero;
         }
     }
 };
 
-pv.Layout.Band.prototype._layoutItemsOfDir = function(stackDir, invertDir, items, vertiMargin, bx, yOffset){
+pv.Layout.Band.prototype._layoutItemsOfDir = function(stackDir, positiveGoesDown, items, vertiMargin, bx, yOffset){
     var existsOtherDir = false,
         vertiMargin2 = vertiMargin / 2,
-        efDir = (invertDir ? -stackDir : stackDir),
-        reverseLayers = invertDir;
+        efDir = (positiveGoesDown ? -stackDir : stackDir),
+        reverseLayers = positiveGoesDown;
     
     for (var l = 0, L = items.length ; l < L ; l+=1) {
         var item = items[reverseLayers ? (L -l -1) : l];
         if(item.dir === stackDir){
             var h = item.h || 0; // null -> 0
             
-            if(efDir > 0){
+            if(efDir > 0) {
                 item.y = yOffset + vertiMargin2;
                 yOffset += h;
             } else {
@@ -527,7 +527,7 @@ pv.Layout.Band.prototype._layoutItemsOfDir = function(stackDir, invertDir, items
                 yOffset -= h;
             }
             
-            var h2 = item.h - vertiMargin;
+            var h2 = h - vertiMargin;
             item.h = h2 > 0 ? h2 : 0;
             item.x = bx - item.w / 2;
         } else {
