@@ -375,7 +375,7 @@ pv.Dom.Node.prototype.childIndex = function(){
               }
           }
           
-          delete p._firstDirtyChildIndex;
+          p._firstDirtyChildIndex = Infinity;
       }
       
       return this._childIndex;
@@ -437,7 +437,7 @@ pv.Dom.Node.prototype.visitAfter = function(f) {
  */
 pv.Dom.Node.prototype.sort = function(f) {
   if (this.firstChild) {
-    delete this._firstDirtyChildIndex;
+    this._firstDirtyChildIndex = Infinity;
     
     this.childNodes.sort(f);
     
@@ -470,7 +470,7 @@ pv.Dom.Node.prototype.sort = function(f) {
 pv.Dom.Node.prototype.reverse = function() {
   var childNodes = [];
   this.visitAfter(function(n) {
-      delete this._firstDirtyChildIndex;
+      this._firstDirtyChildIndex = Infinity;
       
       while (n.lastChild) childNodes.push(n.removeChild(n.lastChild));
       for (var c; c = childNodes.pop();) n.insertBefore(c, n.firstChild);

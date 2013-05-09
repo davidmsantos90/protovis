@@ -216,7 +216,8 @@ pv.Panel.prototype.buildInstance = function(s) {
    * remain on the child nodes because this panel (or a parent panel) may be
    * instantiated multiple times!
    */
-  for (var i = 0; i < n; i++) {
+  i = n;
+  while(i--) {
     child = children[i];
     childScenes[i] = child.scene;
     delete child.scene;

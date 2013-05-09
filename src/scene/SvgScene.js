@@ -122,26 +122,42 @@ pv.SvgScene.expect = function(e, type, scenes, i, attributes, style) {
 
 pv.SvgScene.setAttributes = function(e, attributes){
     var implicitSvg = this.implicit.svg;
+    var prevAttrs = e.__attributes__;
+    if(prevAttrs === attributes) {
+        prevAttrs = null;
+    }
+    
     for (var name in attributes) {
         var value = attributes[name];
-        if (value == null || value == implicitSvg[name]){
-            e.removeAttribute(name);
-        }  else {
-            e.setAttribute(name, value);
+        if(!prevAttrs || (value !== prevAttrs[name])) {
+            if (value == null || value == implicitSvg[name]){
+                e.removeAttribute(name);
+            }  else {
+                e.setAttribute(name, value);
+            }
         }
     }
+    
+    e.__attributes__ = attributes;
 };
 
 pv.SvgScene.setStyle = function(e, style){
   var implicitCss = this.implicit.css;
+  var prevStyle = e.__style__;
+  if(prevStyle === style) {
+      prevStyle = null;
+  }
+  
   switch(pv.renderer()){
       case 'batik':
           for (var name in style) {
               var value = style[name];
-              if (value == null || value == implicitCss[name]) {
-                e.removeAttribute(name);
-              } else {
-                e.style.setProperty(name,value);
+              if(!prevStyle || (value !== prevStyle[name])) {
+                  if (value == null || value == implicitCss[name]) {
+                    e.removeAttribute(name);
+                  } else {
+                    e.style.setProperty(name,value);
+                  }
               }
           }
           break;
@@ -160,13 +176,17 @@ pv.SvgScene.setStyle = function(e, style){
      default:
          for (var name in style) {
              var value = style[name];
-             if (value == null || value == implicitCss[name]){
-               e.style.removeProperty(name);
-             } else {
-                 e.style[name] = value;
+             if(!prevStyle || (value !== prevStyle[name])) {
+                 if (value == null || value == implicitCss[name]){
+                     e.style.removeProperty(name);
+                 } else {
+                     e.style[name] = value;
+                 }
              }
          }
   }
+  
+  e.__style__ = style;
 };
 
 /** TODO */
