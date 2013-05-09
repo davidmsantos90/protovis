@@ -25,63 +25,87 @@
  * keywords</a>
  * @see <a href="http://www.w3.org/TR/css3-color/">CSS3 color module</a>
  */
-pv.color = function(format) {
-  if (format.rgb) return format.rgb();
+(function() {
 
-  /* Handle hsl, rgb. */
-  var m1 = /([a-z]+)\((.*)\)/i.exec(format);
-  if (m1) {
-    var m2 = m1[2].split(","), a = 1;
-    switch (m1[1]) {
-      case "hsla":
-      case "rgba": {
-        a = parseFloat(m2[3]);
-        if (!a) return pv.Color.transparent;
-        break;
-      }
-    }
-    switch (m1[1]) {
-      case "hsla":
-      case "hsl": {
-        var h = parseFloat(m2[0]), // degrees
-            s = parseFloat(m2[1]) / 100, // percentage
-            l = parseFloat(m2[2]) / 100; // percentage
-        return (new pv.Color.Hsl(h, s, l, a)).rgb();
-      }
-      case "rgba":
-      case "rgb": {
-        function parse(c) { // either integer or percentage
-          var f = parseFloat(c);
-          return (c[c.length - 1] == '%') ? Math.round(f * 2.55) : f;
+    var round = Math.round;
+    
+    var parseRgb = function(c) { // either integer or percentage
+        var f = parseFloat(c);
+        return (c[c.length - 1] == '%') ? round(f * 2.55) : f;
+    };
+    
+    var reSysColor = /([a-z]+)\((.*)\)/i;
+    
+    var createColor = function(format) {
+        /* Hexadecimal colors: #rgb and #rrggbb. */
+        if (format.charAt(0) === "#") {
+          var r, g, b;
+          if (format.length === 4) {
+            r = format.charAt(1); r += r;
+            g = format.charAt(2); g += g;
+            b = format.charAt(3); b += b;
+          } else if (format.length === 7) {
+            r = format.substring(1, 3);
+            g = format.substring(3, 5);
+            b = format.substring(5, 7);
+          }
+          
+          return pv.rgb(parseInt(r, 16), parseInt(g, 16), parseInt(b, 16), 1);
         }
-        var r = parse(m2[0]), g = parse(m2[1]), b = parse(m2[2]);
-        return pv.rgb(r, g, b, a);
+        
+        /* Handle hsl, rgb. */
+        var m1 = reSysColor.exec(format);
+        if (m1) {
+          var m2 = m1[2].split(","), 
+              a = 1;
+          
+          switch (m1[1]) {
+            case "hsla":
+            case "rgba": {
+              a = parseFloat(m2[3]);
+              if (!a) return pv.Color.transparent;
+              break;
+            }
+          }
+          
+          switch (m1[1]) {
+            case "hsla":
+            case "hsl": {
+              var h = parseFloat(m2[0]), // degrees
+                  s = parseFloat(m2[1]) / 100, // percentage
+                  l = parseFloat(m2[2]) / 100; // percentage
+              return (new pv.Color.Hsl(h, s, l, a)).rgb();
+            }
+            
+            case "rgba":
+            case "rgb": {
+              var r = parseRgb(m2[0]), 
+                  g = parseRgb(m2[1]), 
+                  b = parseRgb(m2[2]);
+              return pv.rgb(r, g, b, a);
+            }
+          }
+        }
+      
+        /* Otherwise, pass-through unsupported colors. */
+        return new pv.Color(format, 1);
+    };
+    
+    var colorsByFormat = {}; // TODO: unbounded cache 
+    
+    pv.color = function(format) {
+      if (format.rgb) { return format.rgb(); }
+      
+      /* Named colors. */
+      var color = pv.Color.names[format];
+      if (!color) {
+          color = colorsByFormat[format] ||
+                  (colorsByFormat[format] = createColor(format));
       }
-    }
-  }
-
-  /* Named colors. */
-  var named = pv.Color.names[format];
-  if (named) return named;
-
-  /* Hexadecimal colors: #rgb and #rrggbb. */
-  if (format.charAt(0) == "#") {
-    var r, g, b;
-    if (format.length == 4) {
-      r = format.charAt(1); r += r;
-      g = format.charAt(2); g += g;
-      b = format.charAt(3); b += b;
-    } else if (format.length == 7) {
-      r = format.substring(1, 3);
-      g = format.substring(3, 5);
-      b = format.substring(5, 7);
-    }
-    return pv.rgb(parseInt(r, 16), parseInt(g, 16), parseInt(b, 16), 1);
-  }
-
-  /* Otherwise, pass-through unsupported colors. */
-  return new pv.Color(format, 1);
-};
+      
+      return color;
+    };
+}());
 
 /**
  * Constructs a color with the specified color format string and opacity. This

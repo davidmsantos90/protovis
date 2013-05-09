@@ -17,14 +17,24 @@
      */
     pv.fillStyle = function(format) {
         /* A FillStyle object? */
-        if (format.type) {
-            return format;
-        }
+        if (format.type) { return format; }
 
-        /* A Color object? */
-        if (format.rgb) {
-            return new pv.FillStyle.Solid(format.color, format.opacity);
+        var k = format.key || format;
+        var fillStyle = fillStylesByKey[k];
+        if(!fillStyle) { 
+            fillStyle = fillStylesByKey[k] = createFillStyle(format);
+        } else {
+            fillStyle = fillStyle.clone();
         }
+        
+        return fillStyle;
+    };
+    
+    var fillStylesByKey = {}; // TODO: unbounded cache
+    
+    var createFillStyle = function(format) {
+        /* A Color object? */
+        if (format.rgb) { return new pv.FillStyle.Solid(format.color, format.opacity); }
 
         /* A gradient spec. ? */
         var match = /^\s*([a-z\-]+)\(\s*(.*?)\s*\)\s*$/.exec(format);
@@ -38,7 +48,7 @@
         // Default to solid fill
         return new pv.FillStyle.Solid(pv.color(format));
     };
-
+    
     var keyAnglesDeg = {
         top:    0,
         'top right': 45,
@@ -311,9 +321,9 @@
     /* 
      * Provide {@link pv.Color} compatibility.
      */
-    FillStyle.prototype = new pv.Color('none', 1);
+    pv.extendType(FillStyle, new pv.Color('none', 1));
     
-    FillStyle.prototype.rgb = function(){
+    FillStyle.prototype.rgb = function() {
         var color = pv.color(this.color);
         if(this.opacity !== color.opacity){
             color = color.alpha(this.opacity);
@@ -332,6 +342,8 @@
     FillStyle.prototype.isDark = function() {
         return this.rgb().isDark();
     };
+    
+    // FillStyle.prototype.clone
     
     /**
      * Constructs a solid fill style. This constructor should not be invoked
@@ -355,7 +367,7 @@
         this.key += " " + this.color + " alpha(" + this.opacity + ")";
     };
     
-    Solid.prototype = pv.extend(pv.FillStyle);
+    pv.extendType(Solid, FillStyle);
     
     Solid.prototype.alpha = function(opacity){
         return new Solid(this.color, opacity);
@@ -371,6 +383,15 @@
     
     Solid.prototype.complementary = function() {
         return new Solid(this.rgb().complementary());
+    };
+    
+    Solid.prototype.clone = function() {
+        var o = pv.extend(Solid);
+        o.type    = this.type;
+        o.key     = this.key;
+        o.color   = this.color;
+        o.opacity = this.opacity;
+        return o;
     };
     
     pv.FillStyle.transparent = new Solid(pv.Color.transparent);
@@ -401,42 +422,65 @@
           ")";
     };
     
-    Gradient.prototype = pv.extend(pv.FillStyle);
+    pv.extendType(Gradient, FillStyle);
     
     Gradient.prototype.rgb = function(){
         return this.stops.length ? this.stops[0].color : undefined;
     };
     
     Gradient.prototype.alpha = function(opacity){
-        return this._clone(this.stops.map(function(stop){
+        return this._cloneWithStops(this.stops.map(function(stop){
             return {offset: stop.offset, color: stop.color.alpha(opacity)};
         }));
     };
     
     Gradient.prototype.darker = function(k){
-        return this._clone(this.stops.map(function(stop){
+        return this._cloneWithStops(this.stops.map(function(stop){
             return {offset: stop.offset, color: stop.color.darker(k)};
         }));
     };
     
     Gradient.prototype.brighter = function(k){
-        return this._clone(this.stops.map(function(stop){
+        return this._cloneWithStops(this.stops.map(function(stop){
             return {offset: stop.offset, color: stop.color.brighter(k)};
         }));
     };
     
     Gradient.prototype.complementary = function(){
-        return this._clone(this.stops.map(function(stop){
+        return this._cloneWithStops(this.stops.map(function(stop){
             return {offset: stop.offset, color: stop.color.complementary()};
         }));
     };
     
     Gradient.prototype.alphaBlend = function(mate) {
-        return this._clone(this.stops.map(function(stop){
+        return this._cloneWithStops(this.stops.map(function(stop){
             return {offset: stop.offset, color: stop.color.alphaBlend(mate)};
         }));
     };
+    
+    Gradient.prototype.clone = function() {
+        var Type = this.constructor;
+        var o = pv.extend(Type);
+        o.constructor = Type;
+        o.id   = ++gradient_id;
+        o.type = this.type;
+        o.key = this.key;
+
+        var stops = this.stops;
+        o.stops = stops;
+        if(stops.length) {
+            // Default color for renderers that do not support gradients
+            // Cannot use the this.color because it is assigned an per-mark-root id on render...
+            o.color = stops[0].color.color;
+        }
         
+        this._initClone(o);
+        
+        return o;
+    };
+     
+    // Gradient.prototype._initClone
+    
     // ----------------
     
     var LinearGradient = pv.FillStyle.LinearGradient = function(angle, stops) {
@@ -446,10 +490,14 @@
         this.key +=  " angle(" + angle + ")";
     };
 
-    LinearGradient.prototype = pv.extend(Gradient);
+    pv.extendType(LinearGradient, Gradient);
     
-    LinearGradient.prototype._clone = function(stops){
+    LinearGradient.prototype._cloneWithStops = function(stops){
         return new LinearGradient(this.angle, stops);
+    };
+    
+    LinearGradient.prototype._initClone = function(o) {
+        o.angle = this.angle;
     };
     
     // ----------------
@@ -462,9 +510,14 @@
         this.key +=  " center(" + cx + "," + cy + ")";
     };
     
-    RadialGradient.prototype = pv.extend(Gradient);
+    pv.extendType(RadialGradient, Gradient);
     
-    RadialGradient.prototype._clone = function(stops){
+    RadialGradient.prototype._cloneWithStops = function(stops) {
         return new RadialGradient(this.cx, this.cy);
+    };
+    
+    RadialGradient.prototype._initClone = function(o) {
+        o.cx = this.cx;
+        o.cy = this.cy;
     };
 })();

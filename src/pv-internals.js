@@ -27,6 +27,15 @@ pv.extend = Object.create ?
       return new g();
     };
 
+pv.extendType = function(g, f) {
+    var sub = g.prototype = pv.extend(f);
+    
+    // Fix the constructor
+    sub.constructor = g;
+    
+    return g;
+};
+
 // Is there any browser (still) supporting this syntax?
 // Commented cause this messes up with the debugger's break on exceptions.
 

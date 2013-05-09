@@ -378,7 +378,7 @@ pv.SvgScene.undefined = function() {};
     if(!fill.type || fill.type === 'solid' || reTestUrlColor.test(fill.color)) { return; }
     
     var rootMark = scenes.mark.root;
-    var fillStyleMap = rootMark._fillStyleMap || (rootMark._fillStyleMap = {});
+    var fillStyleMap = rootMark.__fillStyleMap__ || (rootMark.__fillStyleMap__ = {});
     var k = fill.key;
     var instId = fillStyleMap[k];
     if(!instId) {
