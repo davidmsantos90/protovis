@@ -7,7 +7,7 @@
     
     shared.autoRender = true;
     shared.positionConstraint = null;
-    shared.bound = function(v, a_p){
+    shared.bound = function(v, a_p) {
         return Math.max(drag.min[a_p], Math.min(drag.max[a_p], v));
     };
     
@@ -156,8 +156,8 @@
         }
     }
 
-    function wrapEvent(ev, drag){
-        try{
+    function wrapEvent(ev, drag) {
+        try {
             ev.drag = drag;
             return ev;
         } catch(ex) {
@@ -166,9 +166,9 @@
 
         // wrap
         var ev2 = {};
-        for(var p in ev){
+        for(var p in ev) {
             var v = ev[p];
-            ev2[p] = typeof v !== 'function' ? v : bindEventFun(f, ev);
+            ev2[p] = typeof v !== 'function' ? v : bindEventFun(v, ev);
         }
         
         ev2._sourceEvent = ev;
@@ -176,10 +176,8 @@
         return ev2;
     }
 
-    function bindEventFun(f, ctx){
-        return function(){
-            return f.apply(ctx, arguments);
-        };
+    function bindEventFun(f, ctx) {
+        return function() { return f.apply(ctx, arguments); };
     }
 
     /**
