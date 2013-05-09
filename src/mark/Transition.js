@@ -210,11 +210,10 @@ pv.Transition = function(mark) {
         throw new Error("Animated partial rendering is not supported.");
     }
     
-    try{
+    try {
         // TODO allow parallel and sequenced transitions
-        if (mark.$transition) {
-            mark.$transition.stop();
-        }
+        if (mark.$transition) { mark.$transition.stop(); }
+        
         mark.$transition = that;
     
         // TODO clearing the scene like this forces total re-build
@@ -231,7 +230,7 @@ pv.Transition = function(mark) {
         
         pv.Mark.prototype.index = i;
     
-        var start = Date.now(), 
+        var start = Date.now(),
             list = {};
         
         interpolate(list, before, after);
@@ -240,20 +239,26 @@ pv.Transition = function(mark) {
         throw ex;
     }
     
+    if(!list.head) {
+        doEnd();
+        return;
+    }
+    
     timer = setInterval(function() {
       var t = Math.max(0, Math.min(1, (Date.now() - start) / duration)),
           e = ease(t);
       
       /* Advance every property of every mark */
-      for (var i = list.head ; i ; i = i.next) {
-          i(e);
-      }
+      var i = list.head;
+      do { i(e); } while((i = i.next));
       
-      if (t == 1) {
+      if (t === 1) {
         cleanup(mark.scene);
+        pv.Scene.updateAll(before);
         that.stop();
+      } else {
+          pv.Scene.updateAll(before);
       }
-      pv.Scene.updateAll(before);
     }, 24);
   };
 
