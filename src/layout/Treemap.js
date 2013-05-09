@@ -60,13 +60,9 @@ pv.Layout.Treemap = function() {
 };
 
 pv.Layout.Treemap.prototype = pv.extend(pv.Layout.Hierarchy)
-    .property("round", Boolean)
-    .property("paddingLeft", Number)
-    .property("paddingRight", Number)
-    .property("paddingTop", Number)
-    .property("paddingBottom", Number)
-    .property("mode", String)
-    .property("order", String);
+    .property("round",         Boolean)
+    .property("mode",          String)
+    .property("order",         String);
 
 /**
  * Default properties for treemap layouts. The default mode is "squarify" and
@@ -147,24 +143,16 @@ pv.Layout.Treemap.prototype.defaults = new pv.Layout.Treemap()
  * @name pv.Layout.Treemap.prototype.order
  */
 
-/**
- * Alias for setting the left, right, top and bottom padding properties
- * simultaneously.
- *
- * @see #paddingLeft
- * @see #paddingRight
- * @see #paddingTop
- * @see #paddingBottom
- * @returns {pv.Layout.Treemap} this.
- */
-pv.Layout.Treemap.prototype.padding = function(n) {
-  return this.paddingLeft(n).paddingRight(n).paddingTop(n).paddingBottom(n);
-};
-
 /** @private The default size function. */
-pv.Layout.Treemap.prototype.$size = function(d) {
-  return Number(d.nodeValue);
-};
+pv.Layout.Treemap.prototype.$size = function(d) { return Number(d.nodeValue); };
+
+pv.Layout.Treemap.prototype.$padLeft   = 
+pv.Layout.Treemap.prototype.$padRight  = 
+pv.Layout.Treemap.prototype.$padBottom = 
+pv.Layout.Treemap.prototype.$padTop    = 
+    /** @private The default padding function. */
+    function() { return 0; };
+
 
 /**
  * Specifies the sizing function. By default, the size function uses the
@@ -184,6 +172,72 @@ pv.Layout.Treemap.prototype.$size = function(d) {
 pv.Layout.Treemap.prototype.size = function(f) {
   this.$size = pv.functor(f);
   return this;
+};
+
+/**
+ * Alias for setting the left, right, top and bottom padding pseudo-properties
+ * simultaneously.
+ *
+ * @see #paddingLeft
+ * @see #paddingRight
+ * @see #paddingTop
+ * @see #paddingBottom
+ * @returns {pv.Layout.Treemap} this.
+ */
+pv.Layout.Treemap.prototype.padding = function(n) {
+    return this.paddingLeft(n).paddingRight(n).paddingTop(n).paddingBottom(n);
+};
+
+/**
+ * Specifies the paddingLeft function. By default, it is 0.
+ *
+ * <p>The paddingLeft function is invoked for each parent node in the tree. 
+ * 
+ * @param {function} f the new paddingLeft function.
+ * @returns {pv.Layout.Treemap} this.
+ */
+pv.Layout.Treemap.prototype.paddingLeft = function(f) {
+    if(arguments.length) { this.$padLeft = f; }
+    return this.$padLeft;
+};
+
+/**
+ * Specifies the paddingRight function. By default, it is 0.
+ *
+ * <p>The paddingRight function is invoked for each parent node in the tree. 
+ * 
+ * @param {function} f the new paddingRight function.
+ * @returns {pv.Layout.Treemap} this.
+ */
+pv.Layout.Treemap.prototype.paddingRight = function(f) {
+    if(arguments.length) { this.$padRight = f; }
+    return this.$padRight;
+};
+
+/**
+ * Specifies the paddingBottom function. By default, it is 0.
+ *
+ * <p>The paddingBottom function is invoked for each parent node in the tree. 
+ * 
+ * @param {function} f the new paddingBottom function.
+ * @returns {pv.Layout.Treemap} this.
+ */
+pv.Layout.Treemap.prototype.paddingBottom = function(f) {
+    if(arguments.length) { this.$padBottom = f; }
+    return this.$padBottom;
+};
+
+/**
+ * Specifies the paddingTop function. By default, it is 0.
+ *
+ * <p>The paddingTop function is invoked for each parent node in the tree. 
+ * 
+ * @param {function} f the new paddingTop function.
+ * @returns {pv.Layout.Treemap} this.
+ */
+pv.Layout.Treemap.prototype.paddingTop = function(f) {
+    if(arguments.length) { this.$padTop = f; }
+    return this.$padTop;
 };
 
 /** @private */
@@ -243,17 +297,25 @@ pv.Layout.Treemap.prototype.buildImplied = function(s) {
 
   /** @private */
   function layout(n, i) {
-    var x = n.x + left,
-        y = n.y + top,
-        w = n.dx - left - right,
-        h = n.dy - top - bottom;
-
+    var p = n.parentNode,
+        x = n.x,
+        y = n.y,
+        w = n.dx,
+        h = n.dy;
+    
+    if(p) {
+        x += p.paddingLeft;
+        y += p.paddingTop;
+        w += -p.paddingLeft -p.paddingRight,
+        h += -p.paddingTop  -p.paddingBottom;
+    }
+    
     /* Assume squarify by default. */
     if (mode != "squarify") {
       slice(
         n.childNodes, 
         n.size,
-        mode == "slice" ? true : 
+        mode == "slice" ? true  :
         mode == "dice"  ? false : i & 1, 
         x, 
         y, 
@@ -325,25 +387,29 @@ pv.Layout.Treemap.prototype.buildImplied = function(s) {
       root.visitAfter(function(n, i) {
           n.depth = i;
           n.x = n.y = n.dx = n.dy = 0;
-          n.size = n.firstChild
-              ? pv.sum(n.childNodes, function(n) { return n.size; })
-              : that.$size.apply(that, (stack[0] = n, stack));
-        });
+          
+          stack[0] = n;
+          
+          var f;
+          if(n.firstChild) {
+              n.size = pv.sum(n.childNodes, size);
+              n.paddingRight  = +that.$padRight .apply(that, stack) || 0;
+              n.paddingLeft   = +that.$padLeft  .apply(that, stack) || 0;
+              n.paddingBottom = +that.$padBottom.apply(that, stack) || 0;
+              n.paddingTop    = +that.$padTop   .apply(that, stack) || 0;
+          } else {
+              n.size = that.$size.apply(that, stack);
+          }
+      });
   } finally { 
       stack.shift();
   }
   
   /* Sort. */
   switch (s.order) {
-    case "ascending": {
-      root.sort(function(a, b) { return a.size - b.size; });
-      break;
-    }
-    case "descending": {
-      root.sort(function(a, b) { return b.size - a.size; });
-      break;
-    }
-    case "reverse": root.reverse(); break;
+    case "ascending":  root.sort(function(a, b) { return a.size - b.size; }); break;
+    case "descending": root.sort(function(a, b) { return b.size - a.size; }); break;
+    case "reverse":    root.reverse(); break;
   }
 
   /* Recursively compute the layout. */
