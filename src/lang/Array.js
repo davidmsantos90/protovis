@@ -110,3 +110,11 @@ if (!Array.prototype.reduce) Array.prototype.reduce = function(f, v) {
   }
   return v;
 };
+
+if (!Array.prototype.indexOf) Array.prototype.indexOf = function (s, from) {
+  var n = this.length >>> 0,
+      i = (!isFinite(from) || from < 0) ? 0 : (from > this.length) ? this.length : from;
+  for (; i < n; i++) { if (this[i] === s) { return i; } }
+  return -1;
+};
+

@@ -1,3 +1,4 @@
+(function() {
 /**
  * @private Returns a prototype object suitable for extending the given class
  * <tt>f</tt>. Rather than constructing a new instance of <tt>f</tt> to serve as
@@ -84,20 +85,6 @@ pv.extendType = function(g, f) {
     s += js.substring(i);
     return s;
   };
-//}
-
-/**
- * @private Computes the value of the specified CSS property <tt>p</tt> on the
- * specified element <tt>e</tt>.
- *
- * @param {string} p the name of the CSS property.
- * @param e the element on which to compute the CSS property.
- */
-pv.css = function(e, p) {
-  return window.getComputedStyle
-      ? window.getComputedStyle(e, null).getPropertyValue(p)
-      : e.currentStyle[p];
-};
 
 /**
  * @private Reports the specified error to the JavaScript console. Mozilla only
@@ -214,6 +201,45 @@ pv.getWindow = function(elem) {
         elem.nodeType === 9 ?
             elem.defaultView || elem.parentWindow :
             false;
+};
+
+var _reHiphenSep = /\-([a-z])/g;
+
+pv.hiphen2camel = function(prop) {
+    if (_reHiphenSep.test(prop)) {
+        return prop.replace(_reHiphenSep, function($0, $1) {
+            return $1.toUpperCase();
+        });
+    }
+    return prop;
+};
+
+// Capture the "most" native possible version, not some poly-fill
+var _getCompStyle = window.getComputedStyle;
+
+/**
+ * @private Computes the value of the specified CSS property <tt>p</tt> on the
+ * specified element <tt>e</tt>.
+ *
+ * @param {string} p the name of the CSS property.
+ * @param e the element on which to compute the CSS property.
+ */
+pv.css = function(e, p) {
+  // Assuming element is of the same window as this script.
+  return _getCompStyle ?
+         _getCompStyle.call(window, e, null).getPropertyValue(p) : 
+         e.currentStyle[p === 'float' ? 'styleFloat' : pv.hiphen2camel(p)];
+};
+
+pv.cssStyle = function(e) {
+    var style; 
+    if(_getCompStyle) {
+        style = _getCompStyle.call(window, e, null); 
+        return function(p) { return style.getPropertyValue(p); };
+    }
+    
+    style = e.currentStyle;
+    return function(p) { return style[p === 'float' ? 'styleFloat' : pv.hiphen2camel(p)]; };
 };
 
 pv._getElementsByClass = function(searchClass, node) {
@@ -345,3 +371,5 @@ pv.get = function(o, p, dv){
     var v;
     return o && (v = o[p]) != null ? v : dv;
 };
+
+}());

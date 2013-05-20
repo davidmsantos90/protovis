@@ -276,15 +276,18 @@ pv.Panel.prototype.buildImplied = function(s) {
       }
 
       /* If width and height weren't specified, inspect the container. */
-      var w, h;
+      var w, h, cssStyle;
       if (s.width == null) {
-        w = parseFloat(pv.css(c, "width"));
+        cssStyle = pv.cssStyle(c);
+        w = parseFloat(cssStyle("width") || 0);
         s.width = w - s.left - s.right;
       }
       if (s.height == null) {
-        h = parseFloat(pv.css(c, "height"));
+        cssStyle || (cssStyle = pv.cssStyle(c));
+        h = parseFloat(pv.cssStyle("height") || 0);
         s.height = h - s.top - s.bottom;
       }
+      cssStyle = null;
     } else {
       var cache = this.$canvas || (this.$canvas = []);
       if (!(c = cache[this.index])) {
