@@ -373,4 +373,10 @@ pv.get = function(o, p, dv){
     return o && (v = o[p]) != null ? v : dv;
 };
 
+var hasOwn = Object.prototype.hasOwnProperty;
+pv.lazyArrayOwn = function(o, p) {
+    var v;
+    return o && hasOwn.call(o, p) && (v = o[p]) ? v : (o[p] = []);
+};
+
 }());
