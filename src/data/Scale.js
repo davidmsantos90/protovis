@@ -46,7 +46,7 @@ pv.Scale.interpolator = function(start, end) {
   }
 
   /* For now, assume color. */
-  
+
   // Gradients are not supported in animations
   // Just show the first one if < 0.5 and the other if >= 0.5
   var startGradient = (start.type && start.type !== 'solid');
@@ -58,7 +58,7 @@ pv.Scale.interpolator = function(start, end) {
           return t < 0.5 ? start : end;
       };
   }
-  
+
   start = pv.color(start).rgb();
   end   = pv.color(end  ).rgb();
   return function(t) {
@@ -94,7 +94,7 @@ pv.Scale.interpolator = function(start, end) {
  *
  * @function
  * @name pv.Scale.prototype.by
- * @param {function} f an accessor function.
+ * @param {Function} f an accessor function.
  * @returns {pv.Scale} a view of this scale by the specified accessor function.
  */
 
@@ -105,20 +105,20 @@ pv.Scale.common = {
       for (var method in scale) by[method] = scale[method];
       return by;
     },
-      
+
     by1: function(f) {
       var scale = this;
       function by1(x) { return scale(f.call(this, x)); }
       for (var method in scale) by1[method] = scale[method];
       return by1;
     },
-    
+
     transform: function(t){
       var scale = this;
       function transfScale(){
-        return t.call(this, scale.apply(scale, arguments)); 
+        return t.call(this, scale.apply(scale, arguments));
       }
-        
+
       for (var method in scale) transfScale[method] = scale[method];
 
       return transfScale;

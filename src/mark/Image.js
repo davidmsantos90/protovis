@@ -90,7 +90,7 @@ pv.Image.prototype.defaults = new pv.Image()
  * and <tt>a</tt> attributes. A {@link pv.Color} or string can also be returned,
  * though this typically results in slower performance.
  *
- * @param {function} f the new sizing function.
+ * @param {Function} f the new sizing function.
  * @returns {pv.Layout.Pack} this.
  */
 pv.Image.prototype.image = function(f) {

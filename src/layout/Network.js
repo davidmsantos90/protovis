@@ -79,7 +79,7 @@ pv.Layout.Network = function() {
   pv.Layout.call(this);
   var that = this;
 
-  /* @private Version tracking to cache layout state, improving performance. */
+  /** @private Version tracking to cache layout state, improving performance. */
   this.$id = pv.id();
 
   /**

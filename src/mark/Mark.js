@@ -128,7 +128,7 @@ pv.Mark.cast = {};
  * type defines a particular property, such as width or height.
  *
  * @param {string} name the property name.
- * @param {function} [cast] the cast function for this property.
+ * @param {Function} [cast] the cast function for this property.
  */
 pv.Mark.prototype.property = function(name, cast) {
   if (!this.hasOwnProperty("properties")) {
@@ -155,19 +155,19 @@ pv.Mark.prototype.property = function(name, cast) {
  * which is necessary since properties are inherited!
  *
  * @param {string} name the property name.
- * @param {function} [cast] the cast function for this property.
+ * @param {Function} [cast] the cast function for this property.
  */
 pv.Mark.prototype.localProperty = function(name, cast) {
   if (!this.hasOwnProperty("properties")) {
     this.properties = pv.extend(this.properties);
   }
   this.properties[name] = true;
-  
+
   var currCast = pv.Mark.cast[name];
   if(cast){
       pv.Mark.cast[name] = currCast = cast;
   }
-  
+
   // NOTE: propertyMethod is called on the Mark instance and not on the prototype
   this.propertyMethod(name, /*def*/false, /*cast*/currCast);
   return this;
@@ -188,7 +188,7 @@ pv.Mark.prototype.localProperty = function(name, cast) {
  * visualization specification as with defs.
  *
  * @param {string} name the name of the local variable.
- * @param {function} [v] an optional initializer; may be a constant or a
+ * @param {Function} [v] an optional initializer; may be a constant or a
  * function.
  */
 pv.Mark.prototype.def = function(name, v) {
@@ -207,35 +207,35 @@ pv.Mark.prototype.def = function(name, v) {
  *
  * @param {string} name the property name.
  * @param {boolean} [isDef] whether is a property or a def.
- * @param {function} [cast] the cast function for this property.
+ * @param {Function} [cast] the cast function for this property.
  */
 pv.Mark.prototype.propertyMethod = function(name, isDef, cast) {
   if (!cast) cast = pv.Mark.cast[name];
-  
+
   this[name] = function(v, tag) {
-      
+
       if(isDef && this.scene) {
           // def being changed during render
           var defs = this.scene.defs;
-          
+
           if (arguments.length) {
             defs[name] = {
               id:    (v == null) ? 0 : pv.id(),
               value: ((v != null) && cast) ? cast(v) : v
             };
-            
+
             return this;
           }
-          
+
           var def = defs[name];
           return def ? def.value : null;
       }
-      
+
       if (arguments.length) {
         this.setPropertyValue(name, v, isDef, cast, /* chain */false, tag);
         return this;
       }
-      
+
       // Listening to function property dependencies?
       var propEval = pv.propertyEval;
       if(propEval) {
@@ -245,16 +245,16 @@ pv.Mark.prototype.propertyMethod = function(name, isDef, cast) {
               var net = binds.net;
               var readNetIndex = net[name];
               if(readNetIndex == null) { readNetIndex = net[name] = 0; }
-              
+
               (propRead.dependents || (propRead.dependents = {}))[propEval.name] = true;
-              
+
               (pv.propertyEvalDependencies || (pv.propertyEvalDependencies = {}))[name] = true;
-              
+
               // evalNetIndex must be at least one higher than readNetIndex
               if(readNetIndex >= pv.propertyEvalNetIndex) { pv.propertyEvalNetIndex = readNetIndex + 1; }
           }
       }
-      
+
       return this.instance()[name];
   };
 };
@@ -279,37 +279,37 @@ pv.Mark.prototype.setPropertyValue = function(name, v, isDef, cast, chain, tag){
      * 01 - 1 - def  - function
      * 10 - 2 - prop - value
      * 11 - 3 - prop - function
-     * 
+     *
      * x << 1 <=> floor(x) * 2
-     * 
+     *
      * true  << 1 -> 2 - 10
      * false << 1 -> 0 - 00
      */
     var type = !isDef << 1 | (typeof v === "function");
     // A function and cast?
-    if(type & 1  && cast) { 
-        v = pv.Mark.funPropertyCaller(v, cast); 
-    } else if(v != null && cast) { 
-        v = cast(v); 
+    if(type & 1  && cast) {
+        v = pv.Mark.funPropertyCaller(v, cast);
+    } else if(v != null && cast) {
+        v = cast(v);
     }
-    
+
     // ------
-    
+
     var propertiesMap = this.$propertiesMap;
     var properties = this.$properties;
-    
+
     var p = {
         name:  name,
-        id:    pv.id(), 
+        id:    pv.id(),
         value: v,
         type:  type,
         tag:   tag
     };
-  
+
     var specified = propertiesMap[name];
-  
+
     propertiesMap[name] = p;
-  
+
     if(specified) {
         // Find it and remove it
         for (var i = 0; i < properties.length; i++) {
@@ -319,40 +319,40 @@ pv.Mark.prototype.setPropertyValue = function(name, v, isDef, cast, chain, tag){
             }
         }
     }
-    
+
     properties.push(p);
-    
+
     if(chain && specified && type === 3) { // is a prop fun
         p.proto = specified;
         p.root  = specified.root || specified;
     }
-    
+
     return p;
 };
 
 pv.Mark.prototype.intercept = function(name, v, keyArgs) {
     this.setPropertyValue(
-            name, 
-            v, 
+            name,
+            v,
             /* isDef */ false,
             pv.get(keyArgs, 'noCast') ? null : pv.Mark.cast[name],
             /* chain*/ true,
             pv.get(keyArgs, 'tag'));
-    
+
     return this;
 };
 
 /**
  * Gets the static value of a property, without evaluation.
  * @param {string} name the property name.
- * @type any
+ * @return {*} the property value.
  */
 pv.Mark.prototype.propertyValue = function(name, inherit) {
     var p = this.$propertiesMap[name];
     if(p){
         return p.value;
     }
-    
+
     // This mimics the way #bind works
     if(inherit){
         if(this.proto){
@@ -361,10 +361,10 @@ pv.Mark.prototype.propertyValue = function(name, inherit) {
                 return value;
             }
         }
-        
+
         return this.defaults.propertyValueRecursive(name);
     }
-    
+
     //return undefined;
 };
 
@@ -473,7 +473,7 @@ pv.Mark.prototype.scale = 1;
  * Affects the drawing order amongst sibling marks.
  * Evaluation order is not affected.
  * A higher Z order value is drawn on top of a lower Z order value.
- * 
+ *
  * @type number
  * @private
  */
@@ -658,7 +658,7 @@ pv.Mark.prototype.extend = function(proto) {
  * Adds a new mark of the specified type to the enclosing parent panel, whilst
  * simultaneously setting the prototype of the new mark to be this mark.
  *
- * @param {function} type the type of mark to add; a constructor, such as
+ * @param {Function} type the type of mark to add; a constructor, such as
  * <tt>pv.Bar</tt>.
  * @returns {pv.Mark} the new mark.
  * @see #extend
@@ -670,26 +670,26 @@ pv.Mark.prototype.add = function(type) {
 /**
  * Affects the drawing order amongst sibling marks.
  * Evaluation order is not affected.
- * A higher Z order value is drawn on top of a lower Z order value. 
- * 
- * @param {number} zOrder the Z order of the mark. 
- * @type number
+ * A higher Z order value is drawn on top of a lower Z order value.
+ *
+ * @param {number} zOrder the Z order of the mark.
+ * @return {number|pv.Mark} the zOrder or this.
  */
 pv.Mark.prototype.zOrder = function(zOrder){
     if(!arguments.length) { return this._zOrder; }
-    
+
     zOrder = (+zOrder) || 0; // NaN -> 0
-    
+
     if(this._zOrder !== zOrder) {
         var p = this.parent;
-        
+
         if(p && this._zOrder !== 0) { p.zOrderChildCount--; }
-        
+
         this._zOrder = zOrder;
-        
+
         if(p && this._zOrder !== 0) { p.zOrderChildCount++; }
     }
-    
+
     return this;
 };
 
@@ -810,8 +810,8 @@ pv.Mark.prototype.margin = function(n) {
  */
 pv.Mark.prototype.instance = function(defaultIndex) {
   var scene = this.scene || this.parent.instance(-1).children[this.childIndex],
-      index = (defaultIndex == null) || this.hasOwnProperty("index") ? 
-              this.index : 
+      index = (defaultIndex == null) || this.hasOwnProperty("index") ?
+              this.index :
               defaultIndex;
   return scene[index < 0 ? scene.length - 1 : index];
 };
@@ -913,7 +913,7 @@ pv.Mark.prototype.render = function() {
       this.root.render();
       return;
     }
-    
+
     this.renderCore();
 };
 
@@ -939,9 +939,9 @@ pv.Mark.prototype.renderCore = function() {
         mark.scale = scale;
         if (depth < L) {
             // At least one more child index to traverse, for getting to the initial mark
-            
+
             // If addStack, then we've reached a level not covered by #context.
-            // TODO: Can't think of a situation in which addStack and index is an own property.  
+            // TODO: Can't think of a situation in which addStack and index is an own property.
             var addStack = (depth >= stack.length);
             if(addStack) { stack.unshift(null); }
                 if (mark.hasOwnProperty("index")) {
@@ -973,7 +973,7 @@ pv.Mark.prototype.renderCore = function() {
             pv.Scene.scale = scale;
             pv.Scene.updateAll(mark.scene);
         }
-      
+
         delete mark.scale;
     }
 
@@ -996,18 +996,18 @@ pv.Mark.prototype.renderCore = function() {
             var childScenez = s.children;
             var childIndex  = indexes[depth];
             var childMark   = childMarks[childIndex];
-    
+
             /* If current child's scene is not set, include it in the loops below. */
             if(!childMark.scene) { childIndex++; }
-    
+
             /* Set preceding (and possibly self) child marks' scenes. */
             for (i = 0; i < childIndex; i++) { childMarks[i].scene = childScenez[i]; }
-    
+
             if(fillStack) { stack[0] = s.data; }
-    
+
             render(childMark, depth + 1, scale * s.transform.k);
-    
-            /* Clear preceding (and possibly self) child mark's scenes. 
+
+            /* Clear preceding (and possibly self) child mark's scenes.
              * It's cheaper to set to null than to delete. */
             for (i = 0; i < childIndex; i++) { childMarks[i].scene = undefined; }
         }
@@ -1018,7 +1018,7 @@ pv.Mark.prototype.renderCore = function() {
 
     /* The render context is the first ancestor with an explicit index. */
     while (parent && !parent.hasOwnProperty("index")) { parent = parent.parent; }
-    
+
     /* Recursively render all instances of this mark. */
     try {
         this.context(
@@ -1038,31 +1038,31 @@ pv.Mark.prototype.renderCore = function() {
 /**
  * @private In the bind phase, inherited property definitions are cached so they
  * do not need to be queried during build.
- * 
+ *
  * NOTE: pv.Panel#bind binds locally and then calls #bind on all of its children.
  *
  * EVALUATION order (not precedence order for choosing props/defs)
  * 0) DEF and PROP _values_ are always already "evaluated".
  *    * Defined PROPs for which a value/fun was not specified
  *      get the value null.
- * 
+ *
  * 1) DEF _functions_
  *    * once per parent instance
  *    * with parent instance's stack
- *    
+ *
  *    1.1) Defaulted
  *        * from farthest proto mark to closest
  *            * on each level the first defined is the first evaluated
- *    
+ *
  *    1.2) Explicit
  *        * idem
- *    
+ *
  * 2) Data PROP _value_ or _function_
  *    * once per all child instances
  *    * with parent instance's stack
- * 
+ *
  * ONCE PER INSTANCE
- * 
+ *
  * 3) Required kind PROP _functions_ (id, datum, visible)
  *    2.1) Defaulted
  *        * idem
@@ -1080,41 +1080,41 @@ pv.Mark.prototype.renderCore = function() {
 pv.Mark.prototype.bind = function() {
   var seen = {},
       data,
-      
+
       /* Required props (no defs) */
-      required = [],    
-      
-      /* 
+      required = [],
+
+      /*
        * Optional props/defs by type
-       * 0 - def/value, 
-       * 1 - def/fun, 
-       * 2 - prop/value, 
-       * 3 - prop/fun 
+       * 0 - def/value,
+       * 1 - def/fun,
+       * 2 - prop/value,
+       * 3 - prop/fun
        */
       types = [[], [], [], []],
-      
+
       bindPropStrategy = {
           'data':    function(p) { data = p;         },
           'visible': function(p) { required.push(p); }
       },
-      
+
       defBindPropStrategy = function(p) {
           types[p.type].push(p);
       };
-  
+
   bindPropStrategy.id = bindPropStrategy.visible;
-  
-  var types0 = types[0], 
-      types1 = types[1], 
+
+  var types0 = types[0],
+      types1 = types[1],
       types2 = types[2],
       types3 = types[3];
-  /** 
+  /**
    * Scans the proto chain for the specified mark.
    *
    * On each mark properties are traversed in reverse
    * so that, below, when reverse() is called
    * function props/defs recover their original defining order.
-   * 
+   *
    * M1 -> P1_0, P1_1, P1_2, P1_3
    * ^
    * |
@@ -1122,9 +1122,9 @@ pv.Mark.prototype.bind = function() {
    * ^
    * |
    * M3 -> P3_0, P3_1
-   * 
+   *
    * List     -> P3_1, P3_0, P2_1, P2_0, P1_3, P1_2, P1_1, P1_0
-   * 
+   *
    * Reversed -> P1_0, P1_1, P1_2, P1_3, P2_0, P2_1, P3_0, P3_1
    */
   function bind(mark) {
@@ -1136,10 +1136,10 @@ pv.Mark.prototype.bind = function() {
         var name = p.name;
         var pLeaf = seen[name];
         if (!pLeaf) {
-          
+
           seen[name] = p;
           (bindPropStrategy[name] || defBindPropStrategy)(p); // hope no props like 'toString'...
-          
+
         } else if(pLeaf.type === 3) { // prop/fun
             // Chain properties
             //
@@ -1181,7 +1181,7 @@ pv.Mark.prototype.bind = function() {
   } else {
       defs = [];
   }
-  
+
   /* Setup binds to evaluate constants before functions. */
   this.binds = {
     properties: seen,
@@ -1189,7 +1189,7 @@ pv.Mark.prototype.bind = function() {
     data:       data,
     defs:       defs,
     required:   required,
-    
+
     // NOTE: although defs are included in the optional properties
     // they are evaluated once per parent instance, before other non-def properties.
     // Yet, for each instance, the already evaluated's def values
@@ -1203,9 +1203,9 @@ pv.Mark.prototype.updateNet = function(pDependent, netIndex){
     var binds = this.binds;
     var props = binds.properties;
     var net   = binds.net;
-    
+
     propagateRecursive(pDependent, netIndex);
-    
+
     function propagateRecursive(p, minNetIndex){
         if(minNetIndex > (net[p.name] || 0)){
             net[p.name] = minNetIndex;
@@ -1281,7 +1281,7 @@ pv.Mark.prototype.build = function() {
   if (bdefs.length) {
     var defs = scene.defs || (scene.defs = {});
     for (var i = 0, B = bdefs.length ; i < B ; i++) {
-      var p = bdefs[i], 
+      var p = bdefs[i],
           d = defs[p.name];
       if (!d || (p.id > d.id)) {
         var fval = p.value;
@@ -1307,13 +1307,13 @@ pv.Mark.prototype.build = function() {
       var L = scene.length = data.length;
       for (var i = 0 ; i < L ; i++) {
         markProto.index = this.index = i;
-        
+
         // Create scene instance
         var instance = scene[i] || (scene[i] = {});
-        
+
         /* Fill special data property and update the stack. */
         instance.data = stack[0] = data[i];
-        
+
         this.buildInstance(instance);
       }
   } finally {
@@ -1321,7 +1321,7 @@ pv.Mark.prototype.build = function() {
       delete this.index;
       stack.shift();
   }
-  
+
   return this;
 };
 
@@ -1361,13 +1361,13 @@ _buildByPropType[1] = _buildByPropType[0];
 
 pv.Mark.prototype.delegate = function(dv, tag){
     var protoProp = pv.propertyProto;
-    if(protoProp && (!tag || protoProp.tag === tag)){ 
+    if(protoProp && (!tag || protoProp.tag === tag)){
         var value = this.evalProperty(protoProp);
         if(value !== undefined){
             return value;
         }
     }
-    
+
     return dv;
 };
 
@@ -1387,8 +1387,8 @@ _buildByPropTypeSingle[3] = function(p) {
     } finally {
         pv.propertyProto = oldProtoProp;
     }
-}; 
-    
+};
+
 
 pv.Mark.prototype.evalProperty = function(p) {
     return _buildByPropTypeSingle[p.type].call(this, p);
@@ -1397,10 +1397,10 @@ pv.Mark.prototype.evalProperty = function(p) {
 pv.Mark.prototype.buildPropertiesWithDepTracking = function(s, properties) {
     // Current bindings
     var net = this.binds.net;
-    var netIndex, newNetIndex, netDirtyProps, prevNetDirtyProps, 
+    var netIndex, newNetIndex, netDirtyProps, prevNetDirtyProps,
         propertyIndexes, evaluatedProps;
     var stack = pv.Mark.stack;
-    
+
     var n = properties.length;
     try {
         while(true) {
@@ -1412,7 +1412,7 @@ pv.Mark.prototype.buildPropertiesWithDepTracking = function(s, properties) {
                     var p = properties[i];
                     var name = p.name;
                     evaluatedProps[name] = true;
-                    
+
                     // Only re-evaluate properties marked dirty on the previous iteration
                     if(!prevNetDirtyProps || prevNetDirtyProps[name]) {
                         var v;
@@ -1421,10 +1421,10 @@ pv.Mark.prototype.buildPropertiesWithDepTracking = function(s, properties) {
                                 pv.propertyEval = p;
                                 pv.propertyEvalNetIndex = netIndex = (net[name] || 0);
                                 pv.propertyEvalDependencies = null;
-                                
+
                                 pv.propertyProto = p.proto;
                                 v = p.value.apply(this,  stack);
-                                
+
                                 newNetIndex = pv.propertyEvalNetIndex;
                                 if(newNetIndex > netIndex) {
                                     var evalDeps = pv.propertyEvalDependencies;
@@ -1437,37 +1437,37 @@ pv.Mark.prototype.buildPropertiesWithDepTracking = function(s, properties) {
                                             netDirtyProps[depName] = true;
                                         }
                                     }
-                                    
+
                                     this.updateNet(p, newNetIndex);
                                 }
                                 break;
-                            
+
                             case 2:
                                 v = p.value;
                                 break;
-                                
+
                             // copy already evaluated def value to each instance's scene
                             case 0:
                             case 1:
                                 v = this.scene.defs[name].value;
                                 break;
                         }
-                         
+
                         s[name] = v;
                     } // if
                 } // for
             } finally {
                 pv.propertyProto = oldProtoProp;
             }
-            
+
             if(!netDirtyProps) { break; }
-            
+
             prevNetDirtyProps = netDirtyProps;
-            
+
             // Sort properties on net index and repeat...
-            
+
             propertyIndexes = pv.numerate(properties, function(p) { return p.name; });
-            
+
             properties.sort(function(pa, pb) {
                 var comp = pv.naturalOrder(net[pa.name] || 0, net[pb.name] || 0);
                 if(!comp) {
@@ -1476,7 +1476,7 @@ pv.Mark.prototype.buildPropertiesWithDepTracking = function(s, properties) {
                 }
                 return comp;
             });
-            
+
             propertyIndexes = null;
         }
     } finally {
@@ -1485,7 +1485,7 @@ pv.Mark.prototype.buildPropertiesWithDepTracking = function(s, properties) {
         pv.propertyEvalDependencies = null;
     }
 };
-  
+
 /**
  * @private Evaluates all of the properties for this mark for the specified
  * instance <tt>s</tt> in the scene graph. The set of properties to evaluate is
@@ -1508,7 +1508,7 @@ pv.Mark.prototype.buildInstance = function(s) {
     } else {
         this.buildProperties(s, this.binds.optional);
     }
-    
+
     this.buildImplied(s);
   }
 };
@@ -1537,7 +1537,7 @@ pv.Mark.prototype.buildImplied = function(s) {
   /* Compute implied width, right and left. */
   var instance;
   var checked;
-  
+
   if(w == null || r == null || l == null){
       instance = this.parent ? this.parent.instance() : null;
       checked = true;
@@ -1554,13 +1554,13 @@ pv.Mark.prototype.buildImplied = function(s) {
         l = width - w - r;
       }
   }
-  
+
   /* Compute implied height, bottom and top. */
   if (h == null || b == null || t == null) {
       if(!checked){
           instance = this.parent ? this.parent.instance() : null;
       }
-      
+
       var height = instance ? instance.height : (h + t + b);
       if (h == null) {
         h = height - (t = t || 0) - (b = b || 0);
@@ -1574,7 +1574,7 @@ pv.Mark.prototype.buildImplied = function(s) {
         t = height - h - b;
       }
   }
-  
+
   s.left = l;
   s.right = r;
   s.top = t;
@@ -1602,7 +1602,7 @@ pv.Mark.prototype.mouse = function() {
         ev = pv.event,
         x = ev.pageX,
         y = ev.pageY;
-    
+
       // Compute xy-coordinates relative to the panel.
       var offset = pv.elementOffset(n);
       if(offset){
@@ -1610,22 +1610,22 @@ pv.Mark.prototype.mouse = function() {
           x -= offset.left + parseFloat(getStyle('paddingLeft') || 0);
           y -= offset.top  + parseFloat(getStyle('paddingTop')  || 0);
       }
-      
+
       /* Compute the inverse transform of all enclosing panels. */
       var t = pv.Transform.identity,
           p = this.properties.transform ? this : this.parent,
           pz = [];
-      
-      do { 
-          pz.push(p); 
+
+      do {
+          pz.push(p);
       } while ((p = p.parent));
-      
+
       while ((p = pz.pop())) {
           var pinst = p.instance();
           t = t.translate(pinst.left, pinst.top)
                .times(pinst.transform);
       }
-      
+
       t = t.invert();
       return pv.vector(x * t.k + t.x, y * t.k + t.y);
 };
@@ -1668,28 +1668,28 @@ pv.Mark.prototype.mouse = function() {
  * interactive visualization, such as selection.
  *
  * <p>TODO In the current implementation, event handlers are not inherited from
- * prototype marks. They must be defined explicitly on each interactive mark. 
+ * prototype marks. They must be defined explicitly on each interactive mark.
  * More than one event handler for a given event type <i>can</i> be defined.
- * The return values of each handler, if any and are marks, 
+ * The return values of each handler, if any and are marks,
  * are rendered at the end of every handler having been called.
  *
  * @see <a href="http://www.w3.org/TR/SVGTiny12/interact.html#SVGEvents">SVG events</a>
  * @param {string} type the event type.
- * @param {function} handler the event handler.
+ * @param {Function} handler the event handler.
  * @returns {pv.Mark} this.
  */
 pv.Mark.prototype.event = function(type, handler) {
   handler = pv.functor(handler);
-  
+
   var handlers = this.$handlers[type];
   if(!handlers) {
-      handlers = handler; 
+      handlers = handler;
   } else if(handlers instanceof Array) {
       handlers.push(handler);
   } else {
       handlers = [handlers, handler];
   }
-  
+
   this.$hasHandlers = true;
   this.$handlers[type] = handlers;
   return this;
@@ -1713,7 +1713,7 @@ pv.Mark.prototype.context = function(scene, index, f) {
     if (!scene) {
         return;
     }
-    
+
     var that = scene.mark,
         mark = that,
         ancestors = []; // that, that.parent, ..., root
@@ -1722,7 +1722,7 @@ pv.Mark.prototype.context = function(scene, index, f) {
     do {
       ancestors.push(mark);
       stack.push(scene[index].data);
-      
+
       mark.index = index;
       mark.scene = scene;
 
@@ -1741,7 +1741,7 @@ pv.Mark.prototype.context = function(scene, index, f) {
       // children's scale
       k *= mark.scene[mark.index].transform.k;
     }
-    
+
     that.scale = k;
 
     /* Set direct children of "that"'s scene and scale. */
@@ -1750,7 +1750,7 @@ pv.Mark.prototype.context = function(scene, index, f) {
       // "that" is a panel, has a transform.
       var thatInst = that.scene[that.index];
       k *= thatInst.transform.k;
-      
+
       var childScenez = thatInst.children;
       for (var i = 0 ; i < n; i++) {
         mark = children[i];
@@ -1776,14 +1776,14 @@ pv.Mark.prototype.context = function(scene, index, f) {
         mark.scale = 1;
       }
     }
-    
+
     /* Reset ancestors. */
     mark = that;
     var parent;
     do{
       stack.pop();
       delete mark.index; // must be deleted!
-      
+
       if ((parent = mark.parent)) {
         // It's generally faster to set to something, than to delete
         mark.scene = undefined;
@@ -1825,7 +1825,7 @@ pv.Mark.getEventHandler = function(type, scenes, index, event){
   if(handler){
     return [handler, type, scenes, index, event];
   }
-   
+
   var parentScenes = scenes.parent;
   if(parentScenes){
     return this.getEventHandler(type, parentScenes, scenes.parentIndex, event);
@@ -1834,7 +1834,7 @@ pv.Mark.getEventHandler = function(type, scenes, index, event){
 
 /** @private Execute the event listener, then re-render the returned mark. */
 pv.Mark.dispatch = function(type, scenes, index, event) {
-  
+
   var root = scenes.mark.root;
   if(root.animatingCount) { return true; }
   var handlerInfo;
@@ -1858,7 +1858,7 @@ pv.Mark.dispatch = function(type, scenes, index, event) {
 
 pv.Mark.handle = function(handler, type, scenes, index, event){
     var m = scenes.mark;
-    
+
     m.context(scenes, index, function(){
       var stack = pv.Mark.stack.concat(event);
       if(handler instanceof Array) {
@@ -1869,7 +1869,7 @@ pv.Mark.handle = function(handler, type, scenes, index, event){
                 (ms || (ms = [])).push(mi);
           }
           });
-          
+
           if(ms) {
               ms.forEach(function(mi){
                 mi.render();
@@ -1882,15 +1882,15 @@ pv.Mark.handle = function(handler, type, scenes, index, event){
         }
       }
   });
-  
+
   return true;
 };
 
 /**
  * Registers an event interceptor function.
- * 
+ *
  * @param {string} type the event type
- * @param {function} handler the interceptor function
+ * @param {Function} handler the interceptor function
  * @param {boolean} [before=false] indicates that the interceptor should be applied <i>before</i> "after" interceptors
  */
 pv.Mark.prototype.addEventInterceptor = function(type, handler, before){
@@ -1929,7 +1929,7 @@ pv.Mark.prototype.eachInstance = function(fun, ctx){
     if(!rootScene){
         return;
     }
-    
+
     var L = indexes.length;
 
     function mapRecursive(scene, level, toScreen){
@@ -1967,7 +1967,7 @@ pv.Mark.prototype.eachInstance = function(fun, ctx){
 
 pv.Mark.prototype.toScreenTransform = function(){
     var t = pv.Transform.identity;
-    
+
     if(this instanceof pv.Panel) {
         t = t.translate(this.left(), this.top())
              .times(this.transform());
@@ -1980,7 +1980,7 @@ pv.Mark.prototype.toScreenTransform = function(){
                  .times(parent.transform());
         } while((parent = parent.parent));
     }
-    
+
     return t;
 };
 
@@ -2003,7 +2003,7 @@ pv.Mark.prototype.getShape = function(scenes, index, inset){
     if(inset == null){
         inset = 0;
     }
-    
+
     var key = '_shape_inset_' + inset;
     return s[key] || (s[key] = this.getShapeCore(scenes, index, inset));
 };
@@ -2022,6 +2022,6 @@ pv.Mark.prototype.getShapeCore = function(scenes, index, inset){
         w -= dw*2;
         h -= dh*2;
     }
-    
+
     return new pv.Shape.Rect(l, t, w, h);
 };

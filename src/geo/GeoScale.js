@@ -292,13 +292,13 @@ pv.Geo.scale = function(p) {
    *
    * @function
    * @name pv.Geo.scale.prototype.by
-   * @param {function} f an accessor function.
+   * @param {Function} f an accessor function.
    * @returns {pv.Geo.scale} a view of this scale by the specified accessor
    * function.
    */
-  
+
   pv.copyOwn(scale, pv.Scale.common);
-  
+
 
   if (arguments.length) scale.projection(p);
   return scale;

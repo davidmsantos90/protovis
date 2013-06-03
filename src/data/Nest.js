@@ -70,7 +70,7 @@ pv.Nest = function(array) {
  * Nests using the specified key function. Multiple keys may be added to the
  * nest; the array elements will be nested in the order keys are specified.
  *
- * @param {function} key a key function; must return a string or suitable map
+ * @param {Function} key a key function; must return a string or suitable map
  * key.
  * @returns {pv.Nest} this.
  */
@@ -99,7 +99,7 @@ pv.Nest.prototype.key = function(key) {
  * returns an array of key-values pairs. If the nest is used to construct a
  * {@link #map} instead, keys are unsorted.
  *
- * @param {function} [order] an optional comparator function.
+ * @param {Function} [order] an optional comparator function.
  * @returns {pv.Nest} this.
  */
 pv.Nest.prototype.sortKeys = function(order) {
@@ -126,7 +126,7 @@ pv.Nest.prototype.sortKeys = function(order) {
  * <p>Value sort order, unlike keys, applies to both {@link #entries} and
  * {@link #map}. It has no effect on {@link #rollup}.
  *
- * @param {function} [order] an optional comparator function.
+ * @param {Function} [order] an optional comparator function.
  * @returns {pv.Nest} this.
  */
 pv.Nest.prototype.sortValues = function(order) {
@@ -235,7 +235,7 @@ pv.Nest.prototype.entries = function() {
  * yield for the given site.
  *
  * @see #map
- * @param {function} f a rollup function.
+ * @param {Function} f a rollup function.
  * @returns a hierarchical map, with the leaf values computed by <tt>f</tt>.
  */
 pv.Nest.prototype.rollup = function(f) {

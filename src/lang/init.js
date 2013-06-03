@@ -1,4 +1,4 @@
-/*
+/**
  * Parses the Protovis specifications on load, allowing the use of JavaScript
  * 1.8 function expressions on browsers that only support JavaScript 1.6.
  * This should only happen for browser environments, so we exclude batik.

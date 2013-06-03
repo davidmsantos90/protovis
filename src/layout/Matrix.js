@@ -117,7 +117,7 @@ pv.Layout.Matrix.prototype = pv.extend(pv.Layout.Network)
  * to find good node orders that emphasize clusters, such as spectral layout and
  * simulated annealing.
  *
- * @param {function} f comparator function for nodes.
+ * @param {Function} f comparator function for nodes.
  * @returns {pv.Layout.Matrix} this.
  */
 pv.Layout.Matrix.prototype.sort = function(f) {

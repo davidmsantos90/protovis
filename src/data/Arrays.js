@@ -25,7 +25,7 @@ pv.repeat = function(array, n) {
 /**
  * Creates an array of the specified length,
  * and, optionally, initializes it with the specified default value.
- * 
+ *
  * @param {number} [len] the length of the array; defaults to 0.
  * @param {number} [dv] the default value with which to initialize each position; defaults to undefined.
  * @returns {array} an array as specified.
@@ -37,7 +37,7 @@ pv.array = function(len, dv){
             a[i] = dv;
         }
     }
-    
+
     return a;
 };
 
@@ -77,7 +77,7 @@ pv.cross = function(a, b) {
  *
  * </ul>return [1, 2, 3, "a", "b", "c"].
  *
- * @param {array[]} arrays an array of arrays.
+ * @param {Array.<Array>} arrays an array of arrays.
  * @returns {array} an array containing all the elements of each array in
  * <tt>arrays</tt>.
  */
@@ -93,8 +93,8 @@ pv.blend = function(arrays) {
  * after this method returns. This method transposes the elements of the array
  * in place, mutating the array, and returning a reference to the array.
  *
- * @param {array[]} arrays an array of arrays.
- * @returns {array[]} the passed-in array, after transposing the elements.
+ * @param {Array.<Array>} arrays an array of arrays.
+ * @returns {Array.<Array>} the passed-in array, after transposing the elements.
  */
 pv.transpose = function(arrays) {
   var n = arrays.length, m = pv.max(arrays, function(d) { return d.length; });
@@ -146,8 +146,8 @@ pv.transpose = function(arrays) {
  * <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
- * @returns {number[]} an array of numbers that sums to one.
+ * @param {Function} [f] an optional accessor function.
+ * @returns {Array.<number>} an array of numbers that sums to one.
  */
 pv.normalize = function(array, f) {
   var norm = pv.map(array, f), sum = pv.sum(norm);
@@ -169,8 +169,8 @@ pv.normalize = function(array, f) {
  * can refer to <tt>this.index</tt>.
  *
  * @param {array} array an array.
- * @param {number[]} indexes an array of indexes into <tt>array</tt>.
- * @param {function} [f] an optional accessor function.
+ * @param {Array.<number>} indexes an array of indexes into <tt>array</tt>.
+ * @param {Function} [f] an optional accessor function.
  * @returns {array} an array of elements from <tt>array</tt>; a permutation.
  */
 pv.permute = function(array, indexes, f) {
@@ -193,7 +193,7 @@ pv.permute = function(array, indexes, f) {
  * element. Accessor functions can refer to <tt>this.index</tt>.
  *
  * @param {array} keys an array, usually of string keys.
- * @param {function} [f] an optional key function.
+ * @param {Function} [f] an optional key function.
  * @returns a map from key to index.
  */
 pv.numerate = function(keys, f) {
@@ -212,7 +212,7 @@ pv.numerate = function(keys, f) {
  * can refer to <tt>this.index</tt>.
  *
  * @param {array} array an array, usually of string keys.
- * @param {function} [f] an optional key function.
+ * @param {Function} [f] an optional key function.
  * @returns {array} the unique values.
  */
 pv.uniq = function(array, f) {
@@ -272,11 +272,11 @@ pv.reverseOrder = function(b, a) {
  * than the specified value. Note that this guarantees that the return value
  * will be nonnegative if and only if the value is found.
  *
- * @param {number[]} array the array to be searched.
+ * @param {Array.<number>} array the array to be searched.
  * @param {number} value the value to be searched for.
  * @returns the index of the search value, if it is contained in the array;
  * otherwise, (-(<i>insertion point</i>) - 1).
- * @param {function} [f] an optional key function.
+ * @param {Function} [f] an optional key function.
  */
 pv.search = function(array, value, f) {
   if (!f) f = pv.identity;

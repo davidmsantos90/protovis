@@ -6,7 +6,7 @@
  * @class Represents a histogram operator.
  *
  * @param {array} data an array of numbers or objects.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  */
 pv.histogram = function(data, f) {
   var frequency = true;

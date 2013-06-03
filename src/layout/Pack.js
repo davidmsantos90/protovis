@@ -107,7 +107,7 @@ pv.Layout.Pack.prototype.$radius = function() { return 1; };
  * As with other properties, a size function may specify additional arguments to
  * access the data associated with the layout and any enclosing panels.
  *
- * @param {function} f the new sizing function.
+ * @param {Function} f the new sizing function.
  * @returns {pv.Layout.Pack} this.
  */
 pv.Layout.Pack.prototype.size = function(f) {

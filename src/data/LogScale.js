@@ -64,7 +64,7 @@ pv.Scale.log = function() {
    *
    * @function
    * @name pv.Scale.log.prototype.ticks
-   * @returns {number[]} an array input domain values to use as ticks.
+   * @returns {Array.<number>} an array input domain values to use as ticks.
    */
   scale.ticks = function() {
     // TODO support non-uniform domains

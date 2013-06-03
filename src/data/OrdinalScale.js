@@ -62,7 +62,7 @@ pv.Scale.ordinal = function() {
     if (!(x in i)) i[x] = d.push(x) - 1;
     return r[i[x] % r.length];
   }
-  
+
   /**
    * Sets or gets the input domain. This method can be invoked several ways:
    *
@@ -163,7 +163,7 @@ pv.Scale.ordinal = function() {
    * The computed step width can be retrieved from the range as
    * <tt>scale.range().step</tt>.
    * </p>
-   * 
+   *
    * @function
    * @name pv.Scale.ordinal.prototype.split
    * @param {number} min minimum value of the output range.
@@ -279,10 +279,10 @@ pv.Scale.ordinal = function() {
         B = (R * band) / N;
         M = N > 1 ? ((R - N * B) / (N - 1)) : 0;
         S = M + B;
-        
+
         r = pv.range(min + B / 2, max, S);
     }
-    
+
     r.step   = S;
     r.band   = B;
     r.margin = M;
@@ -307,9 +307,9 @@ pv.Scale.ordinal = function() {
    * @see #split
    */
   scale.splitFlush = function(min, max) {
-    var n = this.domain().length, 
+    var n = this.domain().length,
         step = (max - min) / (n - 1);
-    
+
     r = (n == 1) ? [(min + max) / 2]
         : pv.range(min, max + step / 2, step);
     r.min = min;
@@ -379,16 +379,16 @@ pv.Scale.ordinal = function() {
     r.max = max;
     return this;
   };
-  
+
   /**
-   * Inverts the specified value in the output range, 
+   * Inverts the specified value in the output range,
    * returning the index of the closest corresponding value in the input domain.
-   * This is frequently used to convert the mouse location (see {@link pv.Mark#mouse}) 
-   * to a value in the input domain. 
-   * 
+   * This is frequently used to convert the mouse location (see {@link pv.Mark#mouse})
+   * to a value in the input domain.
+   *
    * The number of input domain values is returned
    * if the specified point is closest to the end margin of the last input domain value.
-   * 
+   *
    * @function
    * @name pv.Scale.quantitative.prototype.invertIndex
    * @param {number} y a value in the output range (a pixel location).
@@ -400,26 +400,26 @@ pv.Scale.ordinal = function() {
     if(N === 0){
         return -1;
     }
-    
+
     var r = this.range();
     var R = r.max - r.min;
     if(R === 0){
         return 0;
     }
-    
+
     var S = R/N;
     if(y >= r.max){
         return N;
     }
-    
+
     if(y < r.min){
         return 0;
     }
-    
+
     var i = (y - r.min) / S;
     return noRound ? i : Math.round(i);
   };
-  
+
   /**
    * Returns a view of this scale by the specified accessor function <tt>f</tt>.
    * Given a scale <tt>y</tt>, <tt>y.by(function(d) d.foo)</tt> is equivalent to
@@ -429,13 +429,13 @@ pv.Scale.ordinal = function() {
    *
    * @function
    * @name pv.Scale.ordinal.prototype.by
-   * @param {function} f an accessor function.
+   * @param {Function} f an accessor function.
    * @returns {pv.Scale.ordinal} a view of this scale by the specified accessor
    * function.
    */
-  
+
   pv.copyOwn(scale, pv.Scale.common);
-    
+
   scale.domain.apply(scale, arguments);
   return scale;
 };

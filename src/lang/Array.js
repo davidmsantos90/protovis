@@ -12,7 +12,7 @@
  * @see <a
  * href="https://developer.mozilla.org/En/Core_JavaScript_1.5_Reference/Objects/Array/Map">map</a>
  * documentation.
- * @param {function} f function that produces an element of the new Array from
+ * @param {Function} f function that produces an element of the new Array from
  * an element of the current one.
  * @param [o] object to use as <tt>this</tt> when executing <tt>f</tt>.
  */
@@ -36,7 +36,7 @@ if (!Array.prototype.map) Array.prototype.map = function(f, o) {
  * @see <a
  * href="https://developer.mozilla.org/En/Core_JavaScript_1.5_Reference/Objects/Array/filter">filter</a>
  * documentation.
- * @param {function} f function to test each element of the array.
+ * @param {Function} f function to test each element of the array.
  * @param [o] object to use as <tt>this</tt> when executing <tt>f</tt>.
  */
 if (!Array.prototype.filter) Array.prototype.filter = function(f, o) {
@@ -60,7 +60,7 @@ if (!Array.prototype.filter) Array.prototype.filter = function(f, o) {
  * @see <a
  * href="https://developer.mozilla.org/En/Core_JavaScript_1.5_Reference/Objects/Array/ForEach">forEach</a>
  * documentation.
- * @param {function} f function to execute for each element.
+ * @param {Function} f function to execute for each element.
  * @param [o] object to use as <tt>this</tt> when executing <tt>f</tt>.
  */
 if (!Array.prototype.forEach) Array.prototype.forEach = function(f, o) {
@@ -80,7 +80,7 @@ if (!Array.prototype.forEach) Array.prototype.forEach = function(f, o) {
  * @see <a
  * href="https://developer.mozilla.org/En/Core_JavaScript_1.5_Reference/Objects/Array/Reduce">reduce</a>
  * documentation.
- * @param {function} f function to execute on each value in the array.
+ * @param {Function} f function to execute on each value in the array.
  * @param [v] object to use as the first argument to the first call of
  * <tt>t</tt>.
  */

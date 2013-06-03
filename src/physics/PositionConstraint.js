@@ -22,7 +22,7 @@
  * In addition, the alpha parameter can be decayed over time, relaxing the
  * position constraint, which helps to stabilize on an optimal solution.
  *
- * @param {function} [f] the position function.
+ * @param {Function} [f] the position function.
  */
 pv.Constraint.position = function(f) {
   var a = 1, // default alpha

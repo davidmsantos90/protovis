@@ -12,7 +12,7 @@
  *
  * For more details, see Douglas Crockford's essay on prototypal inheritance.
  *
- * @param {function} f a constructor.
+ * @param {Function} f a constructor.
  * @returns a suitable prototype object.
  * @see Douglas Crockford's essay on <a
  * href="http://javascript.crockford.com/prototypal.html">prototypal
@@ -45,11 +45,13 @@ pv.extendType = function(g, f) {
 //} catch (e) {
 
 /**
- * @private Parses a Protovis specification, which may use JavaScript 1.8
+ * @private
+
+ * Parses a Protovis specification, which may use JavaScript 1.8
  * function expresses, replacing those function expressions with proper
- * functions such that the code can be run by a JavaScript 1.6 interpreter. This
- * hack only supports function expressions (using clumsy regular expressions, no
- * less), and not other JavaScript 1.8 features such as let expressions.
+ * functions such that the code can be run by a JavaScript 1.6 interpreter.
+ * This hack only supports function expressions (using clumsy regular expressions,
+ * no less), and not other JavaScript 1.8 features such as let expressions.
  *
  * @param {string} s a Protovis specification (i.e., a string of JavaScript 1.8
  * source code).
@@ -104,7 +106,7 @@ pv.error = function(e) {
  *
  * @param target a DOM element.
  * @param {string} type the type of event, such as "click".
- * @param {function} the event handler callback.
+ * @param {Function} the event handler callback.
  */
 pv.listen = function(target, type, listener) {
   listener = pv.listener(listener);
@@ -132,7 +134,7 @@ pv.listen = function(target, type, listener) {
  *
  * @param target a DOM element.
  * @param {string} type the type of event, such as "click".
- * @param {function} the event handler callback or the result of {@link pv.listen}.
+ * @param {Function} the event handler callback or the result of {@link pv.listen}.
  */
 pv.unlisten = function(target, type, listener){
     if(listener.$listener){
@@ -150,8 +152,8 @@ pv.unlisten = function(target, type, listener){
  * wrapper is cached on the returned function, such that duplicate registrations
  * of the wrapped event handler are ignored.
  *
- * @param {function} f an event handler.
- * @returns {function} the wrapped event handler.
+ * @param {Function} f an event handler.
+ * @returns {Function} the wrapped event handler.
  */
 pv.listener = function(f) {
   return f.$listener || (f.$listener = function(ev) {

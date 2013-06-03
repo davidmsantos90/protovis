@@ -112,7 +112,7 @@ pv.Layout.Partition.prototype.$size = function() { return 1; };
  * As with other properties, a size function may specify additional arguments to
  * access the data associated with the layout and any enclosing panels.
  *
- * @param {function} f the new sizing function.
+ * @param {Function} f the new sizing function.
  * @returns {pv.Layout.Partition} this.
  */
 pv.Layout.Partition.prototype.size = function(f) {
@@ -149,20 +149,20 @@ pv.Layout.Partition.prototype.buildImplied = function(s) {
   root.minBreadth = 0;
   root.breadth    = .5;
   root.maxBreadth = 1;
-  
+
   root.visitBefore(function(n) {
-    var b = n.minBreadth, 
+    var b = n.minBreadth,
         s = n.maxBreadth - b; // span
-      
+
       for (var c = n.firstChild; c; c = c.nextSibling) {
         c.minBreadth = b;
         b += (c.size / n.size) * s;
         c.maxBreadth = b;
-        
+
         c.breadth = (b + c.minBreadth) / 2;
       }
     });
-  
+
   root.visitAfter(function(n, depth) {
       n.minDepth = (depth - 1) / maxDepth;
       n.maxDepth = (n.depth = depth / maxDepth);

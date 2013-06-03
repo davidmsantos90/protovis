@@ -105,7 +105,7 @@ pv.Panel.prototype.type = "panel";
 /**
  * The number of descendant marks that are animating.
  * Only the root panel has this property set.
- * 
+ *
  * @type number
  */
 pv.Panel.prototype.animatingCount = 0;
@@ -113,7 +113,7 @@ pv.Panel.prototype.animatingCount = 0;
 
 /**
  * The number of children that have a non-zero {@link pv.Mark#_zOrder}.
- * 
+ *
  *  @type number
  */
 pv.Panel.prototype.zOrderChildCount = 0;
@@ -151,7 +151,7 @@ pv.Panel.prototype.anchor = function(name) {
  * it is always possible to change this behavior by calling {@link Mark#extend}
  * explicitly.
  *
- * @param {function} Type the type of the new mark to add.
+ * @param {Function} Type the type of the new mark to add.
  * @returns {pv.Mark} the new mark.
  */
 pv.Panel.prototype.add = function(Type) {
@@ -166,7 +166,7 @@ pv.Panel.prototype.add = function(Type) {
 /** @private Bind this panel, then any child marks recursively. */
 pv.Panel.prototype.bind = function() {
   pv.Mark.prototype.bind.call(this);
-  
+
   var children = this.children;
   for (var i = 0, n = children.length ; i < n ; i++) {
     children[i].bind();
@@ -183,9 +183,9 @@ pv.Panel.prototype.bind = function() {
  */
 pv.Panel.prototype.buildInstance = function(s) {
   pv.Bar.prototype.buildInstance.call(this, s);
-  
+
   if (!s.visible) return;
-  
+
   /*
    * Multiply the current scale factor by this panel's transform. Also clear the
    * default index as we recurse into child marks; it will be reset to the

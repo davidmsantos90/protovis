@@ -85,7 +85,7 @@ pv.Layout.Arc.prototype.defaults = new pv.Layout.Arc()
  * find good node orders that emphasize clusters, such as spectral layout and
  * simulated annealing.
  *
- * @param {function} f comparator function for nodes.
+ * @param {Function} f comparator function for nodes.
  * @returns {pv.Layout.Arc} this.
  */
 pv.Layout.Arc.prototype.sort = function(f) {

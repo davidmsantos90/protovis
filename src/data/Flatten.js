@@ -70,7 +70,7 @@ pv.Flatten = function(map) {
  * can easily sort it.
  *
  * @param {string} key the key name.
- * @param {function} [f] an optional value map function.
+ * @param {Function} [f] an optional value map function.
  * @returns {pv.Nest} this.
  */
 pv.Flatten.prototype.key = function(key, f) {
@@ -86,7 +86,7 @@ pv.Flatten.prototype.key = function(key, f) {
  * will be stored in the entries <tt>keys</tt> attribute. The leaf function must
  * return true for leaves, and false for internal nodes.
  *
- * @param {function} f a leaf function.
+ * @param {Function} f a leaf function.
  * @returns {pv.Nest} this.
  */
 pv.Flatten.prototype.leaf = function(f) {

@@ -237,7 +237,7 @@ pv.Scale.quantitative = function() {
    * @param {boolean} [options.roundInside=true] should the ticks be ensured to be strictly inside the scale domain, or to strictly outside the scale domain.
    * @param {boolean} [options.numberExponentMin=-Inifinity] minimum value for the step exponent.
    * @param {boolean} [options.numberExponentMax=+Inifinity] maximum value for the step exponent.
-   * @returns {number[]} an array input domain values to use as ticks.
+   * @returns {Array.<number>} an array input domain values to use as ticks.
    */
   scale.ticks = function(m, options) {
     var start = d[0],
@@ -307,9 +307,9 @@ pv.Scale.quantitative = function() {
 
       precision = dateTickPrecision ? dateTickPrecision : precision;
       format = dateTickFormat ? dateTickFormat : format;
-      
+
       usedDateTickPrecision = precision;
-      
+
       tickFormat = pv.Format.date(format);
 
       var date = new Date(min), dates = [];
@@ -393,7 +393,7 @@ pv.Scale.quantitative = function() {
         step = 1;
         increment = function(d) { d.setSeconds(d.getSeconds() + step*dateTickPrecision/1000);};
       }
-      
+
 
       while (true) {
         increment(date);
@@ -407,11 +407,11 @@ pv.Scale.quantitative = function() {
     if (m == null) {
         m = 10;
     }
-    
+
     var roundInside = pv.get(options, 'roundInside', true);
     var exponentMin = pv.get(options, 'numberExponentMin', -Infinity);
     var exponentMax = pv.get(options, 'numberExponentMax', +Infinity);
-    
+
     //var step = pv.logFloor(span / m, 10);
     var exponent = Math.floor(pv.log(span / m, 10));
     var overflow = false;
@@ -422,41 +422,41 @@ pv.Scale.quantitative = function() {
         exponent = exponentMin;
         overflow = true;
     }
-    
+
     step = Math.pow(10, exponent);
     var mObtained = (span / step);
-    
+
     var err = m / mObtained;
-    if (err <= .15 && exponent < exponentMax - 1) { 
+    if (err <= .15 && exponent < exponentMax - 1) {
         step *= 10;
     } else if (err <= .35) {
         step *= 5;
     } else if (err <= .75) {
         step *= 2;
     }
-    
+
     // Account for floating point precision errors
     exponent = Math.floor(pv.log(step, 10) + 1e-10);
-        
+
     start = step * Math[roundInside ? 'ceil'  : 'floor'](min / step);
     end   = step * Math[roundInside ? 'floor' : 'ceil' ](max / step);
-    
+
     usedNumberExponent = Math.max(0, -exponent);
-    
+
     tickFormat = pv.Format.number().fractionDigits(usedNumberExponent);
-    
+
     var ticks = pv.range(start, end + step, step);
     if(reverse){
         ticks.reverse();
     }
-    
+
     ticks.roundInside = roundInside;
     ticks.step        = step;
     ticks.exponent    = exponent;
     ticks.exponentOverflow = overflow;
     ticks.exponentMin = exponentMin;
     ticks.exponentMax = exponentMax;
-    
+
     return ticks;
   };
 
@@ -486,30 +486,30 @@ pv.Scale.quantitative = function() {
       dateTickPrecision = arguments[0];
       return this;
     }
-    return dateTickPrecision;  
+    return dateTickPrecision;
   };
 
 
     /**
      * Gets or sets a custom tick formatter function.
-     * 
+     *
      * @function
      * @name pv.Scale.quantitative.prototype.tickFormatter
-     * @param {function} [f] The function that formats number or date ticks.
-     * When ticks are dates, the second argument of the function is the 
+     * @param {?(function((number|Date)):string)=} f The function that formats number or date ticks.
+     * When ticks are dates, the second argument of the function is the
      * desired tick precision.
-     * 
-     * @returns {pv.Scale|function} a custom formatter function or this instance.
+     *
+     * @returns {pv.Scale|function((number|Date)):string} a custom formatter function or this instance.
      */
     scale.tickFormatter = function (f) {
       if (arguments.length) {
         tickFormatter = f;
         return this;
       }
-      
+
       return tickFormatter;
    };
-    
+
   /**
    * Formats the specified tick value using the appropriate precision, based on
    * the step interval between tick marks. If {@link #ticks} has not been called,
@@ -517,7 +517,7 @@ pv.Scale.quantitative = function() {
    *
    * @function
    * @name pv.Scale.quantitative.prototype.tickFormat
-   * @param {number} t a tick value.
+   * @param {number|Date} t a tick value.
    * @returns {string} a formatted tick value.
    */
   scale.tickFormat = function (t) {
@@ -525,9 +525,9 @@ pv.Scale.quantitative = function() {
       if(tickFormatter){
           text = tickFormatter(t, type !== Number ? usedDateTickPrecision : usedNumberExponent);
       } else {
-          text = tickFormat(t); 
+          text = tickFormat(t);
       }
-      
+
       // Make sure it is a string
       return text == null ? '' : ('' + text);
   };
@@ -585,11 +585,11 @@ pv.Scale.quantitative = function() {
    *
    * @function
    * @name pv.Scale.quantitative.prototype.by
-   * @param {function} f an accessor function.
+   * @param {Function} f an accessor function.
    * @returns {pv.Scale.quantitative} a view of this scale by the specified
    * accessor function.
    */
-  
+
   pv.copyOwn(scale, pv.Scale.common);
 
   scale.domain.apply(scale, arguments);

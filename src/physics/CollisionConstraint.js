@@ -15,7 +15,7 @@
  * particles in the simulation.
  *
  * @see pv.Constraint
- * @param {function} radius the radius function.
+ * @param {Function} radius the radius function.
  */
 pv.Constraint.collision = function(radius) {
   var n = 1, // number of times to repeat the constraint

@@ -286,7 +286,7 @@ pv.Layout.Stack.prototype.$x
  * This typically corresponds to the independent variable. For example, with the
  * default "bottom-left" orientation, this function defines the "left" property.
  *
- * @param {function} f the x function.
+ * @param {Function} f the x function.
  * @returns {pv.Layout.Stack} this.
  */
 pv.Layout.Stack.prototype.x = function(f) {
@@ -300,7 +300,7 @@ pv.Layout.Stack.prototype.x = function(f) {
  * with the default "bottom-left" orientation, this function defines the
  * "height" property.
  *
- * @param {function} f the y function.
+ * @param {Function} f the y function.
  * @returns {pv.Layout.Stack} this.
  */
 pv.Layout.Stack.prototype.y = function(f) {
@@ -316,7 +316,7 @@ pv.Layout.Stack.prototype.$values = pv.identity;
  * value is the identity function, which assumes that the layers property is
  * specified as a two-dimensional (i.e., nested) array.
  *
- * @param {function} f the values function.
+ * @param {Function} f the values function.
  * @returns {pv.Layout.Stack} this.
  */
 pv.Layout.Stack.prototype.values = function(f) {

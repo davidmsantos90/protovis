@@ -3,7 +3,7 @@
  * order of the returned array is not defined.
  *
  * @param map an object.
- * @returns {string[]} an array of strings corresponding to the keys.
+ * @returns {Array.<string>} an array of strings corresponding to the keys.
  * @see #entries
  */
 pv.keys = function(map) {
@@ -62,7 +62,7 @@ pv.values = function(map) {
  * functions can refer to <tt>this.index</tt>.
  *
  * @param {array} keys an array.
- * @param {function} f a value function.
+ * @param {Function} f a value function.
  * @returns a map from keys to values.
  */
 pv.dict = function(keys, f) {

@@ -42,7 +42,7 @@ pv.Dom.prototype.$leaf = function(n) {
  * By default, objects are considered internal nodes, and primitives (such as
  * numbers and strings) are considered leaves.
  *
- * @param {function} f the new leaf function.
+ * @param {Function} f the new leaf function.
  * @returns the current leaf function, or <tt>this</tt>.
  */
 pv.Dom.prototype.leaf = function(f) {
@@ -190,6 +190,8 @@ pv.Dom.Node.prototype.findChildIndex = function(n) {
   throw new Error("child not found");
 };
 
+pv.Dom.Node.prototype._childRemoved = function(n, i) { /*NOOP*/ };
+pv.Dom.Node.prototype._childAdded   = function(n, i) { /*NOOP*/ };
 
 /**
  * Removes the specified child node from this node.
@@ -209,7 +211,7 @@ pv.Dom.Node.prototype.removeChild = function(n) {
  *
  * @returns {pv.Dom.Node} the appended child.
  */
-pv.Dom.Node.prototype.appendChild = function(n){
+pv.Dom.Node.prototype.appendChild = function(n) {
   var pn = n.parentNode;
   if(pn) { pn.removeChild(n); }
 
@@ -225,7 +227,8 @@ pv.Dom.Node.prototype.appendChild = function(n){
   }
 
   this.lastChild = n;
-  pv.lazyArrayOwn(this, 'childNodes').push(n);
+  var L = pv.lazyArrayOwn(this, 'childNodes').push(n);
+  this._childAdded(n, L - 1);
   return n;
 };
 
@@ -290,6 +293,7 @@ pv.Dom.Node.prototype.insertAt = function(n, i) {
     }
 
     ns.splice(i, 0, n);
+    this._childAdded(n, i);
     return n;
 };
 
@@ -315,6 +319,8 @@ pv.Dom.Node.prototype.removeAt = function(i) {
   else      { this.lastChild       = psib; }
 
   n.nextSibling = n.previousSibling = n.parentNode = null;
+
+  this._childRemoved(n, i);
 
   return n;
 };
@@ -347,6 +353,8 @@ pv.Dom.Node.prototype.replaceChild = function(n, r) {
   // Must be the local array, otherwise r could not be a child of `this`
   this.childNodes[i] = n;
 
+  this._childRemoved(r, i);
+  this._childAdded(n, i);
   return r;
 };
 
@@ -387,7 +395,7 @@ pv.Dom.Node.prototype.childIndex = function(noRebuild) {
  * <li>The current node.
  * <li>The current depth, starting at 0 for the root node.</ol>
  *
- * @param {function} f a function to apply to each node.
+ * @param {Function} f a function to apply to each node.
  */
 pv.Dom.Node.prototype.visitBefore = function(f) {
   function visit(n, d) {
@@ -406,7 +414,7 @@ pv.Dom.Node.prototype.visitBefore = function(f) {
  * <li>The current node.
  * <li>The current depth, starting at 0 for the root node.</ol>
  *
- * @param {function} f a function to apply to each node.
+ * @param {Function} f a function to apply to each node.
  */
 pv.Dom.Node.prototype.visitAfter = function(f) {
   function visit(n, d) {
@@ -428,7 +436,7 @@ pv.Dom.Node.prototype.visitAfter = function(f) {
  * <tt>nextSibling</tt> for the nodes being compared are not defined during the
  * sort operation.
  *
- * @param {function} f a comparator function.
+ * @param {Function} f a comparator function.
  * @returns this.
  */
 pv.Dom.Node.prototype.sort = function(f) {

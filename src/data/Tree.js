@@ -82,7 +82,7 @@ pv.Tree = function(array) {
  * returned keys should be unique for each element in the array; otherwise, the
  * behavior of this operator is undefined.
  *
- * @param {function} k the keys function.
+ * @param {Function} k the keys function.
  * @returns {pv.Tree} this.
  */
 pv.Tree.prototype.keys = function(k) {
@@ -96,7 +96,7 @@ pv.Tree.prototype.keys = function(k) {
  * before it is inserted into the map. If no value function is specified, it is
  * equivalent to using the identity function.
  *
- * @param {function} k the value function.
+ * @param {Function} k the value function.
  * @returns {pv.Tree} this.
  */
 pv.Tree.prototype.value = function(v) {

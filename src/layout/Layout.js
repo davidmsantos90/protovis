@@ -44,6 +44,6 @@ pv.Layout.prototype = pv.extend(pv.Panel);
  * global, which is necessary since properties are inherited!
  *
  * @param {string} name the property name.
- * @param {function} [cast] the cast function for this property.
+ * @param {Function} [cast] the cast function for this property.
  */
 pv.Layout.prototype.property = pv.Mark.prototype.localProperty;

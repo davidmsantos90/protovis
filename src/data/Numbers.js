@@ -12,7 +12,7 @@
  * @param {number} [start] the start value.
  * @param {number} stop the stop value.
  * @param {number} [step] the step value.
- * @returns {number[]} an array of numbers.
+ * @returns {Array.<number>} an array of numbers.
  */
 pv.range = function(start, stop, step) {
   if (arguments.length == 1) {
@@ -65,7 +65,7 @@ pv.random = function(start, stop, step) {
  * Accessor functions can refer to <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the sum of the specified array.
  */
 pv.sum = function(array, f) {
@@ -82,7 +82,7 @@ pv.sum = function(array, f) {
  * example. Accessor functions can refer to <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the maximum value of the specified array.
  */
 pv.max = function(array, f) {
@@ -98,7 +98,7 @@ pv.max = function(array, f) {
  * <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the index of the maximum value of the specified array.
  */
 pv.max.index = function(array, f) {
@@ -124,7 +124,7 @@ pv.max.index = function(array, f) {
  * an example. Accessor functions can refer to <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the minimum value of the specified array.
  */
 pv.min = function(array, f) {
@@ -140,7 +140,7 @@ pv.min = function(array, f) {
  * <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the index of the minimum value of the specified array.
  */
 pv.min.index = function(array, f) {
@@ -167,7 +167,7 @@ pv.min.index = function(array, f) {
  * <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the mean of the specified array.
  */
 pv.mean = function(array, f) {
@@ -181,7 +181,7 @@ pv.mean = function(array, f) {
  * Accessor functions can refer to <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the median of the specified array.
  */
 pv.median = function(array, f) {
@@ -199,7 +199,7 @@ pv.median = function(array, f) {
  * an example. Accessor functions can refer to <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the variance of the specified array.
  */
 pv.variance = function(array, f) {
@@ -223,7 +223,7 @@ pv.variance = function(array, f) {
  * functions can refer to <tt>this.index</tt>.
  *
  * @param {array} array an array of objects, or numbers.
- * @param {function} [f] an optional accessor function.
+ * @param {Function} [f] an optional accessor function.
  * @returns {number} the standard deviation of the specified array.
  */
 pv.deviation = function(array, f) {

@@ -165,13 +165,13 @@ pv.Scale.quantile = function() {
    *
    * @function
    * @name pv.Scale.quantile.prototype.by
-   * @param {function} f an accessor function.
+   * @param {Function} f an accessor function.
    * @returns {pv.Scale.quantile} a view of this scale by the specified
    * accessor function.
    */
-  
+
   pv.copyOwn(scale, pv.Scale.common);
-  
+
   scale.domain.apply(scale, arguments);
   return scale;
 };

@@ -146,10 +146,10 @@ pv.Layout.Treemap.prototype.defaults = new pv.Layout.Treemap()
 /** @private The default size function. */
 pv.Layout.Treemap.prototype.$size = function(d) { return Number(d.nodeValue); };
 
-pv.Layout.Treemap.prototype.$padLeft   = 
-pv.Layout.Treemap.prototype.$padRight  = 
-pv.Layout.Treemap.prototype.$padBottom = 
-pv.Layout.Treemap.prototype.$padTop    = 
+pv.Layout.Treemap.prototype.$padLeft   =
+pv.Layout.Treemap.prototype.$padRight  =
+pv.Layout.Treemap.prototype.$padBottom =
+pv.Layout.Treemap.prototype.$padTop    =
     /** @private The default padding function. */
     function() { return 0; };
 
@@ -166,7 +166,7 @@ pv.Layout.Treemap.prototype.$padTop    =
  *
  * <pre>    .size(function(d) d.bytes)</pre>
  *
- * @param {function} f the new sizing function.
+ * @param {Function} f the new sizing function.
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.size = function(f) {
@@ -191,9 +191,9 @@ pv.Layout.Treemap.prototype.padding = function(n) {
 /**
  * Specifies the paddingLeft function. By default, it is 0.
  *
- * <p>The paddingLeft function is invoked for each parent node in the tree. 
- * 
- * @param {function} f the new paddingLeft function.
+ * <p>The paddingLeft function is invoked for each parent node in the tree.
+ *
+ * @param {Function} f the new paddingLeft function.
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.paddingLeft = function(f) {
@@ -204,9 +204,9 @@ pv.Layout.Treemap.prototype.paddingLeft = function(f) {
 /**
  * Specifies the paddingRight function. By default, it is 0.
  *
- * <p>The paddingRight function is invoked for each parent node in the tree. 
- * 
- * @param {function} f the new paddingRight function.
+ * <p>The paddingRight function is invoked for each parent node in the tree.
+ *
+ * @param {Function} f the new paddingRight function.
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.paddingRight = function(f) {
@@ -217,9 +217,9 @@ pv.Layout.Treemap.prototype.paddingRight = function(f) {
 /**
  * Specifies the paddingBottom function. By default, it is 0.
  *
- * <p>The paddingBottom function is invoked for each parent node in the tree. 
- * 
- * @param {function} f the new paddingBottom function.
+ * <p>The paddingBottom function is invoked for each parent node in the tree.
+ *
+ * @param {Function} f the new paddingBottom function.
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.paddingBottom = function(f) {
@@ -230,9 +230,9 @@ pv.Layout.Treemap.prototype.paddingBottom = function(f) {
 /**
  * Specifies the paddingTop function. By default, it is 0.
  *
- * <p>The paddingTop function is invoked for each parent node in the tree. 
- * 
- * @param {function} f the new paddingTop function.
+ * <p>The paddingTop function is invoked for each parent node in the tree.
+ *
+ * @param {Function} f the new paddingTop function.
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.paddingTop = function(f) {
@@ -302,24 +302,24 @@ pv.Layout.Treemap.prototype.buildImplied = function(s) {
         y = n.y,
         w = n.dx,
         h = n.dy;
-    
+
     if(p) {
         x += p.paddingLeft;
         y += p.paddingTop;
         w += -p.paddingLeft -p.paddingRight,
         h += -p.paddingTop  -p.paddingBottom;
     }
-    
+
     /* Assume squarify by default. */
     if (mode != "squarify") {
       slice(
-        n.childNodes, 
+        n.childNodes,
         n.size,
         mode == "slice" ? true  :
-        mode == "dice"  ? false : i & 1, 
-        x, 
-        y, 
-        w, 
+        mode == "dice"  ? false : i & 1,
+        x,
+        y,
+        w,
         h);
       return;
     }
@@ -387,9 +387,9 @@ pv.Layout.Treemap.prototype.buildImplied = function(s) {
       root.visitAfter(function(n, i) {
           n.depth = i;
           n.x = n.y = n.dx = n.dy = 0;
-          
+
           stack[0] = n;
-          
+
           var f;
           if(n.firstChild) {
               n.size = pv.sum(n.childNodes, size);
@@ -401,10 +401,10 @@ pv.Layout.Treemap.prototype.buildImplied = function(s) {
               n.size = that.$size.apply(that, stack);
           }
       });
-  } finally { 
+  } finally {
       stack.shift();
   }
-  
+
   /* Sort. */
   switch (s.order) {
     case "ascending":  root.sort(function(a, b) { return a.size - b.size; }); break;

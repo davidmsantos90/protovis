@@ -104,7 +104,7 @@ pv.Layout.Rollup.prototype = pv.extend(pv.Layout.Network)
  * function. Typically the function is specified as an ordinal scale. For
  * single-dimension rollups, a constant value can be specified.
  *
- * @param {function} f the <i>x</i>-position function.
+ * @param {Function} f the <i>x</i>-position function.
  * @returns {pv.Layout.Rollup} this.
  * @see pv.Scale.ordinal
  */
@@ -119,7 +119,7 @@ pv.Layout.Rollup.prototype.x = function(f) {
  * function. Typically the function is specified as an ordinal scale. For
  * single-dimension rollups, a constant value can be specified.
  *
- * @param {function} f the <i>y</i>-position function.
+ * @param {Function} f the <i>y</i>-position function.
  * @returns {pv.Layout.Rollup} this.
  * @see pv.Scale.ordinal
  */

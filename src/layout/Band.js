@@ -5,11 +5,11 @@
  *
  * @class Implements a layout for banded visualizations; it is
  * mainly used for grouped bar charts.
- * 
+ *
  * @extends pv.Layout
  */
 pv.Layout.Band = function() {
-    
+
     pv.Layout.call(this);
 
     var that = this,
@@ -39,7 +39,7 @@ pv.Layout.Band = function() {
             return itemProps[name](this.index, this.parent.index);
         };
     }
-    
+
     /**
      * Compute the layout.
      * @private
@@ -59,16 +59,16 @@ pv.Layout.Band = function() {
                 bh = this.parent[horizontal ? "height" : "width"](),
                 bands = this._readData(data, values, s),
                 B = bands.length;
-            
+
             /* Band order */
             if(s.bandOrder === "reverse") {
                 bands.reverse();
             }
-            
+
             /* Layer order */
             if(s.order === "reverse") {
                 values.reverse();
-                
+
                 for (var b = 0; b < B; b++) {
                     bands[b].items.reverse();
                 }
@@ -144,7 +144,7 @@ pv.Layout.Band = function() {
          * Half the specified margin is discounted
          * from each of the items own height.
          * </p>
-         * 
+         *
          * <p>
          * Evaluated once per band
          * (on the corresponding band's item of the first series).
@@ -161,7 +161,7 @@ pv.Layout.Band = function() {
 
     var bandAccessor = this.band = {
         end: this,
-        
+
         /**
          * The band width pseudo-property;
          * determines the width of a band
@@ -183,7 +183,7 @@ pv.Layout.Band = function() {
          * The band x pseudo-property;
          * determines the x center position of a band
          * in a layer panel.
-         * 
+         *
          * <p>
          * Evaluated once per band
          * (on the corresponding band's item of the first series).
@@ -256,7 +256,7 @@ pv.Layout.Band.prototype.defaults = new pv.Layout.Band()
 
 /** @private */ pv.Layout.Band.prototype.$bx =
 /** @private */ pv.Layout.Band.prototype.$bw =
-/** @private */ pv.Layout.Band.prototype.$bDiffControl = 
+/** @private */ pv.Layout.Band.prototype.$bDiffControl =
 /** @private */ pv.Layout.Band.prototype.$iw =
 /** @private */ pv.Layout.Band.prototype.$ih =
 /** @private */ pv.Layout.Band.prototype.$ivertiMargin = pv.functor(0);
@@ -272,7 +272,7 @@ pv.Layout.Band.prototype.$values = pv.identity;
  * which assumes that the bands property is specified as
  * a two-dimensional (i.e., nested) array.
  *
- * @param {function} f the values function.
+ * @param {Function} f the values function.
  * @returns {pv.Layout.Band} this.
  */
 pv.Layout.Band.prototype.values = function(f) {
@@ -315,7 +315,7 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
         stack[0] = data[l];
 
         /* Eval per-layer properties */
-        
+
         var layerValues = layersValues[l] = this.$values.apply(o.parent, stack);
         if(!l){
             B = layerValues.length;
@@ -367,7 +367,7 @@ pv.Layout.Band.prototype._calcGrouped = function(bands, L, scene){
 
         /* Total items width */
         for (var l = 0 ; l < L ; l++) { wItems += items[l].w; }
-        
+
         if(L === 1) {
             /*
              * Horizontal ratio does not apply
@@ -377,11 +377,11 @@ pv.Layout.Band.prototype._calcGrouped = function(bands, L, scene){
         } else if(!(horizRatio > 0 && horizRatio <= 1)) {
             horizRatio = 1;
         }
-        
+
         if(w == null){
             /* Expand band width to contain all items plus ratio */
             w = band.w = wItems / horizRatio;
-            
+
         } else if(scene.horizontalMode === 'expand'){
             /* Scale items width to fit in band's width */
 
@@ -484,7 +484,7 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
             vertiMargin = Math.max(0, band.vertiMargin);
 
         items = band.items;
-        
+
         // diffControl
         var resultPos = this._layoutItemsOfDir(+1, positiveGoesDown, items, vertiMargin, bx, yOffset),
             resultNeg = null; // reset on each iteration
@@ -513,12 +513,12 @@ pv.Layout.Band.prototype._layoutItemsOfDir = function(stackDir, positiveGoesDown
         vertiMargin2 = vertiMargin / 2,
         efDir = (positiveGoesDown ? -stackDir : stackDir),
         reverseLayers = positiveGoesDown;
-    
+
     for (var l = 0, L = items.length ; l < L ; l+=1) {
         var item = items[reverseLayers ? (L -l -1) : l];
         if(item.dir === stackDir){
             var h = item.h || 0; // null -> 0
-            
+
             if(efDir > 0) {
                 item.y = yOffset + vertiMargin2;
                 yOffset += h;
@@ -526,7 +526,7 @@ pv.Layout.Band.prototype._layoutItemsOfDir = function(stackDir, positiveGoesDown
                 item.y = yOffset - (h - vertiMargin2);
                 yOffset -= h;
             }
-            
+
             var h2 = h - vertiMargin;
             item.h = h2 > 0 ? h2 : 0;
             item.x = bx - item.w / 2;
