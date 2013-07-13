@@ -23,6 +23,7 @@ pv.Dot.prototype = pv.extend(pv.Mark)
     .property("shapeAngle", Number)
     .property("shapeRadius", Number)
     .property("shapeSize", Number)
+    .property("aspectRatio", Number)
     .property("lineWidth", Number)
     .property("strokeStyle", pv.fillStyle)
     .property("lineCap",   String)
@@ -40,6 +41,25 @@ pv.Dot.prototype.type = "dot";
  * @see #shapeRadius
  * @type number
  * @name pv.Dot.prototype.shapeSize
+ */
+
+ /**
+ * The aspect ratio of the shape. 
+ * A positive number that is equal to the ratio of the shape's width and height.
+ * 
+ * <p>When equal to 1 the shape has equal with and height (both equal to twice the <i>shapeRadius</i>).</p>
+ * <p>When less that 1, the shape has a width smaller than its height.
+ *    The actual value of each is calculated such that the 
+ *    original area is maintained:
+ *    <ul>
+ *      <li>area = width * height = 4 * shapeRadius^2</li>
+ *      <li>height = 2 * shapeRadius / sqrt(aspectRatio)</li>
+ *      <li>width  = aspectRatio * height</li>
+ *    </ul>
+ * </p>
+ *
+ * @type number
+ * @name pv.Dot.prototype.aspectRatio
  */
 
 /**
@@ -121,6 +141,7 @@ pv.Dot.prototype.type = "dot";
 pv.Dot.prototype.defaults = new pv.Dot()
     .extend(pv.Mark.prototype.defaults)
     .shape("circle")
+    .aspectRatio(1)
     .lineWidth(1.5)
     .strokeStyle(pv.Colors.category10().by(pv.parent))
     .lineCap("butt")
@@ -157,13 +178,13 @@ pv.Dot.prototype.anchor = function(name) {
           case "bottom":
           case "top":
           case "center": return s.left;
-          case "left": return null;
+          case "left":   return null;
         }
-        return s.left + s.shapeRadius;
+        return s.left + s._width/2;
       })
     .right(function() {
         var s = this.scene.target[this.index];
-        return this.name() == "left" ? s.right + s.shapeRadius : null;
+        return this.name() == "left" ? (s.right + s._width/2) : null;
       })
     .top(function() {
         var s = this.scene.target[this.index];
@@ -171,13 +192,13 @@ pv.Dot.prototype.anchor = function(name) {
           case "left":
           case "right":
           case "center": return s.top;
-          case "top": return null;
+          case "top":    return null;
         }
-        return s.top + s.shapeRadius;
+        return s.top + s._height/2;
       })
     .bottom(function() {
         var s = this.scene.target[this.index];
-        return this.name() == "top" ? s.bottom + s.shapeRadius : null;
+        return this.name() == "top" ? (s.bottom + s._height/2) : null;
       })
     .textAlign(function() {
         switch (this.name()) {
@@ -201,40 +222,67 @@ pv.Dot.prototype.anchor = function(name) {
 
 /** @private Sets radius based on size or vice versa. */
 pv.Dot.prototype.buildImplied = function(s) {
-  var r = s.shapeRadius, z = s.shapeSize;
-  if (r == null) {
-    if (z == null) {
-      s.shapeSize = 20.25;
-      s.shapeRadius = 4.5;
+  var r = s.shapeRadius, 
+      z = s.shapeSize,
+      a = s.aspectRatio || 1;
+  
+  if(r == null) {
+    if(z == null) {
+      z = s.shapeSize = 20.25;
+      r = s.shapeRadius = 4.5;
     } else {
-      s.shapeRadius = Math.sqrt(z);
+      r = s.shapeRadius = Math.sqrt(z);
     }
-  } else if (z == null) {
-    s.shapeSize = r * r;
+  } else if(z == null) {
+    z = s.shapeSize = r * r;
   }
+
+  var h, w;
+  if(a === 1 || a < 0) {
+    h = w = 2 * r;
+  } else {
+    h = 2 * r / Math.sqrt(a);
+    w = a * h;
+  }
+  
+  // Not using normal width/height properties
+  // Because some code uses the existence of these to detect stuff...
+  s._height = h;
+  s._width  = w;
+  
   pv.Mark.prototype.buildImplied.call(this, s);
 };
 
-pv.Dot.prototype.getShapeCore = function(scenes, index){
+pv.Dot.prototype.width = function() {
+  return this.instance()._width;
+};
+
+pv.Dot.prototype.height = function() {
+  return this.instance()._height;
+};
+
+pv.Dot.prototype.getShapeCore = function(scenes, index) {
     var s = scenes[index];
     
-    var radius = s.shapeRadius,
+    var h  = s._width,
+        w  = s._height,
         cx = s.left,
         cy = s.top;
 
-    // TODO: square and diamond break when angle is used
-    
-    switch(s.shape){
+    switch(s.shape) {
         case 'diamond':
-            radius *= Math.SQRT2;
+            h *= Math.SQRT2;
+            w *= Math.SQRT2;
             // the following comment is for jshint
             /* falls through */
         case 'square':
         case 'cross':
-            return new pv.Shape.Rect(cx - radius, cy - radius, 2*radius, 2*radius);
+            // TODO: this breaks when angle is used...
+            return new pv.Shape.Rect(cx - w/2, cy - h/2, w, h);
     }
     
     // 'circle' included
     
-    return new pv.Shape.Circle(cx, cy, radius);
+    // TODO: Need an Ellipse shape...
+    return new pv.Shape.Circle(cx, cy, s.shapeRadius);
 };

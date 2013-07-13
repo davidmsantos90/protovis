@@ -302,12 +302,12 @@ pv.logCeil = function(x, b) {
 };
 
 (function() {
-  var radians = Math.PI / 180,
-      degrees = 180 / Math.PI;
+  var _radians = Math.PI / 180,
+      _degrees = 180 / Math.PI;
 
   /** Returns the number of radians corresponding to the specified degrees. */
-  pv.radians = function(degrees) { return radians * degrees; };
+  pv.radians = function(degrees) { return _radians * degrees; };
 
   /** Returns the number of degrees corresponding to the specified radians. */
-  pv.degrees = function(radians) { return degrees * radians; };
+  pv.degrees = function(radians) { return _degrees * radians; };
 })();
