@@ -1,4 +1,4 @@
-// ed3704009902e62e1458b57c52bf2fa9a6dd0911
+// 894d9e65114b7949a6f520e4351f396e5cda9f23
 /**
  * @class The built-in Array class.
  * @name Array
@@ -9220,12 +9220,11 @@ pv.SvgScene.dot = function(scenes) {
       } else {
         shape = 'ellipse';
 
-        svg.cx = 0;
-        svg.cy = 0;
-
+        svg.cx = svg.cy = 0;
+        
         t = 'translate(' + s.left + ',' + s.top + ') ';
         if(sa) { t += 'rotate(' + pv.degrees(sa) + ') '; }
-        
+
         svg.rx = s._width  / 2;
         svg.ry = s._height / 2;
       }
@@ -9273,9 +9272,20 @@ pv.SvgScene.dot = function(scenes) {
     return _renderersBySymName[symName].call(S, instance, symName);
   };
 
+  S.hasSymbol = function(symName) {
+    return _renderersBySymName.hasOwnProperty(symName);
+  };
+
+  S.symbols = function() {
+    return pv.keys(_renderersBySymName);
+  };
+
   var C1 = 2 / Math.sqrt(3);
 
   S
+  .registerSymbol('circle', function(s) {
+    throw new Error("Not implemented as a symbol");
+  })
   .registerSymbol('cross', function(s) {
     var rp = s.shapeRadius,
         rn = -rp;
@@ -12161,7 +12171,7 @@ pv.Mark.prototype.buildImplied = function(s) {
 
   /* Assume width and height are zero if not supported by this mark type. */
   var p = this.properties;
-  var w = p.width  ? s.width  : 0;
+  var w = p.width ? s.width : 0;
   var h = p.height ? s.height : 0;
 
   /* Compute implied width, right and left. */
