@@ -95,9 +95,20 @@ pv.SvgScene.dot = function(scenes) {
     return _renderersBySymName[symName].call(S, instance, symName);
   };
 
+  S.hasSymbol = function(symName) {
+    return _renderersBySymName.hasOwnProperty(symName);
+  };
+
+  S.symbols = function() {
+    return pv.keys(_renderersBySymName);
+  };
+
   var C1 = 2 / Math.sqrt(3);
 
   S
+  .registerSymbol('circle', function(s) {
+    throw new Error("Not implemented as a symbol");
+  })
   .registerSymbol('cross', function(s) {
     var rp = s.shapeRadius,
         rn = -rp;
