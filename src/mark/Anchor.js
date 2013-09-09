@@ -37,7 +37,7 @@
 pv.Anchor = function(target) {
   pv.Mark.call(this);
   this.target = target;
-  this.parent = target.parent;
+  this.parent = target.parent; // same parent as target, but not added as child...
 };
 
 pv.Anchor.prototype = pv.extend(pv.Mark)

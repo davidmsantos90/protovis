@@ -19,27 +19,27 @@
  * inheritance</a>.
  */
 pv.extend = Object.create ?
-    function(f){
-      return Object.create(f.prototype || f);
-    } :
-    function(f) {
-      function g() {}
-      g.prototype = f.prototype || f;
-      return new g();
-    };
+  function(f) {
+    return Object.create(f.prototype || f);
+  } :
+  function(f) {
+    function g() {}
+    g.prototype = f.prototype || f;
+    return new g();
+  };
 
 pv.extendType = function(g, f) {
-    var sub = g.prototype = pv.extend(f);
+  var sub = g.prototype = pv.extend(f);
 
-    // Fix the constructor
-    sub.constructor = g;
+  // Fix the constructor
+  // Note this may make the constructor property to be enumerable.
+  sub.constructor = g;
 
-    return g;
+  return g;
 };
 
-// Is there any browser (still) supporting this syntax?
+// TODO: Is there any browser (still) supporting this syntax?
 // Commented cause this messes up with the debugger's break on exceptions.
-
 //try {
 //  eval("pv.parse = function(x) x;"); // native support
 //} catch (e) {
@@ -58,35 +58,40 @@ pv.extendType = function(g, f) {
  * @returns {string} a conformant JavaScript 1.6 source code.
  */
  pv.parse = function(js) { // hacky regex support
-    var re = new RegExp("function\\s*(\\b\\w+)?\\s*\\([^)]*\\)\\s*", "mg"), m, d, i = 0, s = "";
-    while (m = re.exec(js)) {
-      var j = m.index + m[0].length;
-      if (js.charAt(j) != '{') {
-        s += js.substring(i, j) + "{return ";
-        i = j;
-        for (var p = 0; p >= 0 && j < js.length; j++) {
-          var c = js.charAt(j);
-          switch (c) {
-            case '"': case '\'': {
-              while (++j < js.length && (d = js.charAt(j)) != c) {
-                if (d == '\\') j++;
-              }
-              break;
+  var re = new RegExp("function\\s*(\\b\\w+)?\\s*\\([^)]*\\)\\s*", "mg");
+  var i  = 0;
+  var s  = "";
+  var m, d;
+
+  while((m = re.exec(js))) {
+    var j = m.index + m[0].length;
+    if(js.charAt(j) != '{') {
+      s += js.substring(i, j) + "{return ";
+      i = j;
+      for(var p = 0; p >= 0 && j < js.length; j++) {
+        var c = js.charAt(j);
+        switch(c) {
+          case '"':
+          case '\'': {
+            while(++j < js.length && (d = js.charAt(j)) != c) {
+              if(d == '\\') { j++; }
             }
-            case '[': case '(': p++; break;
-            case ']': case ')': p--; break;
-            case ';':
-            case ',': if (p == 0) p--; break;
+            break;
           }
+          case '[': case '(': p++; break;
+          case ']': case ')': p--; break;
+          case ';':
+          case ',': if(p == 0) p--; break;
         }
-        s += pv.parse(js.substring(i, --j)) + ";}";
-        i = j;
       }
-      re.lastIndex = j;
+      s += pv.parse(js.substring(i, --j)) + ";}";
+      i = j;
     }
-    s += js.substring(i);
-    return s;
-  };
+    re.lastIndex = j;
+  }
+  s += js.substring(i);
+  return s;
+};
 
 /**
  * @private Reports the specified error to the JavaScript console. Mozilla only
@@ -111,16 +116,14 @@ pv.error = function(e) {
 pv.listen = function(target, type, listener) {
   listener = pv.listener(listener);
 
-  if (type === 'load' || type === 'onload'){
+  if(type === 'load' || type === 'onload') {
       return pv.listenForPageLoad(listener);
   }
 
-  if(target.addEventListener){
+  if(target.addEventListener) {
     target.addEventListener(type, listener, false);
   } else {
-      if (target === window) {
-        target = document.documentElement;
-      }
+      if(target === window) { target = document.documentElement; }
 
       target.attachEvent('on' + type, listener);
   }
@@ -136,14 +139,33 @@ pv.listen = function(target, type, listener) {
  * @param {string} type the type of event, such as "click".
  * @param {Function} the event handler callback or the result of {@link pv.listen}.
  */
-pv.unlisten = function(target, type, listener){
-    if(listener.$listener){
-        listener = listener.$listener;
-    }
+pv.unlisten = function(target, type, listener) {
+    if(listener.$listener) { listener = listener.$listener; }
 
-    target.removeEventListener
-        ? target.removeEventListener(type, listener, false)
-        : target.detachEvent('on' + type, listener);
+    target.removeEventListener ?
+      target.removeEventListener(type, listener, false) :
+      target.detachEvent('on' + type, listener);
+};
+
+/**
+ * Binds to the page ready event in a browser-agnostic
+ * fashion (i.e. that works under IE!)
+ */
+pv.listenForPageLoad = function(listener) {
+  // Catch cases where $(document).ready() is called after the
+  // browser event has already occurred.
+  if(document.readyState === "complete") {
+    listener(null); // <-- no event object to give
+    return;
+  }
+
+  if(document.addEventListener) {
+    // Mozilla, Opera and webkit nightlies currently support this event
+    window.addEventListener("load", listener, false);
+  } else if(document.attachEvent) {
+    // IE event model
+    window.attachEvent("onload", listener);
+  }
 };
 
 /**
@@ -162,7 +184,7 @@ pv.listener = function(f) {
         pv.event = ev = ev && pv.fixEvent(ev);
 
         return f.call(this, ev);
-      } catch (ex) {
+      } catch(ex) {
           // swallow top level error
           pv.error(ex);
       } finally {
@@ -171,17 +193,16 @@ pv.listener = function(f) {
   });
 };
 
-pv.fixEvent = function(ev){
-    // Fix event (adapted from jQuery)
+// Fix event - adapted from jQuery
+pv.fixEvent = function(ev) {
     if(ev.pageX == null && ev.clientX != null) {
         var eventDoc = (ev.target && ev.target.ownerDocument) || document;
         var doc  = eventDoc.documentElement;
         var body = eventDoc.body;
 
-        ev.pageX = (ev.clientX * 1) + ( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) - ( doc && doc.clientLeft || body && body.clientLeft || 0 );
-        ev.pageY = (ev.clientY * 1) + ( doc && doc.scrollTop  || body && body.scrollTop  || 0 ) - ( doc && doc.clientTop  || body && body.clientTop  || 0 );
+        ev.pageX = (ev.clientX * 1) + (doc && doc.scrollLeft || body && body.scrollLeft || 0) - (doc && doc.clientLeft || body && body.clientLeft || 0);
+        ev.pageY = (ev.clientY * 1) + (doc && doc.scrollTop  || body && body.scrollTop  || 0) - (doc && doc.clientTop  || body && body.clientTop  || 0);
     }
-
     return ev;
 };
 
@@ -191,25 +212,27 @@ pv.fixEvent = function(ev){
  * target element.
  */
 pv.ancestor = function(a, e) {
-  while (e) {
-    if (e == a) return true;
+  while(e) {
+    if(e === a) { return true; }
     e = e.parentNode;
   }
   return false;
 };
 
+pv.removeChildren = function(p) {
+  while(p.lastChild) { p.removeChild(p.lastChild); }
+};
+
 pv.getWindow = function(elem) {
-    return (elem != null && elem == elem.window) ?
-        elem :
-        elem.nodeType === 9 ?
-            elem.defaultView || elem.parentWindow :
-            false;
+    return (elem != null && elem == elem.window) ? elem :
+           elem.nodeType === 9                   ? (elem.defaultView || elem.parentWindow) :
+           false;
 };
 
 var _reHiphenSep = /\-([a-z])/g;
 
 pv.hiphen2camel = function(prop) {
-    if (_reHiphenSep.test(prop)) {
+    if(_reHiphenSep.test(prop)) {
         return prop.replace(_reHiphenSep, function($0, $1) {
             return $1.toUpperCase();
         });
@@ -235,26 +258,26 @@ pv.css = function(e, p) {
 };
 
 pv.cssStyle = function(e) {
-    var style;
-    if(_getCompStyle) {
-        style = _getCompStyle.call(window, e, null);
-        return function(p) { return style.getPropertyValue(p); };
-    }
+  var style;
+  if(_getCompStyle) {
+      style = _getCompStyle.call(window, e, null);
+      return function(p) { return style.getPropertyValue(p); };
+  }
 
-    style = e.currentStyle;
-    return function(p) { return style[p === 'float' ? 'styleFloat' : pv.hiphen2camel(p)]; };
+  style = e.currentStyle;
+  return function(p) { return style[p === 'float' ? 'styleFloat' : pv.hiphen2camel(p)]; };
 };
 
 pv._getElementsByClass = function(searchClass, node) {
   if(node == null) { node = document; }
 
-  var classElements = [],
-      els = node.getElementsByTagName("*"),
-      L = els.length,
-      pattern = new RegExp("(^|\\s)" + searchClass + "(\\s|$)"), i, j;
+  var classElements = [];
+  var els = node.getElementsByTagName("*");
+  var L = els.length;
+  var pattern = new RegExp("(^|\\s)" + searchClass + "(\\s|$)");
 
-  for (i = 0, j = 0 ; i < L ; i++) {
-    if (pattern.test(els[i].className)) {
+  for(var i = 0, j = 0 ; i < L ; i++) {
+    if(pattern.test(els[i].className)) {
       classElements[j] = els[i];
       j++;
     }
@@ -264,98 +287,61 @@ pv._getElementsByClass = function(searchClass, node) {
 };
 
 pv.getElementsByClassName = function(node, classname) {
-  // use native implementation if available
+  // Use native implementation if available
   return node.getElementsByClassName ?
          node.getElementsByClassName(classname) :
          pv._getElementsByClass(classname, node);
 };
 
-/* Adapted from jQuery.offset()
- */
+/* Adapted from jQuery.offset() */
 pv.elementOffset = function(elem) {
-    var docElem, body, win, clientTop, clientLeft, scrollTop, scrollLeft,
-        box = { top: 0, left: 0 },
-        doc = elem && elem.ownerDocument;
+  var doc = elem && elem.ownerDocument;
+  if(!doc) { return; }
 
-    if (!doc) {
-        return;
-    }
+  var body = doc.body;
+  if(body === elem) { return; } // not supported
 
-    body = doc.body;
-    if(body === elem)  {
-        return; // not supported
-    }
+  var box;
+  if(typeof elem.getBoundingClientRect !== "undefined") {
+    box = elem.getBoundingClientRect();
+  } else {
+    box = {top: 0, left: 0};
+  }
 
-    docElem = doc.documentElement;
+  var win = pv.getWindow(doc);
+  var docElem = doc.documentElement;
 
-    if ( typeof elem.getBoundingClientRect !== "undefined" ) {
-        box = elem.getBoundingClientRect();
-    }
-
-    win = pv.getWindow(doc);
-
-    clientTop  = docElem.clientTop  || body.clientTop  || 0;
-    clientLeft = docElem.clientLeft || body.clientLeft || 0;
-    scrollTop  = win.pageYOffset || docElem.scrollTop;
-    scrollLeft = win.pageXOffset || docElem.scrollLeft;
-    return {
-        top:  box.top  + scrollTop  - clientTop,
-        left: box.left + scrollLeft - clientLeft
-    };
-};
-
-/**
- * Binds to the page ready event in a browser-agnostic
- * fashion (i.e. that works under IE!)
- */
-pv.listenForPageLoad = function(listener) {
-
-    // Catch cases where $(document).ready() is called after the
-    // browser event has already occurred.
-    if ( document.readyState === "complete" ) {
-        listener(null); // <-- no event object to give
-    }
-
-    if (pv.renderer() === "svgweb") {
-        // SVG web adds addEventListener to IE.
-        window.addEventListener("SVGLoad", listener, false);
-    } else {
-        // Mozilla, Opera and webkit nightlies currently support this event
-        if ( document.addEventListener ) {
-            window.addEventListener("load", listener, false);
-
-        // If IE event model is used
-        } else if ( document.attachEvent ) {
-            window.attachEvent("onload", listener);
-        }
-    }
+  var clientTop  = docElem.clientTop  || body.clientTop  || 0;
+  var clientLeft = docElem.clientLeft || body.clientLeft || 0;
+  var scrollTop  = win.pageYOffset || docElem.scrollTop;
+  var scrollLeft = win.pageXOffset || docElem.scrollLeft;
+  return {
+    top:  box.top  + scrollTop  - clientTop,
+    left: box.left + scrollLeft - clientLeft
+  };
 };
 
 /**
  * @public Returns the name of the renderer we're using -
- *
  * 'nativesvg' is the default - the native svg of the browser.
- * 'svgweb' is if we identify svgweb is there.
  */
+pv.renderer = function() {
+    var renderer = document.svgImplementation || "nativesvg";
 
-pv.renderer = function(){
-    var renderer = (typeof document.svgImplementation !== "undefined") ?
-                   document.svgImplementation :
-                   (typeof window.svgweb === "undefined") ? "nativesvg" : "svgweb";
-
-    pv.renderer = function(){ return renderer; };
+    pv.renderer = function() { return renderer; };
 
     return renderer;
 };
 
+/** @private */
+var _id = 1;
+
 /** @private Returns a locally-unique positive id. */
-pv.id = function() {
-  var id = 1; return function() { return id++; };
-}();
+pv.id = function() { return _id++; };
 
 /** @private Returns a function wrapping the specified constant. */
 pv.functor = function(v) {
-  return typeof v == "function" ? v : function() { return v; };
+  return typeof v === "function" ? v : function() { return v; };
 };
 
 /**
@@ -380,5 +366,17 @@ pv.lazyArrayOwn = function(o, p) {
     var v;
     return o && hasOwn.call(o, p) && (v = o[p]) ? v : (o[p] = []);
 };
+
+/**
+ * The class of the error that is thrown when
+ * a root panel detects that its panel has been stolen
+ * by another visualization and 
+ * it doesn't have priority over it.
+ *
+ * @private
+ * @type Error
+ * @name pv.CanvasStolenError
+ */
+ pv.CanvasStolenError = function() {};
 
 }());

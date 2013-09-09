@@ -447,7 +447,9 @@ pv.Dom.Node.prototype.sort = function(f) {
     var cs = this.childNodes;
     cs.sort(f);
 
-    var p = this.firstChild = cs[0], c;
+    var p = (this.firstChild = cs[0]);
+    var c;
+    
     delete p.previousSibling;
     p._childIndex = 0;
 

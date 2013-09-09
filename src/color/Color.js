@@ -94,11 +94,11 @@
     var colorsByFormat = {}; // TODO: unbounded cache 
     
     pv.color = function(format) {
-      if (format.rgb) { return format.rgb(); }
+      if(format.rgb) { return format.rgb(); }
       
       /* Named colors. */
       var color = pv.Color.names[format];
-      if (!color) {
+      if(!color) {
           color = colorsByFormat[format] ||
                   (colorsByFormat[format] = createColor(format));
       }

@@ -185,6 +185,7 @@ pv.Layout.Treemap.prototype.size = function(f) {
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.padding = function(n) {
+    n = pv.functor(n);
     return this.paddingLeft(n).paddingRight(n).paddingTop(n).paddingBottom(n);
 };
 
@@ -197,7 +198,7 @@ pv.Layout.Treemap.prototype.padding = function(n) {
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.paddingLeft = function(f) {
-    if(arguments.length) { this.$padLeft = f; }
+    if(arguments.length) { this.$padLeft = pv.functor(f); return this; }
     return this.$padLeft;
 };
 
@@ -210,7 +211,7 @@ pv.Layout.Treemap.prototype.paddingLeft = function(f) {
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.paddingRight = function(f) {
-    if(arguments.length) { this.$padRight = f; }
+    if(arguments.length) { this.$padRight = pv.functor(f); return this; }
     return this.$padRight;
 };
 
@@ -223,7 +224,7 @@ pv.Layout.Treemap.prototype.paddingRight = function(f) {
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.paddingBottom = function(f) {
-    if(arguments.length) { this.$padBottom = f; }
+    if(arguments.length) { this.$padBottom = pv.functor(f); return this; }
     return this.$padBottom;
 };
 
@@ -236,25 +237,25 @@ pv.Layout.Treemap.prototype.paddingBottom = function(f) {
  * @returns {pv.Layout.Treemap} this.
  */
 pv.Layout.Treemap.prototype.paddingTop = function(f) {
-    if(arguments.length) { this.$padTop = f; }
+    if(arguments.length) { this.$padTop = pv.functor(f); return this; }
     return this.$padTop;
 };
 
 /** @private */
 pv.Layout.Treemap.prototype.buildImplied = function(s) {
-  pv.Layout.Hierarchy.prototype.buildImplied.call(this, s);
+  if (pv.Layout.Hierarchy.prototype.buildImplied.call(this, s)) return;
 
   var that = this,
       nodes = s.nodes,
       root = nodes[0],
       stack = pv.Mark.stack,
-      left = s.paddingLeft,
-      right = s.paddingRight,
-      top = s.paddingTop,
-      bottom = s.paddingBottom,
+      left   = 0,
+      right  = 0,
+      top    = 0,
+      bottom = 0,
       /** @ignore */ size = function(n) { return n.size; },
       round = s.round ? Math.round : Number,
-      mode = s.mode;
+      mode  = s.mode;
 
   /** @private */
   function slice(row, sum, horizontal, x, y, w, h) {

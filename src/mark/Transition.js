@@ -3,7 +3,8 @@ pv.Transition = function(mark) {
       ease = pv.ease("cubic-in-out"),
       duration = 250,
       timer,
-      onEndCallback;
+      onEndCallback,
+      cleanedup;
 
   var interpolated = {
     top: 1,
@@ -15,6 +16,8 @@ pv.Transition = function(mark) {
     innerRadius: 1,
     outerRadius: 1,
     radius: 1,
+    shapeRadius: 1,
+    shapeSize: 1,
     startAngle: 1,
     endAngle: 1,
     angle: 1,
@@ -98,7 +101,7 @@ pv.Transition = function(mark) {
 
         /*
          * After the transition finishes, we need to do a little cleanup to
-         * insure that the final state of the scenegraph is consistent with the
+         * ensure that the final state of the scenegraph is consistent with the
          * "after" render. For instances that were removed, we need to remove
          * them from the scenegraph; for instances that became invisible, we
          * need to mark them invisible. See the cleanup method for details.
@@ -166,15 +169,19 @@ pv.Transition = function(mark) {
 
   /** @private */
   function cleanup(scene) {
-    for (var i = 0, j = 0; i < scene.length; i++) {
-      var s = scene[i];
-      if (s.transition != 1) {
-        scene[j++] = s;
-        if (s.transition == 2) s.visible = false;
-        if (s.children) s.children.forEach(cleanup);
+    if(!cleanedup) {
+      cleanedup = true;
+
+      for(var i = 0, j = 0; i < scene.length; i++) {
+        var s = scene[i];
+        if(s.transition != 1) {
+          scene[j++] = s;
+          if(s.transition == 2) s.visible = false;
+          if(s.children) s.children.forEach(cleanup);
+        }
       }
+      scene.length = j;
     }
-    scene.length = j;
   }
 
   that.ease = function(x) {
@@ -189,62 +196,47 @@ pv.Transition = function(mark) {
         : duration;
   };
 
-  function doEnd(){
-      mark.root.animatingCount--;
-      
-      if(onEndCallback){
-          var cb = onEndCallback;
-          onEndCallback = null;
-          cb();
-      }
-  }
-
   that.start = function(onEnd) {
-    onEndCallback = onEnd;
-    
-    mark.root.animatingCount++;
-    
     // TODO allow partial rendering
-    if (mark.parent) {
-        doEnd();
-        throw new Error("Animated partial rendering is not supported.");
+    if(mark.parent) { throw new Error("Animated partial rendering is not supported."); }
+    
+    onEndCallback = onEnd;
+
+    var root = mark.root;
+
+    // TODO allow parallel and sequenced transitions
+    if(root.$transition) {
+      try { root.$transition.stop(); } catch(ex) { return doEnd(false); }
     }
-    
+
+    // ---------------
+
+    var list, start;
+    root.$transition = that;
+
+    // TODO clearing the scene like this forces total re-build
+    var before = mark.scene;
+    mark.scene = null;
+    var i0 = pv.Mark.prototype.index;
     try {
-        // TODO allow parallel and sequenced transitions
-        if (mark.$transition) { mark.$transition.stop(); }
-        
-        mark.$transition = that;
-    
-        // TODO clearing the scene like this forces total re-build
-        var i = pv.Mark.prototype.index,
-            before = mark.scene,
-            after;
-        
-        mark.scene = null;
         mark.bind();
         mark.build();
         
-        after = mark.scene;
+        var after = mark.scene;
         mark.scene = before;
-        
-        pv.Mark.prototype.index = i;
+        pv.Mark.prototype.index = i0;
     
-        var start = Date.now(),
-            list = {};
-        
+        start = Date.now();
+        list = {};
         interpolate(list, before, after);
     } catch(ex) {
-        doEnd();
-        throw ex;
+        pv.Mark.prototype.index = i0; // JIC
+        return doEnd(false);
     }
     
-    if(!list.head) {
-        doEnd();
-        return;
-    }
+    if(!list.head) { return doEnd(true); }
     
-    timer = setInterval(function() {
+    var advance = function() {
       var t = Math.max(0, Math.min(1, (Date.now() - start) / duration)),
           e = ease(t);
       
@@ -252,18 +244,40 @@ pv.Transition = function(mark) {
       var i = list.head;
       do { i(e); } while((i = i.next));
       
-      if (t === 1) {
+      if(t === 1) {
         cleanup(mark.scene);
         pv.Scene.updateAll(before);
-        that.stop();
+        doEnd(true);
       } else {
-          pv.Scene.updateAll(before);
+        pv.Scene.updateAll(before);
       }
-    }, 24);
-  };
+    };
 
-  that.stop = function() {
-    clearInterval(timer);
-    doEnd();
-  };
+    timer = setInterval(function() {
+      try { advance(); } catch(ex) { doEnd(false); }
+    }, 24);
+  }; // end that.start
+
+  that.stop = function() { doEnd(true); };
+
+  function doEnd(success) {
+    var started = (mark.root.$transition === that);
+    if(started) { mark.root.$transition = null; }
+    
+    if(timer != null) {
+      clearInterval(timer);
+      timer = null;
+    }
+
+    if(started) { cleanup(mark.scene); }
+
+    if(onEndCallback) {
+      var cb = onEndCallback;
+      onEndCallback = null;
+      cb(success);
+    }
+
+    // Only useful when it fails synchronous in #start.
+    return success;
+  }
 };

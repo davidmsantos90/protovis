@@ -99,15 +99,11 @@
                 if (m[1]) {
                     // (top|bottom)(?:\s+(left|right))?
                     keyAngle = m[2];
-                    if(m[3]){
-                        keyAngle += ' ' + m[3];
-                    }
+                    if(m[3]) { keyAngle += ' ' + m[3]; }
                 } else { // m[4]
                     // (left|right)(?:\\s+(top|bottom))?
                     keyAngle = m[5];
-                    if(m[6]){
-                        keyAngle = m[6] + ' ' + keyAngle;
-                    }
+                    if(m[6]) { keyAngle = m[6] + ' ' + keyAngle; }
                 }
                 
                 angle = pv.radians(keyAnglesDeg[keyAngle]);
@@ -170,12 +166,12 @@
         return new pv.FillStyle.RadialGradient(50, 50, stops, text);
     }
 
-    function parseText(text){
+    function parseText(text) {
         var colorFuns  = {};
         var colorFunId = 0;
         
         text = text.replace(/\b\w+?\(.*?\)/g, function($0){
-            var id = '__color' + (colorFunId++); 
+            var id = '__color' + (colorFunId++);
             colorFuns[id] = $0;
             return id;
         });
@@ -513,7 +509,7 @@
     pv.extendType(RadialGradient, Gradient);
     
     RadialGradient.prototype._cloneWithStops = function(stops) {
-        return new RadialGradient(this.cx, this.cy);
+        return new RadialGradient(this.cx, this.cy, stops);
     };
     
     RadialGradient.prototype._initClone = function(o) {

@@ -2,9 +2,7 @@
   <head>
     <title>Antibiotic Effectiveness</title>
     <link type="text/css" rel="stylesheet" href="../ex.css"/>
-    <script type="text/javascript" src="../../3rdparty/svg.js" data-path="../../3rdparty"></script>
-    <meta name="svg.render.forceflash" content="true">
-    <script type="text/javascript" src="../../protovis-r3.3.js"></script>
+    <script type="text/javascript" src="../../protovis-d3.3.js"></script>
     <script type="text/javascript" src="antibiotics.js"></script>
     <style type="text/css">
 
@@ -20,7 +18,7 @@ body {
     </style>
   </head>
   <body><div id="center"><div id="fig">
-    <script type="text/javascript+protovis">
+    <script type="text/javascript">
 
 /* Basic dimensions. */
 var width = 700,
@@ -43,7 +41,7 @@ var min = Math.sqrt(Math.log(.001 * 1E4)),
     max = Math.sqrt(Math.log(1000 * 1E4)),
     a = (outerRadius - innerRadius) / (min - max),
     b = innerRadius - a * max,
-    radius = function(mic) a * Math.sqrt(Math.log(mic * 1E4)) + b;
+    radius = function(mic) { return a * Math.sqrt(Math.log(mic * 1E4)) + b; };
 
 /*
  * The pie is split into equal sections for each bacteria, with a blank
@@ -67,21 +65,33 @@ var bg = vis.add(pv.Wedge)
     .innerRadius(innerRadius)
     .outerRadius(outerRadius)
     .angle(bigAngle)
-    .startAngle(function(d) this.index * bigAngle + bigAngle / 2 - Math.PI / 2)
-    .fillStyle(function(d) gramColor[d.gram]);
+    .startAngle(function(d) { 
+        return this.index * bigAngle + bigAngle / 2 - Math.PI / 2;
+    })
+    .fillStyle(function(d) { return gramColor[d.gram]; });
 
 /* Antibiotics. */
 bg.add(pv.Wedge)
     .angle(smallAngle)
-    .startAngle(function(d) bg.startAngle() + smallAngle)
-    .outerRadius(function(d) radius(d.penicillin))
+    .startAngle(function(d) { 
+        return bg.startAngle() + smallAngle; 
+    })
+    .outerRadius(function(d)  { 
+        return radius(d.penicillin);
+    })
     .fillStyle(drugColor.Penicillin)
   .add(pv.Wedge)
-    .startAngle(function(d) this.proto.startAngle() + 2 * smallAngle)
-    .outerRadius(function(d) radius(d.streptomycin))
+    .startAngle(function(d)  { 
+        return this.proto.startAngle() + 2 * smallAngle; 
+    })
+    .outerRadius(function(d)  { 
+        return radius(d.streptomycin); 
+    })
     .fillStyle(drugColor.Streptomycin)
   .add(pv.Wedge)
-    .outerRadius(function(d) radius(d.neomycin))
+    .outerRadius(function(d)  { 
+        return radius(d.neomycin); 
+    })
     .fillStyle(drugColor.Neomycin);
 
 /* Circular grid lines. */
@@ -90,11 +100,17 @@ bg.add(pv.Dot)
     .fillStyle(null)
     .strokeStyle("#eee")
     .lineWidth(1)
-    .shapeSize(function(i) Math.pow(radius(Math.pow(10, i)), 2))
+    .shapeSize(function(i)  { 
+        return Math.pow(radius(Math.pow(10, i)), 2); 
+    })
   .anchor("top").add(pv.Label)
-    .visible(function(i) i < 3)
+    .visible(function(i)  { 
+        return i < 3;
+    })
     .textBaseline("middle")
-    .text(function(i) Math.pow(10, i).toFixed((i > 0) ? 0 : -i));
+    .text(function(i) { 
+        return  Math.pow(10, i).toFixed((i > 0) ? 0 : -i);
+    });
 
 /* Radial grid lines. */
 bg.add(pv.Wedge)
@@ -108,14 +124,14 @@ bg.add(pv.Wedge)
 /* Labels. */
 bg.anchor("outer").add(pv.Label)
     .textAlign("center")
-    .text(function(d) d.bacteria);
+    .text(function(d) { return d.bacteria; });
 
 /* Antibiotic legend. */
 vis.add(pv.Bar)
     .data(pv.keys(drugColor))
     .right(width / 2 + 3)
-    .top(function() height / 2 - 28 + this.index * 18)
-    .fillStyle(function(d) drugColor[d])
+    .top(function() { return height / 2 - 28 + this.index * 18; })
+    .fillStyle(function(d) { return drugColor[d]; })
     .width(36)
     .height(12)
   .anchor("right").add(pv.Label)
@@ -126,14 +142,14 @@ vis.add(pv.Bar)
 vis.add(pv.Dot)
     .data(pv.keys(gramColor))
     .left(width / 2 - 20)
-    .bottom(function() -60 + this.index * 18)
-    .fillStyle(function(d) gramColor[d])
+    .bottom(function() { return -60 + this.index * 18; })
+    .fillStyle(function(d) { return gramColor[d]; })
     .strokeStyle(null)
     .shapeSize(30)
   .anchor("right").add(pv.Label)
     .textMargin(6)
     .textAlign("left")
-    .text(function(d) "Gram-" + d);
+    .text(function(d) { return "Gram-" + d; });
 
 vis.render();
 

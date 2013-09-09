@@ -81,14 +81,7 @@
             var svgText = pv.SvgScene.create('text');
             svgElem.appendChild(svgText);
             
-            var textNode;
-            if (pv.renderer() === "svgweb") { 
-                // SVGWeb needs an extra 'true' to create SVG text nodes properly in IE.
-                textNode = document.createTextNode('', true);
-            } else {
-                textNode = document.createTextNode('');
-            }
-            svgText.appendChild(textNode);
+            svgText.appendChild(document.createTextNode(''));
             
             document.body.appendChild(div);
             

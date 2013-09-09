@@ -59,10 +59,9 @@ pv.Panel.prototype = pv.extend(pv.Bar)
     .property("transform")
     .property("overflow", String)
     .property("canvas", function(c) {
-        return (typeof c == "string")
-            ? document.getElementById(c)
-            : c; // assume that c is the passed-in element
-      });
+        // If not a string, assume that c is the passed-in element, or unspecified (when nully).
+        return (typeof c === "string") ? document.getElementById(c) : c;
+    });
 
 pv.Panel.prototype.type = "panel";
 
@@ -101,15 +100,6 @@ pv.Panel.prototype.type = "panel";
  * @name pv.Panel.prototype.transform
  * @see pv.Mark#scale
  */
-
-/**
- * The number of descendant marks that are animating.
- * Only the root panel has this property set.
- *
- * @type number
- */
-pv.Panel.prototype.animatingCount = 0;
-
 
 /**
  * The number of children that have a non-zero {@link pv.Mark#_zOrder}.
@@ -168,7 +158,7 @@ pv.Panel.prototype.bind = function() {
   pv.Mark.prototype.bind.call(this);
 
   var children = this.children;
-  for (var i = 0, n = children.length ; i < n ; i++) {
+  for(var i = 0, n = children.length ; i < n ; i++) {
     children[i].bind();
   }
 };
@@ -182,9 +172,10 @@ pv.Panel.prototype.bind = function() {
  * @see Mark#scene
  */
 pv.Panel.prototype.buildInstance = function(s) {
+  // calls buildProperties and then buildImplied (may throw pv.CanvasStolenError)
   pv.Bar.prototype.buildInstance.call(this, s);
 
-  if (!s.visible) return;
+  if(!s.visible) { return; }
 
   /*
    * Multiply the current scale factor by this panel's transform. Also clear the
@@ -203,11 +194,14 @@ pv.Panel.prototype.buildInstance = function(s) {
   var child;
   var children = this.children;
   var childScenes = s.children || (s.children = []);
-  for (var i = 0, n = children.length; i < n; i++) {
+  for(var i = 0, n = children.length; i < n; i++) {
     child = children[i];
     child.scene = childScenes[i]; // possibly undefined
     child.scale = scale;
     child.build();
+    // Leave scene in children, because these might me used
+    // during build of siblings; 
+    // calling a sibling mark's property method (instance() evaluates to same index).
   }
 
   /*
@@ -255,59 +249,126 @@ pv.Panel.prototype.buildInstance = function(s) {
  * @param s a node in the scene graph; the instance of the panel to build.
  */
 pv.Panel.prototype.buildImplied = function(s) {
-  if (!this.parent) {
-    var c = s.canvas;
-    if (pv.renderer() === "batik") {
-      if (c) {
-        if (c.$panel != this) {
-          pv.Panel.updateCreateId(c);
-          c.$panel = this;
-          while (c.lastChild) c.removeChild(c.lastChild);
-        }
-      } else {
-        c = document.lastChild;
-      }
-    } else if (c) {
-      /* Clear the container if it's not associated with this panel. */
-      if (c.$panel != this) {
-        pv.Panel.updateCreateId(c);
-        c.$panel = this;
-        while (c.lastChild) c.removeChild(c.lastChild);
-      }
+  if(!this.parent) { this._buildRootInstanceImplied(s);   }
 
-      /* If width and height weren't specified, inspect the container. */
-      var w, h, cssStyle;
-      if (s.width == null) {
-        cssStyle = pv.cssStyle(c);
-        w = parseFloat(cssStyle("width") || 0);
-        s.width = w - s.left - s.right;
-      }
-      if (s.height == null) {
-        cssStyle || (cssStyle = pv.cssStyle(c));
-        h = parseFloat(pv.cssStyle("height") || 0);
-        s.height = h - s.top - s.bottom;
-      }
-      cssStyle = null;
-    } else {
-      var cache = this.$canvas || (this.$canvas = []);
-      if (!(c = cache[this.index])) {
-        c = cache[this.index] =  document.createElement(pv.renderer() == "svgweb" ? "div" : "span"); // SVGWeb requires a div, not a span
-        if (this.$dom) { // script element for text/javascript+protovis
-          this.$dom.parentNode.insertBefore(c, this.$dom);
-        } else { // find the last element in the body
-          var n = document.body;
-          while (n.lastChild && n.lastChild.tagName) n = n.lastChild;
-          if (n != document.body) n = n.parentNode;
-          n.appendChild(c);
-        }
-      }
-    }
-    s.canvas = c;
-  }
-  if (!s.transform) s.transform = pv.Transform.identity;
+  if(!s.transform) { s.transform = pv.Transform.identity; }
+
   pv.Mark.prototype.buildImplied.call(this, s);
 };
 
-pv.Panel.updateCreateId = function(c){
-    c.$pvCreateId = (c.$pvCreateId || 0) + 1;
+pv.Panel.prototype._buildRootInstanceImplied = function(s) {
+  // Was a canvas specified for *this* instance?
+  var c = s.canvas;
+  if(!c) {
+    // For every instance that doesn't specify a canvas, 
+    //  a new canvas element (a span) is created for it.
+    // This is a typical case of a viz having multiple canvas.
+    s.canvas = this._rootInstanceGetInlineCanvas(s);
+  } else {
+    this._rootInstanceStealCanvas(s, c);
+    this._rootInstanceInitCanvas (s, c);
+  }
+};
+
+pv.Panel.prototype._rootInstanceStealCanvas = function(s, c) {
+  // Clear the container if it's not associated with this panel.
+  // This may happen if concurrent viz's are using the same canvas
+  //  and start stealing the canvas to one another...
+  // TODO: There's no provision here to deal with the same canvas being used
+  //  by different instances of the same root panel?
+  // If this is the first render of this root panel, 
+  //  then we're allowed to steal it from another panel.
+  // If this is not our first render, 
+  //  then just accept that the canvas has been stolen.
+  var cPanel = c.$panel;
+  if(cPanel !== this) {
+    if(cPanel) {
+      if(this.$lastCreateId) {
+        // Let the current canvas panel win the fight.
+        // Throw away from here.
+        throw new pv.CanvasStolenError();
+      }
+
+      // Clear a running transition,
+      //  in the other root panel.
+      // If we don't do this,
+      //  a running animation's setTimeouts will
+      //  continue rendering, over this canvas,
+      //  resulting in "concurrent" updates to 
+      //  the same dom elements -- a big mess.
+      var t = cPanel.$transition;
+      t && t.stop();
+
+      this._updateCreateId(c);  
+    }
+    
+    c.$panel = this;
+    pv.removeChildren(c);
+  } else {
+    // Initialize createId
+    this._updateCreateId(c);
+  }
+};
+
+pv.Panel.prototype._rootInstanceInitCanvas = function(s, c) {
+  // If width and height weren't specified, inspect the container.
+  var w, h, cssStyle;
+  if(s.width == null) {
+    cssStyle = pv.cssStyle(c);
+    w = parseFloat(cssStyle("width") || 0);
+    s.width = w - s.left - s.right;
+  }
+
+  if(s.height == null) {
+    cssStyle || (cssStyle = pv.cssStyle(c));
+    h = parseFloat(cssStyle("height") || 0);
+    s.height = h - s.top - s.bottom;
+  }
+
+  cssStyle = null;
+};
+
+pv.Panel.prototype._rootInstanceGetInlineCanvas = function(s) {
+  // When no container is specified, 
+  //  the vis is added inline, as a span.
+  // The spans are created on first render only, 
+  //  and cached for later renders.
+  // If the visualization was created using a 
+  //  script element with language "text/javascript+protovis",
+  //  the span of each instance is added right before the script tag.
+  // Otherwise, the canvas is added as a sibling of 
+  //  the last (leaf) element of the page.
+  var cache = this.$canvas || (this.$canvas = []);
+  var c;
+  if(!(c = cache[this.index])) {
+    c = cache[this.index] =  document.createElement("span");
+    if(this.$dom) {
+      // Script element for text/javascript+protovis
+      this.$dom.parentNode.insertBefore(c, this.$dom);
+    } else {
+      // Find the last (leaf) element in the body.
+      var n = document.body;
+      while(n.lastChild && n.lastChild.tagName) { n = n.lastChild; }
+
+      // Take its parent.
+      if(n != document.body) { n = n.parentNode; }
+      
+      // Add canvas as last child.
+      n.appendChild(c);
+    }
+  }
+  return c;
+};
+
+/** 
+ * Updates the protovis create counter in the specified canvas.
+ * This allows external entities to detect that a previous
+ * panel attached to this canvas has been disposed of, 
+ * or is no longer in control of this panel.
+ * Also, by storing the latest counter on which this panel updated
+ *  the canvas we're able to detect when we lost the canvas,
+ *  and should not keep stealing it.
+ */
+pv.Panel.prototype._updateCreateId = function(c) {
+    this.$lastCreateId = c.$pvCreateId = (c.$pvCreateId || 0) + 1;
 };

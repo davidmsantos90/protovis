@@ -144,52 +144,30 @@ pv.SvgScene.setStyle = function(e, style) {
   var prevStyle = e.__style__;
   if(prevStyle === style) { prevStyle = null; }
   
-  switch(pv.renderer()) {
-      case 'batik':
-          for (var name in style) {
-              var value = style[name];
-              if(!prevStyle || (value !== prevStyle[name])) {
-                  if (value == null || value == implicitCss[name]) {
-                    e.removeAttribute(name);
-                  } else {
-                    e.style.setProperty(name,value);
-                  }
-              }
-          }
-          break;
-          
-      case 'svgweb':
-          for (var name in style) {
-              // svgweb doesn't support removeproperty TODO SVGWEB
-              var value = style[name];
-              if (value == null || value == implicitCss[name]) {
-                  continue;
-              }
-              e.style[name] = value;
-          }
-          break;
-          
-     default:
-         for (var name in style) {
-             var value = style[name];
-             if(!prevStyle || (value !== prevStyle[name])) {
-                 if (value == null || value == implicitCss[name]){
-                     e.style.removeProperty(name);
-                 } else {
-                     e.style[name] = value;
-                 }
-             }
-         }
-  }
+  for (var name in style) {
+    var value = style[name];
+    if(!prevStyle || (value !== prevStyle[name])) {
+      if (value == null || value == implicitCss[name]){
+        e.style.removeProperty(name);
+      } else {
+        e.style[name] = value;
+      }
+    }
+ }
   
   e.__style__ = style;
 };
 
-/** TODO */
+/** TODO - ??<<--what is to be done?? */
 pv.SvgScene.append = function(e, scenes, index) {
   e.$scene = {scenes: scenes, index: index};
+  
+  // May wrap passed in e
   e = this.title(e, scenes[index]);
-  if (!e.parentNode) scenes.$g.appendChild(e);
+
+  // scenes.$g is the default parent of appended elements.
+  if(!e.parentNode) { scenes.$g.appendChild(e); }
+
   return e.nextSibling;
 };
 
@@ -222,29 +200,22 @@ pv.SvgScene.title = function(e, s) {
 
     // for SVG renderers that follow the recommended approach
     var t = null;
-    for (var c = e.firstChild; c != null; c = c.nextSibling) {
-      if (c.nodeName == "title") {
-        t = c;
-        break;
-      }
+    for(var c = e.firstChild; c != null; c = c.nextSibling) {
+      if(c.nodeName == "title") { t = c; break; }
     }
     
-    if (!t) {
+    if(!t) {
       t = this.create("title");
       e.appendChild(t);
     } else {
       t.removeChild(t.firstChild); // empty out the text
     }
 
-    if (pv.renderer() == "svgweb") { // SVGWeb needs an extra 'true' to create SVG text nodes properly in IE.
-      t.appendChild(document.createTextNode(s.title, true));
-    } else {
-      t.appendChild(document.createTextNode(s.title));
-    }
+    t.appendChild(document.createTextNode(s.title));
 
     return a;
   }
-  if (a) a.parentNode.replaceChild(e, a);
+  if(a) a.parentNode.replaceChild(e, a);
   return e;
 };
 
@@ -400,7 +371,8 @@ pv.SvgScene.undefined = function() {};
     if(!instId) {
         instId = fillStyleMap[k] = '__pvGradient' + (next_gradient_id++);
         var elem = createGradientDef.call(this, scenes, fill, instId);
-        rootMark.scene.$g.$defs.appendChild(elem);
+
+        rootMark.scene.$defs.appendChild(elem);
     }
     
     fill.color = 'url(#' + instId + ')';
