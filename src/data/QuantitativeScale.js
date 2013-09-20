@@ -268,8 +268,7 @@ pv.Scale.quantitative = function() {
         }
       }
 
-      var nn = 5;
-
+      var nn = m == null ? 5 : m;
       var precision, format, increment, step = 1;
       if (span >= nn * 31536e6) {
         precision = 31536e6;
