@@ -686,11 +686,11 @@ pv.Mark.prototype.zOrder = function(zOrder){
     if(this._zOrder !== zOrder) {
         var p = this.parent;
 
-        if(p && this._zOrder !== 0) { p.zOrderChildCount--; }
+        if(p && this._zOrder !== 0) { p._zOrderChildCount--; }
 
         this._zOrder = zOrder;
 
-        if(p && this._zOrder !== 0) { p.zOrderChildCount++; }
+        if(p && this._zOrder !== 0) { p._zOrderChildCount++; }
     }
 
     return this;
@@ -1517,17 +1517,7 @@ pv.Mark.prototype.buildInstance = function(s) {
         this.buildProperties(s, this.binds.optional);
     }
 
-    // May throw pv.CanvasStolenError, if this is the root panel
-    try {
-      this.buildImplied(s);
-    } catch(ex) {
-      if(ex instanceof pv.CanvasStolenError) {
-        // Simply set root scene instance as invisible, to prevent rendering on the stolen canvas
-        s.visible = false;
-      } else {
-        throw ex;
-      }
-    }
+    this.buildImplied(s);
   }
 };
 

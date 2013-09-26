@@ -373,10 +373,10 @@ pv.Dom.Node.prototype.childIndex = function(noRebuild) {
           var ns = p.childNodes;
           if(!noRebuild) { return ns.indexOf(this); }
 
-          if(di < ns.length) {
-              for(var c = ns[di] ; c ; c = c.nextSibling) {
-                  c._childIndex = di++;
-              }
+          var L = ns.length;
+          while(di < L) {
+            ns[di]._childIndex = di;
+            di++;
           }
 
           p._firstDirtyChildIndex = Infinity;

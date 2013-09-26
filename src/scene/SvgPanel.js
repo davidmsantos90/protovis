@@ -87,7 +87,7 @@ pv.SvgScene.panel = function(scenes) {
   //
   var g = scenes.$g;
   var e = g && g.firstChild; // !g => !e
-  
+  var pendingAppendRootElems;
   for(var i = 0, L = scenes.length ; i < L ; i++) {
     var s = scenes[i];
     
@@ -125,9 +125,11 @@ pv.SvgScene.panel = function(scenes) {
         g = this.createRootPanelElement(); // factory of svg/whatever element
         e = null; // J.I.C.?
 
-        this.initRootPanelElement(g);
-        
-        canvas.appendChild(g);
+        this.initRootPanelElement(g, scenes.mark);
+        if(!pendingAppendRootElems) { pendingAppendRootElems = []; }
+        pendingAppendRootElems.push([canvas, g]);
+
+        //canvas.appendChild(g);
         // canvas.firstChild === g ? Not necessarily!
         // g.parentNode === canvas ? Yes sure!
 
@@ -136,7 +138,7 @@ pv.SvgScene.panel = function(scenes) {
 
         // Set g as the current default parent.
         // TODO: Shouldn't this be done every time that g changes during the loop?
-        scenes.$g    = g;
+        scenes.$g = g;
 
         // <div>    -> scenes[i].canvas
         //   .. ? ..   (other instances <svg /> elements may already exist here)
@@ -204,6 +206,13 @@ pv.SvgScene.panel = function(scenes) {
     }
   } // end for panel instance
   
+  // Defer appending to canvas when fully built.
+  if(pendingAppendRootElems) {
+    pendingAppendRootElems.forEach(function(cg) {
+      cg[0].appendChild(cg[1]);
+    })
+  }
+
   return e;
 };
 
@@ -216,7 +225,7 @@ pv.SvgScene.createRootPanelElement = function() {
   return this.create("svg");
 };
 
-pv.SvgScene.initRootPanelElement = function(g) {
+pv.SvgScene.initRootPanelElement = function(g, panel) {
   // Only runs when the panel is created by createRootPanelElement.
   // Default values for attributes, inherited by descendant svg:* elements.
   g.setAttribute("font-size",    "10px");
@@ -227,11 +236,16 @@ pv.SvgScene.initRootPanelElement = function(g) {
   
   this.disableElementSelection(g);
 
-  for(var j = 0, J = this.events.length ; j < J ; j++) {
-    g.addEventListener(this.events[j], this.dispatch, false);
-  }
+  this.listenRootPanelElement(g, panel);
 };
 
+pv.SvgScene.listenRootPanelElement = function(g, panel) {
+  for(var j = 0, evs = this.events, J = evs.length ; j < J ; j++) {
+    g.addEventListener(evs[j], this.dispatch, false);
+
+    panel._registerBoundEvent(g, evs[j], this.dispatch, false);
+  }
+};
 
 pv.SvgScene.disableElementSelection = function(g) {
   // Prevent selecting elements when dragging
@@ -280,7 +294,7 @@ pv.SvgScene.addPanelClipPath = function(g, e, scenes, i, s) {
 };
 
 pv.SvgScene.eachChild = function(scenes, i, fun, ctx){
-  if(scenes.mark.zOrderChildCount){
+  if(scenes.mark._zOrderChildCount){
     var sorted = scenes[i].children.slice(0);
     sorted.sort(function(scenes1, scenes2){ // sort ascending
       var compare = scenes1.mark._zOrder - scenes2.mark._zOrder;

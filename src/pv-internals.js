@@ -367,16 +367,4 @@ pv.lazyArrayOwn = function(o, p) {
     return o && hasOwn.call(o, p) && (v = o[p]) ? v : (o[p] = []);
 };
 
-/**
- * The class of the error that is thrown when
- * a root panel detects that its panel has been stolen
- * by another visualization and 
- * it doesn't have priority over it.
- *
- * @private
- * @type Error
- * @name pv.CanvasStolenError
- */
- pv.CanvasStolenError = function() {};
-
 }());
