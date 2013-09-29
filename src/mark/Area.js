@@ -288,17 +288,10 @@ pv.Area.prototype.buildInstance = function(s) {
  * @returns {pv.Anchor}
  */
 pv.Area.prototype.anchor = function(name) {
-  var scene;
   return pv.Mark.prototype.anchor.call(this, name)
-    .interpolate(function() {
-       return this.scene.target[this.index].interpolate;
-      })
-    .eccentricity(function() {
-       return this.scene.target[this.index].eccentricity;
-      })
-    .tension(function() {
-        return this.scene.target[this.index].tension;
-      });
+    .interpolate (function() { return this.scene.target[this.index].interpolate;  })
+    .eccentricity(function() { return this.scene.target[this.index].eccentricity; })
+    .tension     (function() { return this.scene.target[this.index].tension;      });
 };
 
 

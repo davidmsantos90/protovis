@@ -294,9 +294,10 @@ pv.SvgScene.addPanelClipPath = function(g, e, scenes, i, s) {
 };
 
 pv.SvgScene.eachChild = function(scenes, i, fun, ctx){
+  var children = scenes[i].children;
   if(scenes.mark._zOrderChildCount){
-    var sorted = scenes[i].children.slice(0);
-    sorted.sort(function(scenes1, scenes2){ // sort ascending
+    children = children.slice(0);
+    children.sort(function(scenes1, scenes2){ // sort ascending
       var compare = scenes1.mark._zOrder - scenes2.mark._zOrder;
       if(compare === 0){
           // Preserve original order for same zOrder childs
@@ -304,10 +305,10 @@ pv.SvgScene.eachChild = function(scenes, i, fun, ctx){
       }
       return compare;
     });
-    
-    sorted.forEach(fun, ctx || this);
-  } else {
-    scenes[i].children.forEach(fun, ctx || this);
+  }
+
+  for(var j = 0, L = children.length ; j < L; j++) {
+    fun.call(ctx || this, children[j], j);
   }
 };
 

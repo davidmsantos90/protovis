@@ -1,66 +1,63 @@
-(function(){
+(function() {
     
     var _cache;
     
     pv.Text = {};
     
-    pv.Text.createCache = function(){
+    pv.Text.createCache = function() {
         return new FontSizeCache();
     };
     
     pv.Text.usingCache = function(cache, fun, ctx){
-        if(!(cache instanceof FontSizeCache)){
+        if(!(cache instanceof FontSizeCache)) {
             throw new Error("Not a valid cache.");
         }
         
         var prevCache = _cache;
         
         _cache = cache;
-        try{
+        try {
             return fun.call(ctx);
         } finally {
             _cache = prevCache;
         }
     };
     
-    pv.Text.measure = function(text, font){
-        if(text == null){
-            text = "";
-        } else {
-            text = "" + text;
-        }
+    pv.Text.measure = function(text, font) {
+        text = text == null ? "" : String(text);
         
         var bbox = _cache && _cache.get(font, text);
-        if(!bbox){
-            if(!text){
+        if(!bbox) {
+            if(!text) {
                 bbox = {width: 0, height: 0};
             } else {
                 bbox = this.measureCore(text, font);
             }
-            
-            if(_cache){
-                _cache.put(font, text, bbox);
-            }
+            if(_cache) { _cache.put(font, text, bbox); }
         }
         
         return bbox;
     };
+
+    pv.Text.measureWidth = function(text, font) {
+        return pv.Text.measure(text, font).width;
+    };
     
-    pv.Text.fontHeight = function(font){
+    pv.Text.fontHeight = function(font) {
         return pv.Text.measure('M', font).height;
     };
     
     // Replace with another custom implementation if necessary
-    pv.Text.measureCore = (function(){
+    pv.Text.measureCore = (function() {
         
         // SVG implementation
         var _svgText, _lastFont = '10px sans-serif';
         
-        function getTextSizeElement(){
+        function getTextSizeElement() {
             return _svgText || (_svgText = createTextSizeElement());
         }
         
-        function createTextSizeElement(){
+        function createTextSizeElement() {
             var div =  document.createElement('div');
             div.id = 'pvSVGText_' + new Date().getTime();
             
@@ -72,11 +69,16 @@
             style.left = 0;
             style.top  = 0;
             
+            // Reset text-size affecting attributes
+            style.lineHeight    = 1;
+            style.textTransform = 'none';
+            style.letterSpacing = 'normal'; // 0
+            style.whiteSpace    = 'nowrap'; // support very long lines
+
             var svgElem = pv.SvgScene.create('svg');
             svgElem.setAttribute('font-size',   '10px');
             svgElem.setAttribute('font-family', 'sans-serif');
             div.appendChild(svgElem);
-            
             
             var svgText = pv.SvgScene.create('text');
             svgElem.appendChild(svgText);
@@ -92,7 +94,7 @@
             if(!font){ font = null; }
             
             var svgText = getTextSizeElement();
-            if(_lastFont !== font){
+            if(_lastFont !== font) {
                 _lastFont = font;
                 pv.SvgScene.setStyle(svgText, {'font': font});
             }
@@ -100,10 +102,10 @@
             svgText.firstChild.nodeValue = '' + text;
             
             var box;
-            try{
+            try {
                 box = svgText.getBBox();
-            } catch(ex){
-                if(typeof console.error === 'function'){
+            } catch(ex) {
+                if(typeof console.error === 'function') {
                     console.error("GetBBox failed: ", ex);
                 }
                 
@@ -113,7 +115,7 @@
             return {width: box.width, height: box.height};
         };
     }());
-    
+
     // --------
     
     var FontSizeCache = function(){
@@ -141,5 +143,4 @@
     FontSizeCache.prototype.put = function(font, text, size){
         return this._getFont(font)[text||''] = size;
     };
-        
 }());
