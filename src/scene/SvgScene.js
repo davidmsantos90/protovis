@@ -22,7 +22,8 @@ pv.Scene = pv.SvgScene = {
     "mouseout",
     "mousemove",
     "click",
-    "dblclick"
+    "dblclick",
+    "contextmenu"
   ],
 
   /** Implicit values for SVG and CSS properties. */

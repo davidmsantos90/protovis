@@ -99,7 +99,7 @@
                 pv.SvgScene.setStyle(svgText, {'font': font});
             }
             
-            svgText.firstChild.nodeValue = '' + text;
+            svgText.firstChild.nodeValue = String(text);
             
             var box;
             try {
