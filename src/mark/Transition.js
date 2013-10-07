@@ -147,16 +147,18 @@ pv.Transition = function(mark) {
 
     /* Determine the set of properties to evaluate. */
     var seen = {};
-    for (var i = 0; i < p.length; i++) {
+
+    // All the properties directly defined in mark type
+    for (var i = 0, P = p.length ; i < P ; i++) {
         seen[p[i].name] = 1;
     }
     
-    /* Add to p all optional properties in binds not in proto properties (p) */
+    // Add to p all optional properties in binds not in proto properties (p)
     p = m.binds.optional
          .filter(function(p) { return !(p.name in seen); })
          .concat(p);
 
-    /* Evaluate the properties and update any implied ones. */
+    // Evaluate the properties and update any implied ones.
     m.context(scene, index, function() {
       this.buildProperties(s, p);
       this.buildImplied(s);
