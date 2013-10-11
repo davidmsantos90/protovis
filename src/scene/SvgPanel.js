@@ -87,7 +87,6 @@ pv.SvgScene.panel = function(scene) {
   //
   var g = scene.$g;
   var e = g && g.firstChild; // !g => !e
-  var pendingAppendRootElems;
   for(var i = 0, L = scene.length ; i < L ; i++) {
     var s = scene[i];
     
@@ -126,10 +125,8 @@ pv.SvgScene.panel = function(scene) {
         e = null; // J.I.C.?
 
         this.initRootPanelElement(g, scene.mark);
-        if(!pendingAppendRootElems) { pendingAppendRootElems = []; }
-        pendingAppendRootElems.push([canvas, g]);
-
-        //canvas.appendChild(g);
+        
+        canvas.appendChild(g);
         // canvas.firstChild === g ? Not necessarily!
         // g.parentNode === canvas ? Yes sure!
 
@@ -208,13 +205,6 @@ pv.SvgScene.panel = function(scene) {
       e = clip_g.nextSibling;
     }
   } // end for panel instance
-  
-  // Defer appending to canvas when fully built.
-  if(pendingAppendRootElems) {
-    pendingAppendRootElems.forEach(function(cg) {
-      cg[0].appendChild(cg[1]);
-    })
-  }
 
   return e;
 };

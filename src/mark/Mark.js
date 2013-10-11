@@ -1665,17 +1665,20 @@ pv.Mark.prototype.context = function(scene, index, f) {
       }
     } while(mark);
 
-    /* Set ancestors' scale, excluding "that"; requires top-down. */
+    // Set ancestors' scale, excluding "that"; requires top-down.
     var k = 1; // root's scale is 1
     i = ancestors.length - 1;
-    while(i) { // i = 1 is the last one in
-      mark = ancestors[i--];
-      mark.scale = k; // accumulated scale on mark
+    if(i > 0) { // i >= 1 is the last one in
+      do {
+        mark = ancestors[i--];
+        mark.scale = k; // accumulated scale on mark
 
-      // children's scale
-      k *= mark.scene[mark.index].transform.k;
+        // children's scale
+        k *= mark.scene[mark.index].transform.k;
+
+      } while(i); // faster to just test this way, stop when 0.
     }
-    
+
     that.scale = k;
 
     /* Set direct children of "that"'s scene and scale. */
@@ -1685,11 +1688,11 @@ pv.Mark.prototype.context = function(scene, index, f) {
       var thatInst = that.scene[that.index];
       k *= thatInst.transform.k;
 
-      var childScenez = thatInst.children;
+      var childScenes = thatInst.children;
       i = n;
-      while(i--) {
+      while(i--) { // n -> 1 => n-1 -> 0
         mark = children[i];
-        mark.scene = childScenez[i];
+        mark.scene = childScenes[i];
         mark.scale = k;
       }
     }
@@ -1706,7 +1709,7 @@ pv.Mark.prototype.context = function(scene, index, f) {
     var children = that.children;
     if(children) {
       var i = children.length;
-      while(i--) {
+      while(i--) { // n -> 1 => n-1 -> 0
         mark = children[i];
         // It's generally faster to set to something, than to delete
         mark.scene = undefined;
@@ -1717,8 +1720,9 @@ pv.Mark.prototype.context = function(scene, index, f) {
     /* Reset ancestors. */
     mark = that;
     var parent;
+    var count = 0;
     do {
-      stack.pop();
+      count++;
       delete mark.index; // must be deleted!
 
       if((parent = mark.parent)) {
@@ -1727,6 +1731,8 @@ pv.Mark.prototype.context = function(scene, index, f) {
         mark.scale = 1;
       }
     } while((mark = parent));
+
+    if(count) { stack.length -= count; }
   }
 
   /* Context switch, invoke the function, then switch back. */
@@ -1918,6 +1924,12 @@ pv.Mark.prototype.transition = function() {
   return new pv.Transition(this);
 };
 
+/**
+ * Allows specifying different mark properties for 
+ * its "enter" and "exit" animation states.
+ * @param {string} name the animation state.
+ * @return {pv.Transient} a transient mark associated to this mark and animation state.
+ */
 pv.Mark.prototype.on = function(state) {
   return this["$" + state] = new pv.Transient(this);
 };
@@ -1925,14 +1937,10 @@ pv.Mark.prototype.on = function(state) {
 // --------------
 
 // inset - percentage of width/height to discount on the shape, on each side
-pv.Mark.prototype.getShape = function(scenes, index, inset){
+pv.Mark.prototype.getShape = function(scenes, index, inset) {
     var s = scenes[index];
-    if(!s.visible){
-        return null;
-    }
-    if(inset == null){
-        inset = 0;
-    }
+    if(!s.visible) { return null; }
+    if(inset == null) { inset = 0; }
 
     var key = '_shape_inset_' + inset;
     return s[key] || (s[key] = this.getShapeCore(scenes, index, inset));
@@ -1944,7 +1952,7 @@ pv.Mark.prototype.getShapeCore = function(scenes, index, inset){
     var t = s.top;
     var w = s.width;
     var h = s.height;
-    if(inset > 0 && inset <= 1){
+    if(inset > 0 && inset <= 1) {
         var dw = inset * w;
         var dh = inset * h;
         l += dw;

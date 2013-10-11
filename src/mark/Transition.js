@@ -34,29 +34,28 @@ pv.Transition = function(mark) {
   var defaults = new pv.Transient();
 
   /** @private */
-  function ids(marks) {
+  function ids(scene) {
     var map = {};
-    for (var i = 0; i < marks.length; i++) {
-      var mark = marks[i];
-      if (mark.id) {
-          map[mark.id] = mark;
-      }
+    var i = scene.length;
+    while(i--) {
+      var s  = scene[i];
+      var id = s.id;
+      if(id) { map[id] = s; }
     }
-    
     return map;
   }
 
   /** @private */
   function interpolateProperty(list, name, before, after) {
     var f;
-    if (name in interpolated) {
+    if(name in interpolated) {
       var i = pv.Scale.interpolator(before[name], after[name]);
       f = function(t) {
           before[name] = i(t); 
       };
     } else {
       f = function(t) {
-          if (t > .5) {
+          if(t > .5) {
               before[name] = after[name];
           }
       };
@@ -81,23 +80,29 @@ pv.Transition = function(mark) {
 
   /** @private */
   function interpolate(list, before, after) {
-    var mark = before.mark, 
-        bi = ids(before), 
-        ai = ids(after);
-    
-    for (var i = 0; i < before.length; i++) {
-      var b = before[i], 
-          a = b.id ? ai[b.id] : after[i];
+    var mark = before.mark;
+    var beforeById = ids(before); // scene instances with id indexed by id
+    var afterById  = ids(after);  // idem
+    var beforeInst, afterInst;
+
+    var i = 0;
+    var L = before.length;
+
+    // For each BEFORE instance
+    for(; i < L; i++) {
+      beforeInst = before[i];
+      afterInst  = beforeInst.id ? afterById[beforeInst.id] : after[i]; // by id, if available, or by index
       
-      b.index = i;
+      beforeInst.index = i;
+
+      // Initially hidden. Handled in the AFTER loop, below.
+      if(!beforeInst.visible) { continue; }
       
-      if (!b.visible) { 
-          continue;
-      }
-      
-      // No after or not after.visible
-      if (!(a && a.visible)) {
-        var o = override(before, i, mark.$exit, after);
+      // Initially visible.
+
+      // The inexistent or invisible `after` instance is existing.
+      if(!(afterInst && afterInst.visible)) {
+        var overridenAfterInst = override(before, i, mark.$exit, after);
 
         /*
          * After the transition finishes, we need to do a little cleanup to
@@ -106,67 +111,116 @@ pv.Transition = function(mark) {
          * them from the scenegraph; for instances that became invisible, we
          * need to mark them invisible. See the cleanup method for details.
          */
-        b.transition = a ? 
-                2 : 
-                (after.push(o), 1);
-        a = o;
+        beforeInst.transition = afterInst ? 2 : (after.push(overridenAfterInst), 1);
+
+        afterInst = overridenAfterInst;
       }
-      interpolateInstance(list, b, a);
+
+      interpolateInstance(list, beforeInst, afterInst);
     }
     
-    for (var i = 0; i < after.length; i++) {
-      var a = after[i], 
-          b = a.id ? bi[a.id] : before[i];
+    // For each AFTER instance (skipping ones just created),
+    //  for which a corresponding `before` instance 
+    //  does not exist or is invisible, 
+    //  the following creates them, when missing, or overrides them when existing.
+    i = 0;
+    L = after.length;
+    for(; i < L; i++) {
+      afterInst  = after[i];
+      beforeInst = afterInst.id ? beforeById[afterInst.id] : before[i];
       
-      if (!(b && b.visible) && a.visible) {
-        var o = override(after, i, mark.$enter, before);
-        if (!b) 
-            before.push(o);
-        else 
-            before[b.index] = o;
+      // The inexistent or invisible `before` instance is entering.
+      if(!(beforeInst && beforeInst.visible) && afterInst.visible) {
+        var overridenBeforeInst = override(after, i, mark.$enter, before);
+
+        if(!beforeInst) {
+          // Add overridenBeforeInst to the end of before.
+          // This way indexes of existing befores are not changed,
+          //  and the result of the above beforeInst assignment will remain the same
+          //  for the remaining `i`. This should work if all have ids or if none do.
+          before.push(overridenBeforeInst);
+        } else { 
+          // replace beforeInst with overridenBeforeInst, in `before`.
+          before[beforeInst.index] = overridenBeforeInst;
+        }
+
+        // beforeInst = overridenBeforeInst;
         
-        interpolateInstance(list, o, a);
+        interpolateInstance(list, overridenBeforeInst, afterInst);
       }
     }
   }
 
-  /** @private */
+  /**
+   * Creates or overrides an instance that 
+   * is entering or exiting the stage in an animation.
+   * <p>
+   * A "before" instance is said to be "entering", 
+   * when it does not exist, for a corresponding
+   * existing and visible "after" instance, 
+   * or if it is invisible.
+   * </p>
+   * <p>
+   * An "after" instance is said to be "exiting",
+   * when if does not exist, for a corresponding 
+   * existing and visible "before" instance, or if it is invisible.
+   * </p>
+   *
+   * @param {Array}  scene the scene being overriden. A before or after scene.
+   * @param {number} index the index of the instance of scene being overriden.
+   * @param {pv.Transient} [proto] the transient of the corresponding state: "enter" or "exit".
+   * When overriding a before instance, it is the "exit" transient. 
+   * When overriding an after instance, it is the "enter" transient.
+   * @param {Array}  other the other scene.
+   * When overriding a before instance, the corresponding after scene. 
+   * When overriding an after instance, the corresponding before scene.
+   *
+   * @return {object} an overriden scene instance object.
+   * @private 
+   */
   function override(scene, index, proto, other) {
-    var s = pv.extend(scene[index]),
-        m = scene.mark,
-        r = m.root.scene,
-        p = (proto || defaults).$properties,
-        t;
+    var otherInst = pv.extend(scene[index]);
+    var m = scene.mark;
+    var rs = m.root.scene;
 
-    /* Correct the target reference, if this is an anchor. */
-    if (other.target && (t = other.target[other.length])) {
+    // Correct the target reference, if this is an anchor.
+    // This change affects only the below m.context code.
+    // TODO: understand/explain the other.length, below...
+    var t;
+    if(other.target && (t = other.target[other.length])) {
       scene = pv.extend(scene);
       scene.target = pv.extend(other.target);
       scene.target[index] = t;
     }
 
-    /* Determine the set of properties to evaluate. */
-    var seen = {};
+    // BIND
+    // Determine the set of properties to evaluate.
 
-    // All the properties directly defined in mark type
-    for (var i = 0, P = p.length ; i < P ; i++) {
-        seen[p[i].name] = 1;
-    }
-    
-    // Add to p all optional properties in binds not in proto properties (p)
-    p = m.binds.optional
-         .filter(function(p) { return !(p.name in seen); })
-         .concat(p);
+    // Properties of the transient specified for "entry" or "exit" state.
+    // If proto isn't specified use a default transient instance.
+    if(!proto) { proto = defaults; }
+    var ps        = proto.$properties;    // Do not change!
+    var overriden = proto.$propertiesMap; // Idem!!
 
+    // Add to ps all optional properties in binds not in `overriden` properties.
+    ps = m.binds.optional
+         .filter(function(p) { return !(p.name in overriden); })
+         .concat(ps);
+
+    // BUILD
     // Evaluate the properties and update any implied ones.
+    // TODO: is it really needed to enter and exit the context per overriden instance?
+    //   Could the context be set for the parent scene and only then
+    //   change the context for each instance?
     m.context(scene, index, function() {
-      this.buildProperties(s, p);
-      this.buildImplied(s);
+      this.buildProperties(otherInst, ps);
+      this.buildImplied(otherInst);
     });
 
-    /* Restore the root scene. This should probably be done by context(). */
-    m.root.scene = r;
-    return s;
+    // Restore the root scene. This should probably be done by context().
+    m.root.scene = rs;
+
+    return otherInst;
   }
 
   /** @private */
