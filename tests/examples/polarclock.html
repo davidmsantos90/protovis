@@ -2,7 +2,7 @@
   <head>
     <title>PolarClock</title>
     
-    <script type="text/javascript" src="../../protovis-d3.2.js"></script>
+    <script type="text/javascript" src="../../protovis-d3.3.js"></script>
     
     <style type="text/css">
       body {
@@ -73,7 +73,7 @@
           .font("bold 12px sans-serif")
           .textStyle("#000")
           .textMargin(7)
-          .text(function(d) d.text);
+          .text(function(d) d.value);
 
       setInterval(function() vis.render(), 50);
 
