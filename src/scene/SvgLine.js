@@ -12,16 +12,8 @@
  *
  * segmented smart
  * <g> <-> scenes.$g
- *    <g> colored, no events
- *        <path /> segment 0
- *        <path /> segment 1
- *        ...
- *    </g>
- *    <g> transparent, fully segmented, events
- *        <path /> instance 0
- *        <path /> instance 1
- *        ...
- *    </g>
+ *    <path /> segment 0
+ *    <path /> segment 1
  * </g>
  */
 pv.SvgScene.line = function(scenes) {
@@ -122,56 +114,11 @@ pv.SvgScene.lineFixed = function(elm, scenes) {
 };
 
 pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
-  /*
-   * <g> <-> scenes.$g <-> elm --> gg
-   *    <g> colored, no events
-   *        <path /> segment 0
-   *        <path /> segment 1
-   *        ...
-   *    </g>
-   *    <g> transparent, fully segmented, events (wen existent)
-   *        <path /> instance 0
-   *        <path /> instance 1
-   *        ...
-   *    </g>
-   * </g>
-   */
-
-  if(!elm){
-    elm = scenes.$g.appendChild(this.create("g"));
-  }
-  
-  var gg = elm;
-
-  // Create colored/no-events group
-  elm = gg.firstChild;
-  
-  var g1 = this.expect(elm, "g", scenes, 0, {'pointer-events': 'none'});
-  if (!g1.parentNode) {
-      gg.appendChild(g1);
-  }
-
-  // Set current default parent
-  scenes.$g = g1;
-  elm = g1.firstChild;
-  
-  var eventsSegments = scenes.mark.$hasHandlers ? [] : null;
-  
-  /* Visual only */
-  // Iterate *visible* scene segments
-  elm = this.eachLineAreaSegment(elm, scenes, function(elm, scenes, from, to){
+  return this.eachLineAreaSegment(elm, scenes, function(elm, scenes, from, to){
     
     // Paths depend only on visibility
     var paths = this.lineSegmentPaths(scenes, from, to);
     var fromp = from;
-    
-    // Events segments also, depend only on visibility
-    if(eventsSegments){
-      eventsSegments.push({
-        from:  from,
-        paths: paths
-      });
-    }
     
     // Split this visual scenes segment, 
     // on key properties changes
@@ -181,7 +128,7 @@ pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
         to:    to
       };
     
-    return this.eachLineAreaSegment(elm, scenes, options, function(elm, scenes, from, to){
+    return this.eachLineAreaSegment(elm, scenes, options, function(elm, scenes, from, to, ka, eventsMax){
       
       var s1 = scenes[from];
       
@@ -201,7 +148,7 @@ pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
       var sop = stroke.opacity;
       var attrs = {
         'shape-rendering':   s1.antialias ? null : 'crispEdges',
-        'pointer-events':    'none',
+        'pointer-events':    eventsMax,
         'cursor':            s1.cursor,
         'd':                 d,
         'fill':              fill.color,
@@ -220,64 +167,6 @@ pv.SvgScene.lineSegmentedSmart = function(elm, scenes) {
       return this.append(elm, scenes, from);
     });
   });
-
-  // Remove any excess segments from previous render
-  this.removeSiblings(elm);
-  
-  /* Events */
-  var g2;
-  if(eventsSegments){
-    // Create colored/no-events group
-    elm = g1.nextSibling;
-    g2 = this.expect(elm, "g", scenes, 0);
-    if (!g2.parentNode) {
-        gg.appendChild(g2);
-    }
-   
-    // Set current default parent
-    scenes.$g = g2;
-    elm = g2.firstChild;
-    
-    eventsSegments.forEach(function(segment){
-      var from  = segment.from;
-      var paths = segment.paths;
-      
-      var attrsBase = {
-          'shape-rendering':   'crispEdges',
-          'fill':              'rgb(127,127,127)',
-          'fill-opacity':      0.005, // VML requires this much to fire events
-          'stroke':            'rgb(127,127,127)',
-          'stroke-opacity':    0.005, // VML idem
-          'stroke-width':      10,
-          'stroke-dasharray':  null
-        };
-      
-      paths.forEach(function(path, j){
-        var i = from + j;
-        var s = scenes[i];
-        
-        var events = s.events;
-        if(events && events !== 'none'){
-          var attrs = Object.create(attrsBase);
-          attrs['pointer-events'] = events;
-          attrs.cursor = s.cursor;
-          attrs.d = path.join('');
-          
-          elm = this.expect(elm, 'path', scenes, i, attrs);
-          
-          elm = this.append(elm, scenes, i);
-        }
-      }, this); 
-    }, this);
-
-    // Remove any excess paths from previous render
-    this.removeSiblings(elm);
-  }
-
-  // Restore initial current parent
-  scenes.$g = gg;
-  
-  return (g2 || g1).nextSibling;
 };
 
 pv.SvgScene.lineSegmentedFull = function(e, scenes) {
@@ -630,6 +519,15 @@ pv.SvgScene.lineAreaDotAlone = function(elm, scenes, i) {
   */
 };
 
+pv.Scene.eventsToNumber = {
+  "":        0,
+  "none":    0,
+  "painted": 1,
+  "all":     2
+};
+
+pv.Scene.numberToEvents = ["none", "painted", "all"];
+
 pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment) {
   
   if(typeof keyArgs === 'function'){
@@ -643,6 +541,9 @@ pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment
   var from = pv.get(keyArgs, 'from') || 0;
   var to   = pv.get(keyArgs, 'to', scenes.length - 1);
   
+  // The less restrictive events number from any of the instances:
+  var eventsNumber;
+
   var ki, kf;
   if(breakOnKeyChange){
       ki = [];
@@ -659,6 +560,8 @@ pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment
       continue;
     }
     
+    eventsNumber = this.eventsToNumber[si.events] || 0;
+
     // Compute its line-area-key
     if(breakOnKeyChange){
       this.lineAreaSceneKey(si, ki);
@@ -687,6 +590,8 @@ pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment
         break;
       }
       
+      eventsNumber = Math.max(eventsNumber, this.eventsToNumber[sf.events] || 0);
+      
       // Accept f + 1 as final point
       // f > i
       f = f2;
@@ -703,7 +608,7 @@ pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment
       }
     }
   
-    elm = lineAreaSegment.call(this, elm, scenes, i, f, keyArgs);
+    elm = lineAreaSegment.call(this, elm, scenes, i, f, keyArgs, this.numberToEvents[eventsNumber]);
     
     // next part
     i = i2;
@@ -712,7 +617,7 @@ pv.SvgScene.eachLineAreaSegment = function(elm, scenes, keyArgs, lineAreaSegment
   return elm;
 };
 
-pv.SvgScene.lineAreaSceneKey = function(s, k){
+pv.SvgScene.lineAreaSceneKey = function(s, k) {
   k[0] = s.fillStyle.key;
   k[1] = s.strokeStyle.key;
   k[2] = s.lineWidth;
@@ -721,16 +626,13 @@ pv.SvgScene.lineAreaSceneKey = function(s, k){
   return k;
 };
 
-pv.SvgScene.isSceneVisible = function(s){
-  return s.visible && 
-        (s.fillStyle.opacity > 0 || s.strokeStyle.opacity > 0);
+pv.SvgScene.isSceneVisible = function(s) {
+  return s.visible && (s.fillStyle.opacity > 0 || s.strokeStyle.opacity > 0);
 };
 
-pv.SvgScene.equalSceneKeys = function(ka, kb){
-  for(var i = 0, K = ka.length ; i < K ; i++){
-    if(ka[i] !== kb[i]){
-      return false;
-    }
+pv.SvgScene.equalSceneKeys = function(ka, kb) {
+  for(var i = 0, K = ka.length ; i < K ; i++) {
+    if(ka[i] !== kb[i]) { return false; }
   }
   return true;
 };

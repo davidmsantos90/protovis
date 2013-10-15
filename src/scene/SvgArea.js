@@ -121,39 +121,13 @@ pv.SvgScene.areaFixed = function(elm, scenes, from, to, addEvents) {
 };
 
 pv.SvgScene.areaSegmentedSmart = function(elm, scenes) {
-  if(!elm){
-    elm = scenes.$g.appendChild(this.create("g"));
-  }
-  var gg = elm;
-  
-  // Create colored/no-events group
-  elm = gg.firstChild;
-  
-  var g1 = this.expect(elm, "g", scenes, 0, {'pointer-events': 'none'});
-  if (!g1.parentNode) {
-      gg.appendChild(g1);
-  }
-  
-  // Set current default parent
-  scenes.$g = g1;
-  elm = g1.firstChild;
-
-  var eventsSegments = scenes.mark.$hasHandlers ? [] : null;
-  
-  /* Visual only */
-  // Iterate *visible* scene segments
-  elm = this.eachLineAreaSegment(elm, scenes, function(elm, scenes, from, to){
+  return this.eachLineAreaSegment(elm, scenes, function(elm, scenes, from, to){
     
     // Paths depend only on visibility
     var segment = this.areaSegmentPaths(scenes, from, to);
     var pathsT = segment.top;
     var pathsB = segment.bottom;
     var fromp = from;
-    
-    // Events segments also, depend only on visibility
-    if(eventsSegments){
-      eventsSegments.push(segment);
-    }
     
     // Split this visual scenes segment, 
     // on key properties changes
@@ -163,7 +137,7 @@ pv.SvgScene.areaSegmentedSmart = function(elm, scenes) {
         to:    to
       };
     
-    return this.eachLineAreaSegment(elm, scenes, options, function(elm, scenes, from, to){
+    return this.eachLineAreaSegment(elm, scenes, options, function(elm, scenes, from, to, ka, eventsMax) {
       
       var s1 = scenes[from];
       
@@ -183,7 +157,7 @@ pv.SvgScene.areaSegmentedSmart = function(elm, scenes) {
       var sop = stroke.opacity;
       var attrs = {
         'shape-rendering':   s1.antialias ? null : 'crispEdges',
-        'pointer-events':    'none',
+        'pointer-events':    eventsMax,
         'cursor':            s1.cursor,
         'd':                 d,
         'fill':              fill.color,
@@ -202,65 +176,6 @@ pv.SvgScene.areaSegmentedSmart = function(elm, scenes) {
       return this.append(elm, scenes, from);
     });
   });
-
-  // Remove any excess segments from previous render
-  this.removeSiblings(elm);
-
-  /* Events */
-  var g2;
-  if(eventsSegments){
-    // Create colored/no-events group
-    elm = g1.nextSibling;
-    g2 = this.expect(elm, "g", scenes, 0);
-    if (!g2.parentNode) {
-        gg.appendChild(g2);
-    }
-
-    // Set current default parent
-    scenes.$g = g2;
-    elm = g2.firstChild;
-
-    eventsSegments.forEach(function(segment){
-      var from  = segment.from;
-      var pathsT = segment.top;
-      var pathsB = segment.bottom;
-      var P = pathsT.length;
-      
-      var attrsBase = {
-          'shape-rendering': 'crispEdges',
-          'fill':            'rgb(127,127,127)',
-          'fill-opacity':    0.005, // VML requires this much to fire events
-          'stroke':          null
-        };
-      
-      pathsT.forEach(function(pathT, j){
-        var i = from + j;
-        var s = scenes[i];
-        
-        var events = s.events;
-        if(events && events !== "none"){
-          var pathB = pathsB[P - j - 1];
-          
-          var attrs = Object.create(attrsBase);
-          attrs['pointer-events'] = events;
-          attrs.cursor = s.cursor;
-          attrs.d = pathT.join("") + "L" + pathB[0].substr(1) + pathB[1] + "Z";
-          
-          elm = this.expect(elm, 'path', scenes, i, attrs);
-          
-          elm = this.append(elm, scenes, i);
-        }
-      }, this); 
-    }, this);
-
-    // Remove any excess paths from previous render
-    this.removeSiblings(elm);
-  }
-  
-  // Restore initial current parent
-  scenes.$g = gg;
-
-  return (g2 || g1).nextSibling;
 };
 
 pv.SvgScene.areaSegmentPaths = function(scenes, from, to) {

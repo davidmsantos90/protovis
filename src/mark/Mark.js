@@ -1763,19 +1763,21 @@ pv.Mark.prototype.context = function(scene, index, f) {
   }
 };
 
-pv.Mark.getEventHandler = function(type, scenes, index, event){
-  var handler = scenes.mark.$handlers[type];
-  if(handler){
-    return [handler, type, scenes, index, event];
-  }
+pv.Mark.prototype.getEventHandler = function(type, scenes, index, ev) {
+  var handler = this.$handlers[type];
+  if(handler) { return [handler, scenes, index, ev]; }
 
+  return this.getParentEventHandler(type, scenes, index, ev);
+};
+
+pv.Mark.prototype.getParentEventHandler = function(type, scenes, index, ev) {
   var parentScenes = scenes.parent;
-  if(parentScenes){
-    return this.getEventHandler(type, parentScenes, scenes.parentIndex, event);
+  if(parentScenes) {
+    return parentScenes.mark.getEventHandler(type, parentScenes, scenes.parentIndex, ev);
   }
 };
 
-/** @private Execute the event listener, then re-render the returned mark. */
+/** @private Execute the event listener, then re-render the returned mark, if any. */
 pv.Mark.dispatch = function(type, scenes, index, event) {
 
   var root = scenes.mark.root;
@@ -1783,26 +1785,37 @@ pv.Mark.dispatch = function(type, scenes, index, event) {
   // While animating, ignore any UI event notifications
   if(root.$transition) { return true; }
 
+
+  // Check for any event interceptors for this event's type.
   var handlerInfo;
   var interceptors = root.$interceptors && root.$interceptors[type];
   if(interceptors) {
     for(var i = 0, L = interceptors.length ; i < L ; i++) {
       handlerInfo = interceptors[i](type, event);
+
+      // Delegates to a handler info?
       if(handlerInfo) { break; }
 
-      if(handlerInfo === false) { return true; } // Consider handled
+      // Consider handled when strictly false.
+      if(handlerInfo === false) { return true; }
     }
   }
 
   if(!handlerInfo) {
-    handlerInfo = this.getEventHandler(type, scenes, index, event);
+    // Find for a registered handler for this event's type, 
+    //  in the mark or any of its ascendants.
+    handlerInfo = scenes.mark.getEventHandler(type, scenes, index, event);
+
+    // No handler.
     if(!handlerInfo) { return false; }
   }
 
+  // Handle with the determined handler info:
+  //  [handler, scenes, index, event].
   return this.handle.apply(this, handlerInfo);
 };
 
-pv.Mark.handle = function(handler, type, scenes, index, event){
+pv.Mark.handle = function(handler, scenes, index, event) {
     var m = scenes.mark;
 
     m.context(scenes, index, function() {
@@ -1840,7 +1853,7 @@ pv.Mark.prototype.addEventInterceptor = function(type, handler, before){
     var ints = root.$interceptors || (root.$interceptors = {});
     var list = ints[type] || (ints[type] = []);
 
-    if(before) { list.unshift(handler); } 
+    if(before) { list.unshift(handler); }
     else       { list.push(handler);    }
   }
 };

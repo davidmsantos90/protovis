@@ -26,6 +26,17 @@ pv.Scene = pv.SvgScene = {
     "contextmenu"
   ],
 
+  mousePositionEventSet: {
+    "mousedown": 1,
+    "mouseup": 1,
+    "mouseover": 1,
+    "mouseout": 1,
+    "mousemove": 1,
+    "click": 1,
+    "dblclick": 1,
+    "contextmenu": 1
+  },
+ 
   /** Implicit values for SVG and CSS properties. */
   implicit: {
     svg: {

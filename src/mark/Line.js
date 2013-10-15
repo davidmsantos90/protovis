@@ -154,6 +154,8 @@ pv.Line.prototype.defaults = new pv.Line()
 /** @private Reuse Area's implementation for segmented bind & build. */
 pv.Line.prototype.bind = pv.Area.prototype.bind;
 pv.Line.prototype.buildInstance = pv.Area.prototype.buildInstance;
+pv.Line.prototype.getEventHandler = pv.Area.prototype.getEventHandler;
+pv.Line.prototype.getNearestInstanceToMouse = pv.Area.prototype.getNearestInstanceToMouse;
 
 /**
  * Constructs a new line anchor with default properties. Lines support five

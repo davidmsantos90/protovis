@@ -290,6 +290,71 @@ pv.Area.prototype.anchor = function(name) {
     .tension     (function() { return this.scene.target[this.index].tension;      });
 };
 
+pv.Area.prototype.getEventHandler = function(type, scene, index, ev) {
+  // mouseover -> mouseover different scene/instance
+  // mousemove -> mouseover different scene/instance
+  //           -> mousemove different scene/instance
+  var s = scene[index];
+  var needEventSimulation = pv.Scene.mousePositionEventSet[type] === 1 && 
+                            !s.segmented || s.segmented === 'smart';
+
+  if(!needEventSimulation) {
+    return pv.Mark.prototype.getEventHandler.call(this, type, scene, index, ev);
+  }
+  
+  var handler = this.$handlers[type];
+  var isMouseMove = type === 'mousemove';
+  var handlerMouseOver = isMouseMove ? this.$handlers.mouseover : null;
+  if(!handler && !handlerMouseOver) {
+    return this.getParentEventHandler(type, scene, index, ev);
+  }
+
+  // 1. Detect real index
+  var mouseIndex = this.getNearestInstanceToMouse(scene, index);
+
+  // 2. Generate fixed event(s)
+  if(handler) {
+    if(handlerMouseOver) {
+      var prevMouseOverScene = this._mouseOverScene;
+      if(!prevMouseOverScene || 
+          prevMouseOverScene !== scene || 
+          this._mouseOverIndex !== mouseIndex) {
+
+        this._mouseOverScene = scene;
+        this._mouseOverIndex = mouseIndex;
+
+        // MouseMove first, MouseOver next
+        return [[handler, handlerMouseOver], scene, mouseIndex, ev];  
+      }
+    }
+    return [handler, scene, mouseIndex, ev];
+  }
+
+  // => handlerMouseOver
+  return [handlerMouseOver, scene, mouseIndex, ev];
+};
+
+
+pv.Area.prototype.getNearestInstanceToMouse = function(scene, eventIndex) {
+  var p = this.mouse();
+  var minDist2 = Infinity;
+  var minIndex = null;
+
+  // TODO: stop at last segment
+  for(var index = eventIndex, L = scene.length; index < L; index++) {
+    var shape = this.getShape(scene, index);
+    if(shape.containsPoint(p)) { return index; }
+    
+    var dist2 = shape.distance2(p).dist2;
+    if(dist2 < minDist2) {
+      minDist2 = dist2;
+      minIndex = index;
+    }
+  }
+
+  return minIndex != null ? minIndex : eventIndex;
+};
+
 
 pv.Area.prototype.getShapeCore = function(scenes, index){
     var s = scenes[index];
