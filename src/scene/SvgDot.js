@@ -34,7 +34,7 @@ pv.SvgScene.dot = function(scenes) {
     var shape = s.shape || 'circle';
     var ar = s.aspectRatio;
     var sa = s.shapeAngle;
-    var t;
+    var t  = null; // must reset to null, in every iteration. Declaring the var is not sufficient.
     if(shape === 'circle') {
       if(ar === 1) {
         svg.cx = s.left;
@@ -56,7 +56,6 @@ pv.SvgScene.dot = function(scenes) {
       shape = 'path';
 
       t = 'translate(' + s.left + ',' + s.top + ') ';
-
       if(sa) { t += 'rotate(' + pv.degrees(sa) + ') '; }
 
       if(ar !== 1) {

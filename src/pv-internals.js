@@ -18,15 +18,7 @@
  * href="http://javascript.crockford.com/prototypal.html">prototypal
  * inheritance</a>.
  */
-pv.extend = Object.create ?
-  function(f) {
-    return Object.create(f.prototype || f);
-  } :
-  function(f) {
-    function g() {}
-    g.prototype = f.prototype || f;
-    return new g();
-  };
+pv.extend = function(f) { return Object.create(f.prototype || f); };
 
 pv.extendType = function(g, f) {
   var sub = g.prototype = pv.extend(f);

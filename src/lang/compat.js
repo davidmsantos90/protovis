@@ -118,3 +118,13 @@ if (!Array.prototype.indexOf) Array.prototype.indexOf = function (s, from) {
   return -1;
 };
 
+
+if (!Date.now) { Date.now = function() { return +new Date(); }; }
+
+if (!Object.create) {
+  Object.create = function(proto) {
+    function g() {}
+    g.prototype = proto;
+    return new g();
+  }
+}

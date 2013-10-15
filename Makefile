@@ -1,5 +1,5 @@
 JS_LANG_FILES = \
-	src/lang/Array.js
+	src/lang/compat.js
 
 JS_CORE_FILES = \
 	src/pv.js \
@@ -61,8 +61,8 @@ JS_CORE_FILES = \
 	src/mark/Image.js \
 	src/mark/Wedge.js \
 	src/mark/Ease.js \
-	src/mark/Transition.js \
-	src/mark/Transient.js
+	src/mark/Transient.js \
+	src/mark/Transition.js
 
 JS_LAYOUT_FILES = \
 	src/physics/Particle.js \

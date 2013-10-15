@@ -1086,20 +1086,20 @@ pv.Mark.prototype.renderCore = function() {
  * 4) Implied PROPs (when instance.visible=true)
  */
 pv.Mark.prototype.bind = function() {
-    var seen = {},
-        data,
+  var seen = {},
+      data,
 
-        // Required props (no defs)
-        required = [],
+      // Required props (no defs)
+      required = [],
 
-        /*
-         * Optional props/defs by type.
-         * 0 - def/value,
-         * 1 - def/fun,
-         * 2 - prop/value,
-         * 3 - prop/fun
-         */
-        types = [[], [], [], []];
+      /*
+       * Optional props/defs by type.
+       * 0 - def/value,
+       * 1 - def/fun,
+       * 2 - prop/value,
+       * 3 - prop/fun
+       */
+      types = [[], [], [], []];
 
   /**
    * Scans the proto chain for the specified mark.

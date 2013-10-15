@@ -62,7 +62,7 @@ pv.SvgScene.updateAll = function(scenes) {
       && scenes[0].reverse
       && (scenes.type !== "line")
       && (scenes.type !== "area")) {
-    var reversed = pv.extend(scenes);
+    var reversed = Object.create(scenes);
     for (var i = 0, j = scenes.length - 1; j >= 0; i++, j--) {
       reversed[i] = scenes[j];
     }

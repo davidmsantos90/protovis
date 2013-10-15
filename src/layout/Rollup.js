@@ -163,7 +163,7 @@ pv.Layout.Rollup.prototype.buildImplied = function(s) {
     var nodeId = id(i),
         rn = rnodes[nodeId];
     if (!rn) {
-      rn = rnodes[nodeId] = pv.extend(nodes[i]);
+      rn = rnodes[nodeId] = Object.create(nodes[i]);
       rn.index = rnindex++;
       rn.x = x[i];
       rn.y = y[i];

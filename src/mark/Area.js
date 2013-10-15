@@ -23,18 +23,14 @@ pv.Area = function() {
   pv.Mark.call(this);
 };
 
-pv.Area.castSegmented = function(v){
-  if(!v){
-    return '';
-  }
+pv.Area.castSegmented = function(v) {
+  if(!v) { return ''; }
   
-  switch(v){
+  switch(v) {
     case 'smart':
-    case 'full':
-      break;
+    case 'full': break;
     
-    default:
-      v = 'full';
+    default: v = 'full';
   }
   
   return v;
