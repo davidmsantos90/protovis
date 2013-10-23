@@ -130,12 +130,14 @@ protovis-r3.3.js: $(JS_FILES)
 
 %-d3.3.js: Makefile
 	rm -f $@
-	echo "// $(shell git rev-parse HEAD)" >> $@
+	cat license.js >> $@
+	echo "/*! $(shell git rev-parse HEAD) */" >> $@
 	cat $(filter %.js,$^) >> $@
 
 %-r3.3.js:: Makefile
 	rm -f $@
-	echo "// $(shell git rev-parse --short HEAD)" >> $@
+	cat license.js >> $@
+	echo "/*! $(shell git rev-parse --short HEAD) */" >> $@
 	cat $(filter %.js,$^) | $(JS_COMPILER) >> $@
 
 jsdoc: $(JS_FILES) Makefile

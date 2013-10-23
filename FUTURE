@@ -2,7 +2,7 @@
 - use === and !== instead of == and !=
 - force type conversion of input arguments in public API?
 - use array push rather than string concatentation to improve performance?
-- use Object.create instead of pv.extend, if available
+- use Object.create instead of pv.extend, if available (DCL - Done)
 
 data/?
 - AJAX helper? or refer to jQuery

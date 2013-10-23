@@ -1,4 +1,16 @@
-// a505f2b
+/*!
+ * Copyright 2002 - 2013 Webdetails, a Pentaho company.  All rights reserved.
+ * 
+ * This software was developed by Webdetails and is provided under the terms
+ * of the Mozilla Public License, Version 2.0, or any later version. You may not use
+ * this file except in compliance with the license. If you need a copy of the license,
+ * please go to  http://mozilla.org/MPL/2.0/. The Initial Developer is Webdetails.
+ *
+ * Software distributed under the Mozilla Public License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or  implied. Please refer to
+ * the license for the specific language governing your rights and limitations.
+ */
+ /*! Copyright 2010 Stanford Visualization Group, Mike Bostock, BSD license. *//*! e114d6d */
 var a;if(!Array.prototype.map)Array.prototype.map=function(b,c){for(var f=this.length,d=new Array(f),e=0;e<f;e++)if(e in this)d[e]=b.call(c,this[e],e,this);return d};if(!Array.prototype.filter)Array.prototype.filter=function(b,c){for(var f=this.length,d=[],e=0;e<f;e++)if(e in this){var g=this[e];b.call(c,g,e,this)&&d.push(g)}return d};if(!Array.prototype.forEach)Array.prototype.forEach=function(b,c){for(var f=this.length>>>0,d=0;d<f;d++)d in this&&b.call(c,this[d],d,this)};
 if(!Array.prototype.reduce)Array.prototype.reduce=function(b,c){var f=this.length;if(!f&&arguments.length==1)throw new Error("reduce: empty array, no initial value");var d=0;if(arguments.length<2)for(;;){if(d in this){c=this[d++];break}if(++d>=f)throw new Error("reduce: no values, no initial value");}for(;d<f;d++)if(d in this)c=b(c,this[d],d,this);return c};
 if(!Array.prototype.indexOf)Array.prototype.indexOf=function(b,c){var f=this.length>>>0;for(c=!isFinite(c)||c<0?0:c>this.length?this.length:c;c<f;c++)if(this[c]===b)return c;return-1};if(!Date.now)Date.now=function(){return+new Date};if(!Object.create)Object.create=function(b){function c(){}c.prototype=b;return new c};var pv={};pv.version={major:3,minor:3};pv.identity=function(b){return b};pv.index=function(){return this.index};pv.child=function(){return this.childIndex};pv.parent=function(){return this.parent.index};
