@@ -11,7 +11,7 @@
  * the license for the specific language governing your rights and limitations.
  */
  /*! Copyright 2010 Stanford Visualization Group, Mike Bostock, BSD license. */
- /*! a0038e8154103a8590ba51222ffe7bbdb5119632 */
+ /*! a4e2ccae65b6453dfbca467003ea54dcbffde31e */
 /**
  * @class The built-in Array class.
  * @name Array
@@ -141,7 +141,8 @@ if (!Object.create) {
     g.prototype = proto;
     return new g();
   }
-}/**
+}
+/**
  * The top-level Protovis namespace. All public methods and fields should be
  * registered on this object. Note that core Protovis source is surrounded by an
  * anonymous function, so any other declared globals will not be visible outside
