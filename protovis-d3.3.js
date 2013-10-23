@@ -10,7 +10,8 @@
  * basis, WITHOUT WARRANTY OF ANY KIND, either express or  implied. Please refer to
  * the license for the specific language governing your rights and limitations.
  */
- /*! Copyright 2010 Stanford Visualization Group, Mike Bostock, BSD license. *//*! e114d6d427607e729c6333d467a616c98ff6aeb6 */
+ /*! Copyright 2010 Stanford Visualization Group, Mike Bostock, BSD license. */
+ /*! a0038e8154103a8590ba51222ffe7bbdb5119632 */
 /**
  * @class The built-in Array class.
  * @name Array
