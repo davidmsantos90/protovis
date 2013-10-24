@@ -253,18 +253,21 @@ pv.Scale.quantitative = function() {
       return [type(min)];
     }
 
+    var roundInside = pv.get(options, 'roundInside', true);
+
     /* Special case: dates. */
     if (type == newDate) {
       /* Floor the date d given the precision p. */
       function floor(d, p) {
-        switch (p) {
-          case 31536e6: d.setMonth(0);
-          case 2592e6: d.setDate(1);
-          case 6048e5: if (p == 6048e5) d.setDate(d.getDate() - d.getDay());
-          case 864e5: d.setHours(0);
-          case 36e5: d.setMinutes(0);
-          case 6e4: d.setSeconds(0);
-          case 1e3: d.setMilliseconds(0);
+        switch(p) {
+          // NOTE: fall-through!
+          case 31536e6: d.setMonth(0);        // year
+          case 2592e6:  d.setDate(1);         // 30 days
+          case 6048e5:  if(p == 6048e5) { d.setDate(d.getDate() - d.getDay()); } // 7-days dayOfMonth{1,31} - dayOfWeek{0, 6}{Sunday,Saturday}
+          case 864e5:   d.setHours(0);        // day
+          case 36e5:    d.setMinutes(0);      // hour
+          case 6e4:     d.setSeconds(0);      // minute
+          case 1e3:     d.setMilliseconds(0); // second
         }
       }
 
@@ -343,7 +346,7 @@ pv.Scale.quantitative = function() {
             //  71 - 105   | 11 - 15         | 2*7 = 14 | 5 - 7 | 11 weeks, ~2.2 months
             //  35 -  70   |  5 - 10         | 1*7 =  7 |    -  |  5 weeks, ~1 month
             step = (n > 15) ? 3 : (n > 10 ? 2 : 1);
-            date.setDate(Math.floor(date.getDate() / (7 * step)) * (7 * step));
+            date.setDate(1 + Math.floor(date.getDate() / (7 * step)) * (7 * step));
             break;
           }
 
@@ -351,7 +354,7 @@ pv.Scale.quantitative = function() {
           // span > 10 days: more than 10 ticks
           case 864e5: {
             step = (n >= 30) ? 5 : ((n >= 15) ? 3 : 2);
-            date.setDate(Math.floor(date.getDate() / step) * step);
+            date.setDate(1 + Math.floor(date.getDate() / step) * step);
             break;
           }
 
@@ -393,12 +396,21 @@ pv.Scale.quantitative = function() {
         increment = function(d) { d.setSeconds(d.getSeconds() + step*dateTickPrecision/1000);};
       }
 
-
-      while (true) {
-        increment(date);
-        if (date > max) break;
-        dates.push(new Date(date));
+      if(roundInside) {
+	    while (true) {
+	      increment(date);
+	      if (date > max) break;
+	      dates.push(new Date(date));
+	    }
+      } else {
+      	max = new Date(max);
+      	increment(max);
+      	do {
+	      dates.push(new Date(date));
+	      increment(date);
+	    } while(date <= max);
       }
+      
       return reverse ? dates.reverse() : dates;
     }
 
@@ -407,7 +419,6 @@ pv.Scale.quantitative = function() {
         m = 10;
     }
 
-    var roundInside = pv.get(options, 'roundInside', true);
     var exponentMin = pv.get(options, 'numberExponentMin', -Infinity);
     var exponentMax = pv.get(options, 'numberExponentMax', +Infinity);
 
