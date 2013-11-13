@@ -282,6 +282,7 @@ pv.Scale.quantitative = function() {
         format = "%m/%Y";
         /** @ignore */ increment = function(d) { d.setMonth(d.getMonth() + step); };
       } else if (span >= nn * 6048e5) {
+        // TODO: with nn = 5, a 2 days span ends up being shown as 48 hour ticks (except some are skipped)
         precision = 6048e5;
         format = "%m/%d";
         /** @ignore */ increment = function(d) { d.setDate(d.getDate() + 7 * step); };

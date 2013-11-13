@@ -343,12 +343,14 @@ pv.Area.prototype.getNearestInstanceToMouse = function(scene, eventIndex) {
   // TODO: stop at last segment
   for(var index = eventIndex, L = scene.length; index < L; index++) {
     var shape = this.getShape(scene, index);
-    if(shape.containsPoint(p)) { return index; }
-    
-    var dist2 = shape.distance2(p).dist2;
-    if(dist2 < minDist2) {
-      minDist2 = dist2;
-      minIndex = index;
+    if(shape) {
+      if(shape.containsPoint(p)) { return index; }
+      
+      var dist2 = shape.distance2(p).dist2;
+      if(dist2 < minDist2) {
+        minDist2 = dist2;
+        minIndex = index;
+      }
     }
   }
 
