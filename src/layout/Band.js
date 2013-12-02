@@ -27,7 +27,8 @@ pv.Layout.Band = function() {
         .right (proxy("r"))
         .bottom(proxy("b"))
         .width (proxy("w"))
-        .height(proxy("h"));
+        .height(proxy("h"))
+        .antialias(proxy("antialias"));
 
     /**
      * Proxy the given property for an item of a band.
@@ -78,6 +79,21 @@ pv.Layout.Band = function() {
             switch(s.layout){
                 case "grouped": this._calcGrouped(bands, L, s);     break;
                 case "stacked": this._calcStacked(bands, L, bh, s); break;
+            }
+
+            var hZero = s.hZero || 0;
+            var isStacked = s.layout === 'stacked';
+            for(var i = 0; i < B; i++) {
+                // Have zero bars display a minimal stripe
+                var band = bands[i];
+                var hMargin2 = isStacked ? Math.max(0, band.vertiMargin)/2 : 0;
+                for(var j = 0; j < L; j++) {
+                    var item = band.items[j];
+                    if(item.zero) {
+                        item.h = hZero;
+                        item.y -= hMargin2 + hZero / 2;
+                    }
+                }
             }
 
             this._bindItemProps(bands, itemProps, orient, horizontal);
@@ -230,7 +246,8 @@ pv.Layout.Band.prototype = pv.extend(pv.Layout)
     .property("orient", String)     // x-y orientation
     .property("layout", String)     // items layout within band: "grouped", "stacked"
     .property("layers") // data
-    .property("yZero",     Number)  // The y zero base line
+    .property("yZero",  Number)  // The y zero base line
+    .property("hZero",  Number)  // The height of a zero bar.
     .property("verticalMode",   String) // The vertical mode: 'expand', null
     .property("horizontalMode", String) // The horizontal mode: 'expand', null
     .property("order",     String)  // layer order; "reverse" or null
@@ -251,6 +268,7 @@ pv.Layout.Band.prototype.defaults = new pv.Layout.Band()
     .orient("bottom-left")
     .layout("grouped")
     .yZero(0)
+    .hZero(1.5)
     .layers([[]])
     ;
 
@@ -306,6 +324,7 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
      * pseudo-mark that is a *grandchild* of this layout.
      */
     var stack = pv.Mark.stack,
+        hZero = scene.hZero,
         o = {parent: {parent: this}};
 
     stack.unshift(null);
@@ -341,11 +360,13 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
             }
 
             var ih = this.$ih.apply(o, stack); // may be null
+            var h = ih != null ? Math.abs(ih) : ih;
             band.items[l] = {
                 y: (scene.yZero || 0),
                 x: 0,
                 w: this.$iw.apply(o, stack),
-                h: ih != null ? Math.abs(ih) : ih,
+                h: h,
+                zero: h != null && h <= hZero,
                 dir: ih < 0 ? -1 : 1 // null -> 1
             };
         }
@@ -445,7 +466,7 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
             }
 
             /* Scale hs */
-            if(nonNullCount){
+            if (nonNullCount){
                 if (hSum) {
                     var hScale = bh / hSum;
                     for (var l = 0; l < L; l++) {
@@ -454,7 +475,12 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
                             items[l].h = h * hScale;
                         }
                     }
-                } else {
+                } else if (hSum == 0) {
+                    // 0/0 ambiguous, just defer to standard bar behavior for now
+                    for (var l = 0; l < L; l++) {
+                        items[l].h = 0;
+                    }
+                } else { //TODO: still relevant after ==0?
                     var hAvg = bh / nonNullCount;
                     for (var l = 0; l < L; l++) {
                         var h = items[l].h;
@@ -570,4 +596,10 @@ pv.Layout.Band.prototype._bindItemProps = function(bands, itemProps, orient, hor
     itemProps[py] = function(b, l) {return bands[b].items[l].y;};
     itemProps[pw] = function(b, l) {return bands[b].items[l].w;};
     itemProps[ph] = function(b, l) {return bands[b].items[l].h || 0;}; // null -> 0
+
+    // Activating antialias for "zero" bars helps
+    // bars not looking negative when positive, and the like.
+    itemProps.antialias = function(b, l) {
+        return bands[b].items[l].zero;
+    };
 };
