@@ -1040,6 +1040,7 @@ pv.Mark.prototype.renderCore = function() {
         });
     } catch(e) {
       if(stack.length > S) { stack.length = S; }
+      throw e;
     }
 };
 

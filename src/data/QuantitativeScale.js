@@ -411,7 +411,7 @@ pv.Scale.quantitative = function() {
 	      increment(date);
 	    } while(date <= max);
       }
-      
+
       return reverse ? dates.reverse() : dates;
     }
 
@@ -426,10 +426,10 @@ pv.Scale.quantitative = function() {
     //var step = pv.logFloor(span / m, 10);
     var exponent = Math.floor(pv.log(span / m, 10));
     var overflow = false;
-    if(exponent > exponentMax){
+    if(exponent > exponentMax) {
         exponent = exponentMax;
         overflow = true;
-    } else if(exponent < exponentMin){
+    } else if(exponent < exponentMin) {
         exponent = exponentMin;
         overflow = true;
     }
@@ -438,12 +438,15 @@ pv.Scale.quantitative = function() {
     var mObtained = (span / step);
 
     var err = m / mObtained;
-    if (err <= .15 && exponent < exponentMax - 1) {
+    if(err <= .15 && exponent < exponentMax - 1) {
         step *= 10;
-    } else if (err <= .35) {
+        mObtained /= 10;
+    } else if(err <= .35) {
         step *= 5;
-    } else if (err <= .75) {
+        mObtained /= 5;
+    } else if(err <= .75) {
         step *= 2;
+        mObtained /= 2;
     }
 
     // Account for floating point precision errors
@@ -456,10 +459,14 @@ pv.Scale.quantitative = function() {
 
     tickFormat = pv.Format.number().fractionDigits(usedNumberExponent);
 
-    var ticks = pv.range(start, end + step, step);
-    if(reverse){
-        ticks.reverse();
+    // Handle special case
+    if(m === 2 && mObtained >= 2) {
+      // Take only the first and last
+      step = end - start;
     }
+
+    var ticks = pv.range(start, end + step, step);
+    if(reverse) { ticks.reverse(); }
 
     ticks.roundInside = roundInside;
     ticks.step        = step;
