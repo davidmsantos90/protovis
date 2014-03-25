@@ -1433,8 +1433,27 @@ pv.Mark.prototype.buildInstance = function(s) {
     return v;
   };
 
+  pv.Mark.prototype.evalInPropertyContext = function(f, protoProp) {
+    var protoPropBefore = _protoProp;
+
+    _protoProp = protoProp;
+
+    var v = f.apply(this, _stack);
+
+    _protoProp = protoPropBefore;
+    return v;
+  };
+
   pv.Mark.prototype.delegate = function(dv, tag) {
     if(_protoProp && (!tag || _protoProp.tag === tag)) {
+      var value = this.evalProperty(_protoProp);
+      if(value !== undefined) { return value; }
+    }
+    return dv;
+  };
+
+  pv.Mark.prototype.delegateExcept = function(dv, notTag) {
+    if(_protoProp && (!notTag || _protoProp.tag !== notTag)) {
       var value = this.evalProperty(_protoProp);
       if(value !== undefined) { return value; }
     }
