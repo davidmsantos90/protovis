@@ -308,6 +308,9 @@
 
       var list, start;
       root.$transition = that;
+      
+      // Increment the (root) render id.
+      root._renderId++;
 
       // TODO: clearing the scene like this forces total re-build
       var before = mark.scene;
