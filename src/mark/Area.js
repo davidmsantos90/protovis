@@ -324,7 +324,9 @@ pv.Area.prototype.getEventHandler = function(type, scene, index, ev) {
         this._mouseOverIndex = mouseIndex;
 
         // MouseMove first, MouseOver next
-        return [[handler, handlerMouseOver], scene, mouseIndex, ev];  
+        // Each can be an array or not. Concat handles the nuances for us.
+        var handlers = [].concat(handler, handlerMouseOver);
+        return [handlers, scene, mouseIndex, ev];
       }
     }
     return [handler, scene, mouseIndex, ev];
