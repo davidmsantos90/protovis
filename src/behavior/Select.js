@@ -66,6 +66,8 @@
         dragstart: function(ev){
             var drag = ev.drag;
             drag.type = 'select';
+            drag.dxmin = 0;
+            drag.dymin = 0;
             
             var r  = drag.d;
             r.drag = drag;
@@ -89,16 +91,12 @@
             var m = drag.m;
             if(kx){
                 r.x = shared.bound(m.x, 'x');
-                if(!preserveLength){
-                    r.dx = 0;
-                }
+                if(!preserveLength) r.dx = Math.max(0, drag.dxmin);
             }
             
             if(ky){
                 r.y = shared.bound(m.y, 'y');
-                if(!preserveLength){
-                    r.dy = 0;
-                }
+                if(!preserveLength) r.dy = Math.max(0, drag.dymin);
             }
             
             pv.Mark.dispatch('selectstart', drag.scene, drag.index, ev);
@@ -128,7 +126,7 @@
                 if(!preserveLength){
                     var ex = Math.max(m.x,  m1.x);
                     ex = shared.bound(ex, 'x');
-                    r.dx = ex - bx;
+                    r.dx = Math.max(0, drag.dxmin, ex - bx);
                 }
             }
             
@@ -140,7 +138,7 @@
                 if(!preserveLength){
                     var ey = Math.max(m.y,  m1.y);
                     ey = shared.bound(ey, 'y');
-                    r.dy = ey - by;
+                    r.dy = Math.max(0, drag.dymin, ey - by);
                 }
             }
             
