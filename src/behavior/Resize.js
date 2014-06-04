@@ -4,7 +4,7 @@
  * @class Implements interactive resizing of a selection starting with mousedown
  * events. Register this behavior on selection handles that should be resizeable
  * by the user, such for brushing and linking. This behavior can be used in
- * tandom with {@link pv.Behavior.select} and {@link pv.Behavior.drag} to allow
+ * tandem with {@link pv.Behavior.select} and {@link pv.Behavior.drag} to allow
  * the selected region to be selected and dragged interactively.
  *
  * <p>After the initial mousedown event is triggered, this behavior listens for
@@ -124,8 +124,8 @@ pv.Behavior.resize = function(side) {
                 var by = Math.min(m1.y, m.y );
                 var ey = Math.max(m.y,  m1.y);
                 
-                bx = shared.bound(by, 'y');
-                ex = shared.bound(ey, 'y');
+                by = shared.bound(by, 'y');
+                ey = shared.bound(ey, 'y');
                 
                 r.y  = by;
                 r.dy = ey - by;
@@ -141,7 +141,7 @@ pv.Behavior.resize = function(side) {
         dragend: function(ev){
             var drag = ev.drag;
             
-            max = null;
+            drag.max = null;
             try {
                 pv.Mark.dispatch('resizeend', drag.scene, drag.index, ev);
             } finally {
