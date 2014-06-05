@@ -156,6 +156,7 @@ pv.Line.prototype.bind = pv.Area.prototype.bind;
 pv.Line.prototype.buildInstance = pv.Area.prototype.buildInstance;
 pv.Line.prototype.getEventHandler = pv.Area.prototype.getEventHandler;
 pv.Line.prototype.getNearestInstanceToMouse = pv.Area.prototype.getNearestInstanceToMouse;
+pv.Line.prototype.filterMouseMove = pv.Area.prototype.filterMouseMove;
 
 /**
  * Constructs a new line anchor with default properties. Lines support five
