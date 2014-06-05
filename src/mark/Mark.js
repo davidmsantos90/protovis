@@ -1554,7 +1554,7 @@ pv.Mark.prototype.mouse = function() {
   var n = this.root.canvas();
 
   // Calling #mouse from outside a mouse event (like during load, to follow mouse position)
-  // may result in there being no pv.event  or the event not having pageX/Y defined.
+  // may result in there being no pv.event or the event not having pageX/Y defined.
   var ev = pv.event;
   var x  = (ev && ev.pageX) || 0;
   var y  = (ev && ev.pageY) || 0;
