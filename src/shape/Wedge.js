@@ -8,6 +8,7 @@
     var cos   = Math.cos;
     var sin   = Math.sin;
     var sqrt  = Math.sqrt;
+    var pi2   = Math.PI*2;
     var atan2Norm = pv.Shape.atan2Norm;
     var normalizeAngle = pv.Shape.normalizeAngle;
     
@@ -45,8 +46,11 @@
         var dy = p.y - this.y ;
         var r  = sqrt(dx*dx + dy*dy);
         if(r >= this.innerRadius &&  r <= this.outerRadius){
-            var a  = atan2Norm(dy, dx); // between -pi and pi -> 0 - 2*pi
-            return this.startAngle <= a && a <= this.endAngle;
+            var a = atan2Norm(dy, dx); // between -pi and pi -> 0 - 2*pi
+            // ex:  45º -> 270º       ?  a = 50º
+            // ex: 300º -> 420º (60º) ?  a = 50º (410º)
+            return (this.startAngle <= a && a <= this.endAngle) ||
+                   (a+=pi2, (this.startAngle <= a && a <= this.endAngle));
         }
         
         return false;
