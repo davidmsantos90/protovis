@@ -24,14 +24,14 @@ pv.Line = function() {
 
 pv.Line.prototype = pv.extend(pv.Mark)
     .property("lineWidth", Number)
-    .property("lineJoin",  String)
+    .property("lineJoin",  pv.stringLowerCase)
     .property("strokeMiterLimit", Number)
-    .property("lineCap",   String)
+    .property("lineCap",   pv.stringLowerCase)
     .property("strokeStyle", pv.fillStyle)
-    .property("strokeDasharray", String)
+    .property("strokeDasharray", pv.stringLowerCase)
     .property("fillStyle", pv.fillStyle)
     .property("segmented", pv.Area.castSegmented)
-    .property("interpolate", String)
+    .property("interpolate", pv.stringLowerCase)
     .property("eccentricity", Number)
     .property("tension", Number);
 

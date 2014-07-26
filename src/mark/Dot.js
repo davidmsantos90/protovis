@@ -19,16 +19,16 @@ pv.Dot = function() {
 };
 
 pv.Dot.prototype = pv.extend(pv.Mark)
-    .property("shape", String)
-    .property("shapeAngle", Number)
+    .property("shape",       pv.stringLowerCase)
+    .property("shapeAngle",  Number)
     .property("shapeRadius", Number)
-    .property("shapeSize", Number)
+    .property("shapeSize",   Number)
     .property("aspectRatio", Number)
-    .property("lineWidth", Number)
-    .property("strokeStyle", pv.fillStyle)
-    .property("lineCap",   String)
-    .property("strokeDasharray", String)
-    .property("fillStyle", pv.fillStyle);
+    .property("lineWidth",   Number)
+    .property("strokeStyle",     pv.fillStyle)
+    .property("lineCap",         pv.stringLowerCase)
+    .property("strokeDasharray", pv.stringLowerCase)
+    .property("fillStyle",       pv.fillStyle);
 
 pv.Dot.prototype.type = "dot";
 

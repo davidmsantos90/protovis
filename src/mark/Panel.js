@@ -57,7 +57,7 @@ pv.Panel = function() {
 
 pv.Panel.prototype = pv.extend(pv.Bar)
     .property("transform")
-    .property("overflow", String)
+    .property("overflow", pv.stringLowerCase)
     .property("canvas", function(c) {
         // If not a string, assume that c is the passed-in element, or unspecified (when nully).
         return (typeof c === "string") ? document.getElementById(c) : c;

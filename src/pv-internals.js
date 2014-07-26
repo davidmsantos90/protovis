@@ -24,7 +24,7 @@ pv.extendType = function(g, f) {
   var sub = g.prototype = pv.extend(f);
 
   // Fix the constructor
-  // Note this may make the constructor property to be enumerable.
+  // Note that this makes the constructor property become enumerable.
   sub.constructor = g;
 
   return g;
@@ -335,6 +335,10 @@ pv.id = function() { return _id++; };
 pv.functor = function(v) {
   return typeof v === "function" ? v : function() { return v; };
 };
+
+pv.stringLowerCase = function(s) {
+  return String(s).toLowerCase();
+}
 
 /**
  * Gets the value of an existing, own or inherited, and not "nully", property of an object,

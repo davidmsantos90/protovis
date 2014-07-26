@@ -32,11 +32,11 @@ pv.Label.prototype = pv.extend(pv.Mark)
     .property("font", String)
     .property("textAngle", Number)
     .property("textStyle", pv.color)
-    .property("textAlign", String)
-    .property("textBaseline", String)
+    .property("textAlign",    pv.stringLowerCase)
+    .property("textBaseline", pv.stringLowerCase)
     .property("textMargin", Number)
     .property("textDecoration", String)
-    .property("textShadow", String);
+    .property("textShadow",     String);
 
 pv.Label.prototype.type = "label";
 

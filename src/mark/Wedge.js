@@ -30,10 +30,10 @@ pv.Wedge.prototype = pv.extend(pv.Mark)
     .property("outerRadius", Number)
     .property("lineWidth", Number)
     .property("strokeStyle", pv.fillStyle)
-    .property("lineJoin",  String)
+    .property("lineJoin",  pv.stringLowerCase)
     .property("strokeMiterLimit", Number)
-    .property("lineCap",   String)
-    .property("strokeDasharray", String)
+    .property("lineCap",   pv.stringLowerCase)
+    .property("strokeDasharray", pv.stringLowerCase)
     .property("fillStyle", pv.fillStyle);
 
 pv.Wedge.prototype.type = "wedge";

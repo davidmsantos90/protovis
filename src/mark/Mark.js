@@ -387,7 +387,7 @@ pv.Mark.prototype
     .property("title", String)
     .property("reverse", Boolean)
     .property("antialias", Boolean)
-    .property("events", String)
+    .property("events", pv.stringLowerCase)
     .property("id", String);
 
 /**
