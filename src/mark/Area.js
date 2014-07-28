@@ -26,6 +26,8 @@ pv.Area = function() {
 pv.Area.castSegmented = function(v) {
   if(!v) { return ''; }
   
+  v = v.toLowerCase();
+
   switch(v) {
     case 'smart':
     case 'full': break;
@@ -40,14 +42,14 @@ pv.Area.prototype = pv.extend(pv.Mark)
     .property("width", Number)
     .property("height", Number)
     .property("lineWidth", Number)
-    .property("lineJoin",   String)
+    .property("lineJoin",        pv.stringLowerCase)
     .property("strokeMiterLimit", Number)
-    .property("lineCap",   String)
-    .property("strokeDasharray", String)
+    .property("lineCap",         pv.stringLowerCase)
+    .property("strokeDasharray", pv.stringLowerCase)
     .property("strokeStyle", pv.fillStyle)
     .property("fillStyle", pv.fillStyle)
     .property("segmented", pv.Area.castSegmented)
-    .property("interpolate", String)
+    .property("interpolate", pv.stringLowerCase)
     .property("tension", Number);
 
 pv.Area.prototype.type = "area";

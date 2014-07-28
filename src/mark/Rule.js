@@ -51,8 +51,8 @@ pv.Rule.prototype = pv.extend(pv.Mark)
     .property("height", Number)
     .property("lineWidth", Number)
     .property("strokeStyle", pv.fillStyle)
-    .property("lineCap",   String)
-    .property("strokeDasharray", String);
+    .property("lineCap",     pv.stringLowerCase)
+    .property("strokeDasharray", pv.stringLowerCase);
 
 pv.Rule.prototype.type = "rule";
 

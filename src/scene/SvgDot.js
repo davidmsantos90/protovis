@@ -35,8 +35,9 @@ pv.SvgScene.dot = function(scenes) {
     var ar = s.aspectRatio;
     var sa = s.shapeAngle;
     var t  = null; // must reset to null, in every iteration. Declaring the var is not sufficient.
-    if(shape === 'circle') {
+    if(shape === 'circle' || !this.hasSymbol(shape)) {
       if(ar === 1) {
+        shape = 'circle';
         svg.cx = s.left;
         svg.cy = s.top;
         svg.r  = s.shapeRadius;
@@ -93,14 +94,17 @@ pv.SvgScene.dot = function(scenes) {
   // Only path-generating shapes are registered this way
 
   S.registerSymbol = function(symName, funRenderer) {
-    _renderersBySymName[symName] = funRenderer;
+    _renderersBySymName[symName.toLowerCase()] = funRenderer;
     return S;
   };
 
+  // Lower case conversion not made here, for performance reasons.
+  // It's made in mark property code instead.
   S.renderSymbol = function(symName, instance, rx, ry) {
     return _renderersBySymName[symName].call(S, instance, symName, rx, ry);
   };
 
+  // idem
   S.hasSymbol = function(symName) {
     return _renderersBySymName.hasOwnProperty(symName);
   };

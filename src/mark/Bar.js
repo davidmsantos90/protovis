@@ -33,8 +33,8 @@ pv.Bar.prototype = pv.extend(pv.Mark)
     .property("lineWidth", Number)
     .property("strokeStyle", pv.fillStyle)
     .property("fillStyle", pv.fillStyle)
-    .property("lineCap",   String)
-    .property("strokeDasharray", String);
+    .property("lineCap",   pv.stringLowerCase)
+    .property("strokeDasharray", pv.stringLowerCase);
 
 pv.Bar.prototype.type = "bar";
 
