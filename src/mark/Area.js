@@ -24,9 +24,11 @@ pv.Area = function() {
 };
 
 pv.Area.castSegmented = function(v) {
+  // false goes here
   if(!v) { return ''; }
   
-  v = v.toLowerCase();
+  // true goes here
+  v = String(v).toLowerCase();
 
   switch(v) {
     case 'smart':
