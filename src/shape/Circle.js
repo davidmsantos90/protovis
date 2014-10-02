@@ -104,7 +104,7 @@
         return at.minus(this.x, this.y).norm();
     };
     
-    Circle.prototype.containsPoint = function(p){
+    Circle.prototype._containsPointCore = function(p){
         var dx = p.x - this.x,
             dy = p.y - this.y,
             r  = this.radius;
@@ -115,9 +115,9 @@
     // Distance (squared) to the border of the circle (inside or not)
     // //or to the center of the circle, whichever is smaller
     Circle.prototype.distance2 = function(p, k){
-        var dx = p.x - this.x,
-            dy = p.y - this.y,
-            r  = this.radius;
+        var r = this.radius;
+            //dx = p.x - this.x,
+            //dy = p.y - this.y;
         
         //var dCenter = dist2(p, this, k);
         
@@ -129,4 +129,8 @@
         return /*dCenter.cost < dBorder.cost ? dCenter : */dBorder; 
     };
 
+    Circle.prototype._calcBBox = function(){
+        var r = this.radius, r_2 = 2*r;
+        return new pv.Shape.Rect(this.x - r, this.y - r, r_2, r_2);
+    };
 }());

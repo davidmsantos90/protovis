@@ -35,7 +35,7 @@
  * <p>This behavior only listens to mousemove events on the assigned panel,
  * which is typically the root panel. The behavior will search recursively for
  * descendant marks to point. If the mouse leaves the assigned panel, the
- * behavior no longer receives mousemove events; an unpoint psuedo-event is
+ * behavior no longer receives mousemove events; an unpoint pseudo-event is
  * automatically dispatched to unpoint any pointed mark. Marks may be re-pointed
  * when the mouse reenters the panel.
  *
@@ -51,10 +51,11 @@
  *
  * @param {object|number} [keyArgs] the fuzzy radius threshold in pixels, or an 
  * optional keyword arguments object.
- * @param {boolean} [keyArgs.radius=33] the fuzzy radius threshold in pixels
- * @param {boolean} [keyArgs.radiusIn=33] the fuzzy radius threshold in pixels 
- *   that wins over a pointer that is <i>inside</i> an element's area.
+ * @param {number} [keyArgs.radius=30] the fuzzy radius threshold in pixels.
+ * @param {number} [keyArgs.radiusHyst=0] the minimum distance in pixels that
+ *  the next point must be from the previous one so that it can be chosen.
  * @param {boolean} [keyArgs.stealClick=false] whether to steal any click event when a point element exists
+ * @param {boolean} [keyArgs.painted=false] whether to only consider marks with a non-transparent fill or stroke style.
  * @param {string} [keyArgs.collapse] whether to collapse any of the position components when
  *   determining the fuzzy distance.
  * @see <a href="http://www.tovigrossman.com/papers/chi2005bubblecursor.pdf"
@@ -62,210 +63,292 @@
  * Cursor's Activation Area"</a> by T. Grossman &amp; R. Balakrishnan, CHI 2005.
  */
 pv.Behavior.point = function(keyArgs) {
-    var unpoint, // the current pointer target
+    if(typeof keyArgs !== 'object') keyArgs = {radius: keyArgs};
+
+    var DEBUG = 0,
+        unpoint, // the current pointer target
         collapse = null, // dimensions to collapse
-        stealClick = !!pv.get(keyArgs, 'stealClick', false),
+        painted = !!pv.get(keyArgs, 'painted', false),
+        stealClick = !!pv.get(keyArgs, 'stealClick',  false),
         k = {
             x: 1, // x-dimension cost scale
             y: 1  // y-dimension cost scale
         },
-        pointingPanel = null, 
-        
-        r2 = (function(r) {
-                if(r != null) {
-                    if(typeof r === 'object')      r = pv.get(r, 'radius');
-                    else if(typeof r === 'string') r = +r;
-                    else if(typeof r !== 'number') r = null;
-                }
-                return (r == null || isNaN(r) || r <= 0) 
-                    ? 900
-                    : (isFinite(r) ? (r * r) : r);
-            }(arguments.length ? keyArgs : null)),
+        pointingPanel = null,
 
-        // Minimum distance for a non-inside be chosen over an inside.
-        r2Inside = (function() {
-                var r = pv.get(keyArgs, 'radiusIn');
-                if(typeof r === 'string')      r = +r;
-                else if(typeof r !== 'number') r = null;
+        dist2Max = (function() {
+            var r = pv.parseNumNonNeg(pv.get(keyArgs, 'radius'), 30);
+            return r * r;
+        }()),
 
-                return (r == null || isNaN(r) || r <= 0) 
-                    ? (isFinite(r2) ? (r2 / 8) : 1)
-                    : (isFinite(r)  ? (r * r ) : r);
-            }());
+        finiteDist2Max = isFinite(dist2Max),
+
+        radiusHyst2 = (function() {
+            var r = pv.parseNumNonNeg(pv.get(keyArgs, 'radiusHyst'), 0);
+            if(!isFinite(r)) r = 4;
+            return r * r;
+        } ());
 
     /** @private 
      * Search for the mark, 
      * that has a point handler and 
      * that is "closest" to the mouse. 
      */
-    function searchSceneChildren(scene, result) {
-        if(scene.visible){
-            for(var i = scene.children.length - 1 ; i >= 0; i--) {
-                searchScenes(scene.children[i], result);
-            }
-        }
+    function searchSceneChildren(scene, curr) {
+        if(scene.visible)
+            for(var i = scene.children.length - 1 ; i >= 0; i--)
+                if(searchScenes(scene.children[i], curr))
+                    return true; // stop
     }
   
-    function searchScenes(scenes, result){
+    function searchScenes(scenes, curr) {
         var mark = scenes.mark;
-        if (mark.type === 'panel') {
+        if(mark.type === 'panel') {
             mark.scene = scenes;
-            try{
-                for (var j = scenes.length - 1 ; j >= 0; j--) {
+            try {
+                for(var j = scenes.length - 1 ; j >= 0; j--) {
                     mark.index = j;
-                    searchSceneChildren(scenes[j], result);
+                    if(searchSceneChildren(scenes[j], curr))
+                        return true; // stop
                 }
             } finally {
                 delete mark.scene;
                 delete mark.index;
             }
-        } else if (mark.$handlers.point) {
-            var mouse = mark.mouse();
-            for (var j = scenes.length - 1 ; j >= 0; j--) {
-                if(isSceneVisible(scenes, j)){
-                    evalScene(scenes, j, mouse, result);
+        } else if(mark.$handlers.point) {
+            var mouse = mark.mouse(),
+                visibility,
+                markRMax = mark._pointingRadiusMax,
+                markCostMax = markRMax * markRMax;
+
+            for(var j = scenes.length - 1 ; j >= 0; j--)
+                if((visibility = sceneVisibility(scenes, j)))
+                    if(evalScene(scenes, j, mouse, curr, visibility, markCostMax))
+                        return true; // stop
+        }
+    }
+  
+    function sceneVisibility(scenes, index) {
+        var s = scenes[index];
+        if(!s.visible) return 0;
+        if(!painted  ) return 1;
+
+        // Ignores labels' textStyle.
+
+        var ps = scenes.mark.properties;
+        if(!ps.fillStyle && !ps.strokeStyle) return 1;
+
+        var o1 = s.fillStyle   ? s.fillStyle.opacity   : 0,
+            o2 = s.strokeStyle ? s.strokeStyle.opacity : 0,
+            o  = Math.max(o1, o2);
+        return o < 0.02 ? 0 :
+               o > 0.98 ? 1 :
+               0.5;
+    }
+  
+    function evalScene(scenes, index, mouse, curr, visibility, markCostMax) {
+        var shape = scenes.mark.getShape(scenes, index),
+
+            hasArea = shape.hasArea(),
+
+            // 1) "inside" with collapse x/y taken into account (note argument `k` to containsPoint).
+            // 1.1) !insideCollapsed => !insideStrict
+            // 2) When not collapsed, this is equal to the strict "inside".
+            // --
+            // When !hasArea Inside <=means=> Coincident.
+            // insideStrict > insideCollapsed > outside
+            inside = (!shape.containsPoint(mouse, k)            ? 0 : // outside
+                      (!collapse || shape.containsPoint(mouse)) ? 2 : // insideStrict
+                      1), // insideCollapsed
+
+            // markRadius2Max is only applicable when not strictly inside (inside < 2).
+            applyMarkCostMax = isFinite(markCostMax) && inside < 2,
+
+            cand;
+
+        function makeChoice() {
+            // Early exit, when no `cand.cost` could ever satisfy markCostMax:
+            // markCostMax === 0 => insideStrict !
+            if(applyMarkCostMax && markCostMax <= 0) return -1;
+
+            // cand = {cost: 123, dist2: 123}
+            cand = shape.distance2(mouse, k);
+
+            if(applyMarkCostMax          && pv.floatLess(markCostMax, cand.cost )) return -2;
+            if(finiteDist2Max && !inside && pv.floatLess(dist2Max,    cand.dist2)) return -3;
+
+            // "Inside" comparison is only used on equal `hasArea` situations.
+            // Otherwise, the one with no-area and insideCollapsed
+            //  would always loose with the one with area and insideStrict.
+            if(hasArea === curr.hasArea) {
+                if(inside < curr.inside) return -4;
+                if(inside > curr.inside) return +1;
+                // equal inside
+            } else {
+                if(collapse) {
+                    // A weaker version of the above rule that considers insideStrict = insideCollapsed.
+                    // When collapsed, shapes that don't have area,
+                    //  are transformed-into/seen-as shapes that do (if of at least two points).
+                    // So, they're on a somewhat fairer competition with shapes that naturally have area.
+
+                    // When != weakInsides:
+                    if(!inside &&  curr.inside) return -5;
+                    if( inside && !curr.inside) return +2;
+
+                    // both have inside === 0
+                    // or
+                    // both have inside  >  0 (need not be equal)
+                }
+
+                if(!hasArea && curr.inside === 2) {
+                    // 1) When both inside strict,
+                    //  prefer one with no area over one with area.
+                    if(inside === 2) return +3;
+
+                    // 2) A non-area, outside, can only steal an insideStrict if
+                    // very, very close to it.
+                    if(inside === 0 && pv.floatLess(3, cand.cost)) return -6;
+                } else if(hasArea && inside === 2) {
+                    // Converse of 1)
+                    if(curr.inside === 2) return -7;
+
+                    // Converse of 2)
+                    if(curr.inside === 0 && pv.floatLess(3, curr.cost)) return +4;
                 }
             }
-        }
-    }
-  
-    function isSceneVisible(scenes, index){
-        var s = scenes[index];
-        if(!s.visible){
-            return false;
-        }
-      
-        var ps = scenes.mark.properties;
-        if(!ps.fillStyle && !ps.strokeStyle){
-            return true;
-        }
-      
-        if(ps.fillStyle  && s.fillStyle.opacity >= 0.01){
-            return true;
-        }
-      
-        if(ps.strokeStyle && s.strokeStyle.opacity >= 0.01){
-            return true;
-        }
-      
-        return false;
-    }
-  
-    function evalScene(scenes, index, mouse, result){
-        var s = scenes[index];
-      
-        var shape = scenes.mark.getShape(scenes, index);
-      
-        // r = {cost: 123, dist2: 123}
-        var r = shape.distance2(mouse, k);
-        var inside = shape.containsPoint(mouse);
-        var chosen = false;
-      
-        if(result.inside && !inside){
-            // The one inside has an "any distance pass".
-            
-            // If the one not inside also has "area",
-            // then ignore it. Must be inside to compete with an inside one.
-            // The one not inside, must be at the minimum distance (r2)
-            // or there is no point in choosing it...
-            if(shape.hasArea() || r.dist2 > r2Inside){
-                // Keep existing
-                return;
+
+            // "Collapsed aware" distance.
+            // Note on the exclusion of the (collapse && inside) case.
+            // * When collapse && inside, then both insides are > 0 (see above ifs to conclude it).
+            // * In this situation, using dist2 would be misleading,
+            //   as it is the distance to the closest point and
+            //   not to the closest point on the collapsed direction.
+            // * To choose between two equal, non-zero, `inside` values,
+            //   what is needed is the distance under the ignored/collapsed dimension;
+            //   because the `cost` contains both dimensions, it is used instead.
+            // * So this block is skipped and the following run.
+            // * An example of a case where this reveals itself is of
+            //   an area whose top edge is diagonal and of
+            //   a bar (whose top edge is straight...).
+            //   The area's top edge is above the bar's top edge.
+            //   When collapse=y,
+            //   and the mouse is above the area's top edge,
+            //   because the barTopEdge.dist2 = 0 (its an horizontal line)
+            //   and the areaTopEdge.dist2 > 0 (it's a diagonal line),
+            //   the bar is always chosen, even though the area's top edge is
+            //   closer to the mouse.
+
+            if(!(collapse && inside)) {
+                if(pv.floatLess(curr.dist2, cand.dist2)) return -8;
+                if(pv.floatLess(cand.dist2, curr.dist2)) return +5;
             }
-        } else if(inside && !result.inside){
-            // The converse
-            if(result.distance <= r2Inside && !result.shape.hasArea()){
-                // Keep existing
-                return;
-            }
-            
-            // Always prefer an inside one
-            chosen = true;
+
+            if(collapse && pv.floatLess(cand.cost, curr.cost)) return +6;
+            return -9;
         }
-      
-        if (chosen || r.cost < result.cost) {
-            result.inside   = inside;
-            result.distance = r.dist2;
-            result.cost     = r.cost;
-            result.scenes    = scenes;
-            result.index    = index;
-            result.shape    = shape;
+
+        var choice = makeChoice();
+
+        if(DEBUG) (function() {
+            if(choice < -3 || choice > 0) {
+                var pointMark = scenes && scenes.mark;
+                console.log(
+                        "POINT " + (choice > 0 ? "choose" : "skip") + " (" + choice + ") " +
+                        (pointMark ? (pointMark.type + " " + index) : 'none') +
+                        " in=" + inside +
+                        " d2=" + (cand && cand.dist2) +
+                        " cost=" + (cand && cand.cost ) +
+                        " opaq=" + (visibility === 1));
+            }
+        }());
+
+        if(choice > 0) {
+            curr.hasArea = hasArea;
+            curr.inside  = inside;
+            curr.dist2   = cand.dist2;
+            curr.cost    = cand.cost;
+            curr.scenes  = scenes;
+            curr.index   = index;
+            curr.shape   = shape;
             
-//            logChoice(result);
+            // Be satisfied with the first insideStrict and opaque (visibility === 1) curr.
+            // Cannot see through.
+            // Hides anything below/after.
+            if(hasArea && inside === 2 && (visibility === 1)) return true;
         }
     }
-  
-//    function logChoice(point){
-//        var pointMark = point.scenes && point.scenes.mark;
-//        console.log(
-//            "POINT   choosing point mark=" + 
-//            (pointMark ? (pointMark.type + " " + point.index) : 'none') + 
-//            " inside=" + point.inside + 
-//            " dist2="  + point.distance + 
-//            " cost="   + point.cost);
-//    }
-    
-    /** @private */
-    var counter = 0;
-    
-    function mousemove(e) {
-        var myid = counter++; 
-        //console.log("POINT MOUSE MOVE BEG " + myid);
-//        
-//       try{
-            var point = {cost: Infinity, inside: false};
-        
+
+    function mousemove() {
+        var e = pv.event;
+
+        if(DEBUG) console.log("POINT MOUSE MOVE BEG");
+        try {
+            var point = {
+                cost:    Infinity,
+                dist2:   Infinity,
+                inside:  0,
+                hasArea: false,
+
+                // For the radiusHyst2 test below.
+                x: e.pageX || 0,
+                y: e.pageY || 0
+            };
+
+            // Simulate a bit of hysteresis, by not reacting within a 3 px radius
+            // from the last point change.
+            // This stabilizes the experience a bit, by preventing alternation
+            // between pointed scenes, near their "separation lines".
+            if(unpoint && radiusHyst2 && pv.Shape.dist2(point, unpoint).cost < radiusHyst2)
+                return;
+
             searchSceneChildren(this.scene[this.index], point);
-        
-            //logChoice(point);
-            
-            // If the closest mark is far away, clear the current target.
-            if (!point.inside && (!isFinite(point.cost) || (point.distance > r2))){
-                point = null;
-            }
-    
-            /* Unpoint the old target, if it's not the new target. */
-            if (unpoint) {
-                if (point && 
-                    (unpoint.scenes == point.scenes) && 
-                    (unpoint.index == point.index)) {
+
+            // When inside, max distance doesn't apply.
+            // Note: !isFinite(point.cost) => no point after all.
+            if(!point.inside && !isFinite(point.cost)) point = null;
+
+            // Unpoint the old target, if it's not the new target.
+            if(unpoint) {
+                if(point &&
+                   (unpoint.scenes == point.scenes) &&
+                   (unpoint.index  == point.index )) {
                     return;
                 }
-      
+
+                e.isPointSwitch = !!point;
                 pv.Mark.dispatch("unpoint", unpoint.scenes, unpoint.index, e);
             }
 
             unpoint = point;
-    
-            /* Point the new target, if there is one. */
+
+            // Point the new target, if there is one.
             if(point) {
                 pv.Mark.dispatch("point", point.scenes, point.index, e);
 
-                // Initialize panel
-                // Unpoint when the mouse leaves the pointing panel
+                // Initialize panel.
+                // Unpoint when the mouse leaves the pointing panel.
                 if(!pointingPanel && this.type === 'panel') {
-                    
+
                     pointingPanel = this;
-                    pointingPanel.event('mouseout', function(){
-                        var ev = arguments[arguments.length - 1];
-                        mouseout.call(pointingPanel.scene.$g, ev);
+                    pointingPanel.event('mouseout', function() {
+                        mouseout.call(pointingPanel.scene.$g);
                     });
-                    
-                    if(stealClick){
-                        pointingPanel.addEventInterceptor('click', eventInterceptor);
-                    }
+
+                    if(stealClick) pointingPanel.addEventInterceptor('click', eventInterceptor);
                 } else {
                     pv.listen(this.root.canvas(), 'mouseout', mouseout);
                 }
             }
-//        } finally{
-//            //console.log("POINT MOUSE MOVE END " + myid);
-//        }
+
+        } finally {
+            if(DEBUG) console.log("POINT MOUSE MOVE END");
+        }
     }
 
     /** @private */
-    function mouseout(e) {
-        if (unpoint && !pv.ancestor(this, e.relatedTarget)) {
+    function mouseout() {
+        var e = pv.event;
+        if(unpoint && !pv.ancestor(this, e.relatedTarget)) {
             pv.Mark.dispatch("unpoint", unpoint.scenes, unpoint.index, e);
             unpoint = null;
         }
@@ -305,19 +388,19 @@ pv.Behavior.point = function(keyArgs) {
      * @param {string} [x] the new collapse parameter
      */
     mousemove.collapse = function(x) {
-        if (arguments.length) {
+        if(arguments.length) {
             collapse = String(x);
-            switch (collapse) {
+            switch(collapse) {
                 case "y": k.x = 1; k.y = 0; break;
                 case "x": k.x = 0; k.y = 1; break;
-                default:  k.x = 1; k.y = 1; break;
+                default:  k.x = 1; k.y = 1; collapse = null; break;
             }
             return mousemove;
         }
         return collapse;
     };
     
-    if(keyArgs && keyArgs.collapse !== null) mousemove.collapse(keyArgs.collapse);
+    if(keyArgs && keyArgs.collapse != null) mousemove.collapse(keyArgs.collapse);
     keyArgs = null;
 
     return mousemove;

@@ -63,36 +63,28 @@
         return norm;
     };
     
-    Line.prototype.intersectsRect = function(rect){
+    Line.prototype.intersectsRect = function(rect) {
         var i, L;
         var points = this.points();
         L = points.length;
-        for(i = 0 ; i < L ; i++){
-            if(points[i].intersectsRect(rect)){
-                return true;
-            }
-        }
+        for(i = 0 ; i < L ; i++) if(points[i].intersectsRect(rect)) return true;
         
         var edges = rect.edges();
         L = edges.length;
-        for(i = 0 ; i < L ; i++){
-            if(this.intersectsLine(edges[i])){
-                return true;
-            }
-        }
+        for(i = 0 ; i < L ; i++) if(this.intersectsLine(edges[i])) return true;
     
         return false;
     };
     
-    Line.prototype.containsPoint = function(p){
-        var x  = this.x ;
-        var x2 = this.x2;
-        var y  = this.y ;
-        var y2 = this.y2;
-        return x <= p.x && p.x <= x2 &&
-               ((x === x2) ? 
-                (Math.min(y, y2) <= p.y && p.y <= Math.max(y, y2)) :
-                (Math.abs((y2-y)/(x2-x) * (p.x-x) + y - p.y) <= 1e-10));
+    Line.prototype._containsPointCore = function(p) {
+        var x  = this.x,
+            x2 = this.x2,
+            y  = this.y,
+            y2 = this.y2;
+        return pv.floatBelongsClosed(x, p.x, x2) &&
+               (pv.floatEqual(x, x2) ?
+                pv.floatBelongsClosed(Math.min(y, y2), p.y, Math.max(y, y2)) :
+                pv.floatZero((y2-y)/(x2-x) * (p.x-x) + y - p.y));
     };
     
     Line.prototype.intersectsLine = function(b){
@@ -106,34 +98,26 @@
             y43 = b.y2 - b.y,
     
             denom = y43 * x21 - x43 * y21;
-    
-        if(denom === 0){
-            // Parallel lines: no intersection
-            return false;
-        }
+
+        // Parallel lines: no intersection?
+        if(pv.floatZero(denom)) return false;
     
         var y13 = a.y - b.y,
             x13 = a.x - b.x,
             numa = (x43 * y13 - y43 * x13),
             numb = (x21 * y13 - y21 * x13);
-    
-        if(denom === 0){
-            // Both 0  => coincident
-            // Only denom 0 => parallel, but not coincident
-            return (numa === 0) && (numb === 0);
-        }
-    
+
+        // Both 0  => coincident?
+        // Only denom 0 => parallel, but not coincident
+        if(pv.floatZero(denom)) return pv.floatZero(numa) && pv.floatZero(numb);
+
+        // Intersection not within segment a?
         var ua = numa / denom;
-        if(ua < 0 || ua > 1){
-            // Intersection not within segment a
-            return false;
-        }
-    
+        if(!pv.floatBelongsClosed(0, ua, 1)) return false;
+
+        // Intersection not within segment b?
         var ub = numb / denom;
-        if(ub < 0 || ub > 1){
-            // Intersection not within segment b
-            return false;
-        }
+        if(!pv.floatBelongsClosed(0, ub, 1)) return false;
     
         return true;
     };
@@ -141,27 +125,28 @@
     // Adapted from http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment (commenter Grumdrig)
     // Return minimum distance (squared) between the point p and the line segment
     // k: cost vector
-    Line.prototype.distance2 = function(p, k){
+    Line.prototype.distance2 = function(p, k) {
+        // v *--->* w
+        //
+        //   p *
+
         var v = this;
         var w = {x: this.x2, y: this.y2};
-        
-        var l2 = dist2(v, w).dist2;
-        if (l2 <= 1e-10) {
-            // v == w case
-            return dist2(p, v, k);
-        }
+
+        // v == w case ?
+        var l2 = dist2(v, w).cost;
+        if(pv.floatZero(l2)) return dist2(p, v, k);
       
-        // Consider the line extending the segment, parameterized as v + t (w - v).
-        // We find projection of point p onto the line. 
+        // Consider the line extending the segment, parameterized as: proj = v + t (w - v).
+        // We find projection of point p onto the line.
         // It falls where t = [(p-v) . (w-v)] / |w-v|^2
         var wvx = w.x - v.x;
         var wvy = w.y - v.y;
         
         var t = ((p.x - v.x) * wvx + (p.y - v.y) * wvy) / l2;
         
-        if (t < 0) { return dist2(p, v, k); } // lies before v, so return the distance between v and p
-        
-        if (t > 1) { return dist2(p, w, k); } // lies after  w, so return the distance between w and p
+        if(pv.floatLess   (t, 0)) return dist2(p, v, k); // lies before v, so return the distance between v and p
+        if(pv.floatGreater(t, 1)) return dist2(p, w, k); // lies after  w, so return the distance between w and p
         
         var proj = {x: v.x + t * wvx, y: v.y + t * wvy};
         

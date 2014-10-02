@@ -107,9 +107,9 @@
      * @returns {pv.Vector} a new vector.
      */
     pv.Vector.prototype.plus = function(x, y) {
-      return (arguments.length == 1)
+      return (arguments.length === 1)
           ? new Point(this.x + x.x, this.y + x.y)
-          : new Point(this.x + x, this.y + y);
+          : new Point(this.x + x,   this.y + y  );
     };
     
     /**
@@ -122,9 +122,9 @@
      * @returns {pv.Vector} a new vector.
      */
     pv.Vector.prototype.minus = function(x, y) {
-      return (arguments.length == 1)
+      return (arguments.length === 1)
           ? new Point(this.x - x.x, this.y - x.y)
-          : new Point(this.x - x, this.y - y);
+          : new Point(this.x - x,   this.y - y  );
     };
     
     /**
@@ -139,7 +139,7 @@
     pv.Vector.prototype.dot = function(x, y) {
       return (arguments.length == 1)
           ? this.x * x.x + this.y * x.y
-          : this.x * x + this.y * y;
+          : this.x * x   + this.y * y;
     };
     
     pv.Vector.prototype.hasArea = function(){
@@ -154,13 +154,13 @@
         return new Point(t.x + (t.k * this.x), t.y + (t.k * this.y));
     };
     
-    pv.Vector.prototype.intersectsRect = function(rect){
+    pv.Vector.prototype.intersectsRect = function(rect) {
         // Does rect contain the point
-        return (this.x >= rect.x) && (this.x <= rect.x2) &&
-               (this.y >= rect.y) && (this.y <= rect.y2);
+        return pv.floatBelongsClosed(rect.x, this.x, rect.x2) &&
+               pv.floatBelongsClosed(rect.y, this.y, rect.y2);
     };
     
-    pv.Vector.prototype.containsPoint = function(p){
+    pv.Vector.prototype._containsPointCore = function(p){
         return (this.x === p.x) && (this.y === p.y);
     };
     

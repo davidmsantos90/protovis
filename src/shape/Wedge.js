@@ -8,7 +8,10 @@
     var cos   = Math.cos;
     var sin   = Math.sin;
     var sqrt  = Math.sqrt;
-    var pi2   = Math.PI*2;
+    var pi     = Math.PI;
+    var pi_2   = 2*pi;
+    var pi_1_2 = pi/2;
+    var pi_3_2 = 3*pi/2;
     var atan2Norm = pv.Shape.atan2Norm;
     var normalizeAngle = pv.Shape.normalizeAngle;
     
@@ -17,10 +20,13 @@
         this.y = y;
         this.innerRadius = innerRadius;
         this.outerRadius = outerRadius;
-        
+
+        // Be careful not to transform 2*pi into 0.
+        if(!pv.floatBelongsClosed(0, angleSpan, pi_2)) angleSpan = normalizeAngle(angleSpan);
+
         this.startAngle = normalizeAngle(startAngle);
-        this.angleSpan  = normalizeAngle(angleSpan); // always positive...
-        this.endAngle   = this.startAngle + this.angleSpan; // may be > 2*pi
+        this.angleSpan  = angleSpan; // always positive; may be 2*pi;
+        this.endAngle   = this.startAngle + angleSpan; // may be > 2*pi
     };
     
     var Wedge = pv.Shape.Wedge;
@@ -40,105 +46,109 @@
         var or  = t.k * this.outerRadius;
         return new Wedge(x, y, ir, or, this.startAngle, this.angleSpan);
     };
-    
-    Wedge.prototype.containsPoint = function(p){
+
+    Wedge.prototype.containsAngle = Arc.prototype.containsAngle;
+
+    Wedge.prototype._containsPointCore = function(p){
         var dx = p.x - this.x;
         var dy = p.y - this.y ;
         var r  = sqrt(dx*dx + dy*dy);
-        if(r >= this.innerRadius &&  r <= this.outerRadius){
-            var a = atan2Norm(dy, dx); // between -pi and pi -> 0 - 2*pi
-            // ex:  45º -> 270º       ?  a = 50º
-            // ex: 300º -> 420º (60º) ?  a = 50º (410º)
-            return (this.startAngle <= a && a <= this.endAngle) ||
-                   (a+=pi2, (this.startAngle <= a && a <= this.endAngle));
-        }
-        
-        return false;
+        return pv.floatBelongsClosed(this.innerRadius, r, this.outerRadius) && this.containsAngle(atan2Norm(dy, dx));
     };
     
-    Wedge.prototype.intersectsRect = function(rect){
-        var i, L;
+    Wedge.prototype.intersectsRect = function(rect) {
+        var i, L, points, edges;
         
         // I - Any point of the wedge is inside the rect?
-        var points = this.points();
+        points = this.points();
         
         L = points.length;
-        for(i = 0 ; i < L ; i++){
-            if(points[i].intersectsRect(rect)){
-                return true;
-            }
-        }
+        for(i = 0 ; i < L ; i++) if(points[i].intersectsRect(rect)) return true;
         
         // II - Any point of the rect inside the wedge?
         points = rect.points();
         L = points.length;
-        for(i = 0 ; i < L ; i++){
-            if(this.containsPoint(points[i])){
-                return true;
-            }
-        }
+        for(i = 0 ; i < L ; i++) if(this._containsPointCore(points[i])) return true;
         
         // III - Any edge intersects the rect?
-        var edges = this.edges();
+        edges = this.edges();
         L = edges.length;
-        for(i = 0 ; i < L ; i++){
-            if(edges[i].intersectsRect(rect)){
-                return true;
-            }
-        }
+        for(i = 0 ; i < L ; i++) if(edges[i].intersectsRect(rect)) return true;
         
         return false;
     };
-    
+
+    /**
+     * Obtains an array of points that describe the shape.
+     *
+     * The standard returned points are:
+     * <ul>
+     *     <li>the point at the inner radius and initial angle,</li>
+     *     <li>if the inner radius is not zero, the point at the inner radius and final angle,</li>
+     *     <li>the point at the outer radius and initial angle,</li>
+     *     <li>the point at the outer radius and final angle</li>
+     * </ul>
+     *
+     * Additionally, points lying at multiples of 90º, may be returned.
+     *
+     * @return {pv.Shape.Point[]} The array of points.
+     */
     Wedge.prototype.points = function(){
-        if(!this._points){
-            this.edges();
-        }
-        
+        if(!this._points) this.edges();
         return this._points;
     };
     
-    Wedge.prototype.edges = function(){
-        var edges = this._edges;
-        if(!edges){
-            var x  = this.x;
-            var y  = this.y;
-            var ir = this.innerRadius;
-            var or = this.outerRadius;
-            var ai = this.startAngle;
-            var af = this.endAngle;
-            var aa = this.angleSpan;
-            var cai = cos(ai);
-            var sai = sin(ai);
-            var caf = cos(af);
-            var saf = sin(af);
-            
-            var pii, pfi;
-            if(ir > 0){
+    Wedge.prototype.edges = function() {
+        var me = this,
+            edges = me._edges;
+        if(!edges) {
+            var x  = me.x,
+                y  = me.y,
+                ir = me.innerRadius,
+                irPositive = pv.floatGreater(ir, 0),
+                or = me.outerRadius,
+                ai = me.startAngle,
+                af = me.endAngle,
+                aa = me.angleSpan,
+                cai = cos(ai),
+                sai = sin(ai),
+                caf = cos(af),
+                saf = sin(af),
+                pii, pfi; // pi_inner and pf_inner
+
+            if(irPositive) {
                 pii = new Point(x + ir * cai, y + ir * sai);
                 pfi = new Point(x + ir * caf, y + ir * saf);
             } else {
                 pii = pfi = new Point(x, y);
             }
+
+            // pi_outer and pf_outer
+            var pio = new Point(x + or * cai, y + or * sai),
+                pfo = new Point(x + or * caf, y + or * saf);
             
-            var pio = new Point(x + or * cai, y + or * sai);
-            var pfo = new Point(x + or * caf, y + or * saf);
-            
-            edges = this._edges = [];
-            
-            if(ir > 0){
-               edges.push(new Arc(x, y, ir, ai, aa));
-            }
-            
+            edges = me._edges = [];
+
+            // Inner arc
+            if(irPositive) edges.push(new Arc(x, y, ir, ai, aa));
+
             edges.push(
                 new Line(pii.x, pii.y, pio.x, pio.y),
                 new Arc(x, y, or, ai, aa),
                 new Line(pfi.x, pfi.y, pfo.x, pfo.y));
             
-            var points = this._points = [pii, pio, pfo];
-            if(ir > 0){
-                points.push(pfi);
+            var points = me._points = [pii, pio, pfo];
+            if(irPositive) points.push(pfi);
+
+            function addAngle(a) {
+                if(me.containsAngle(a, /*inside*/true))
+                    points.push(new Point(x + or * cos(a), y + or * sin(a)));
             }
+
+            addAngle(0);
+            addAngle(pi_1_2);
+            addAngle(pi);
+            addAngle(pi_3_2);
         }
         
         return edges;
@@ -146,14 +156,12 @@
     
     // Distance (squared) to the border of the Wedge,
     // // or to its center, whichever is smaller.
-    Wedge.prototype.distance2 = function(p, k){
+    Wedge.prototype.distance2 = function(p, k) {
         var min = {cost: Infinity, dist2: Infinity}; //dist2(p, this.center(), k);
         
-        this.edges().forEach(function(edge){
+        this.edges().forEach(function(edge) {
             var d = edge.distance2(p, k);
-            if(d.cost < min.cost){
-                min = d;
-            }
+            if(pv.floatLess(d.cost, min.cost)) min = d;
         });
         
         return min;

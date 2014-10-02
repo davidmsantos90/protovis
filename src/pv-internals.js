@@ -363,4 +363,117 @@ pv.lazyArrayOwn = function(o, p) {
     return o && hasOwn.call(o, p) && (v = o[p]) ? v : (o[p] = []);
 };
 
+pv.parseNumNonNeg = function(v, dv) {
+    if(v != null) {
+        if(typeof v === 'string') v = +v;
+        else if(typeof v !== 'number') v = null;
+    }
+    return (v == null || isNaN(v) || v < 0) ? (dv == null ? 0 : dv) : v;
+};
+
+/**
+ * The maximum floating point precision.
+ * @type number
+ */
+var epsilon = pv.epsilon = 1e-6;
+
+/**
+ * Indicates if the first value is less than the second value.
+ *
+ * This function takes floating point numbers' precision into account.
+ *
+ * @param {number} a The first value.
+ * @param {number} a The second value.
+ * @return {boolean} <tt>true</tt> if <i>a</i> is less than <i>b</i>, <tt>false</tt>, otherwise.
+ */
+pv.floatLess = function(a, b) {
+    return !pv.floatEqual(a, b) && (a < b);
+};
+
+/**
+ * Indicates if the first value is less than or equal to the second value.
+ *
+ * This function takes floating point numbers' precision into account.
+ *
+ * @param {number} a The first value.
+ * @param {number} a The second value.
+ * @return {boolean} <tt>true</tt> if <i>a</i> is less than or equal to <i>b</i>, <tt>false</tt>, otherwise.
+ */
+pv.floatLessOrEqual = function(a, b) {
+    return (a < b) || pv.floatEqual(a, b);
+};
+
+/**
+ * Indicates if the first value is greater than the second value.
+ *
+ * This function takes floating point numbers' precision into account.
+ *
+ * @param {number} a The first value.
+ * @param {number} a The second value.
+ * @return {boolean} <tt>true</tt> if <i>a</i> is greater than <i>b</i>, <tt>false</tt>, otherwise.
+ */
+pv.floatGreater = function(a, b) {
+    return !pv.floatEqual(a, b) && (a > b);
+};
+
+/**
+ * Indicates if the first value is equal to the second value.
+ *
+ * This function takes floating point numbers' precision into account.
+ *
+ * @param {number} a The first value.
+ * @param {number} a The second value.
+ * @return {boolean} <tt>true</tt> if <i>a</i> is equal to <i>b</i>, <tt>false</tt>, otherwise.
+ */
+pv.floatEqual = function(a, b) {
+    return Math.abs(b - a) < epsilon;
+};
+
+/**
+ * Indicates if a value is zero.
+ *
+ * This function takes floating point numbers' precision into account.
+ *
+ * @param {number} value The value.
+ * @return {boolean} <tt>true</tt> if <i>value</i> is zero, <tt>false</tt>, otherwise.
+ */
+pv.floatZero = function(value) {
+    return Math.abs(value) < epsilon;
+};
+
+/**
+ * Indicates if a value belongs to an open interval.
+ *
+ * This function takes floating point numbers' precision into account.
+ *
+ * It is assumed that <i>min</i> is less than or equal to <i>max</i>.
+ *
+ * @param {number} min The minimum value.
+ * @param {number} value The value.
+ * @param {number} max The maximum value.
+ * @return {boolean} <tt>true</tt> if <i>value</i> is inside the open interval defined by <i>min</i> and <i>max</i>,
+ *   <tt>false</tt>, otherwise.
+ */
+pv.floatBelongsOpen = function(min, value, max) {
+    return pv.floatLess(min, value) && pv.floatLess(value, max);
+};
+
+/**
+ * Indicates if a value belongs to a closed interval.
+ *
+ * This function takes floating point numbers' precision into account.
+ *
+ * It is assumed that <i>min</i> is less than or equal to <i>max</i>.
+ *
+ * @param {number} min The minimum value.
+ * @param {number} value The value.
+ * @param {number} max The maximum value.
+ * @return {boolean} <tt>true</tt> if <i>value</i> is inside the closed interval defined by <i>min</i> and <i>max</i>,
+ *   <tt>false</tt>, otherwise.
+ */
+pv.floatBelongsClosed = function(min, value, max) {
+    // min <= value && value <= max
+    return pv.floatLessOrEqual(min, value) && pv.floatLessOrEqual(value, max);
+};
+
 }());

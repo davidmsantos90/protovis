@@ -1996,3 +1996,29 @@ pv.Mark.prototype.getShapeCore = function(scenes, index, inset){
 
     return new pv.Shape.Rect(l, t, w, h);
 };
+
+/**
+ * Gets or sets the maximum distance that the pointing device
+ * may be from an instance of this mark's boundaries
+ * for the point behavior to be able to choose this mark.
+ *
+ * The default value is <tt>Infinity</tt>.
+ *
+ * The pointing behavior "collapse" option is not taken into account when evaluating this restriction.
+ *
+ * @param {number} value The point behavior should only choose an instance of this mark
+ * when the pointing device is inside or no farther than this value.
+ *
+ * @return {pv.Mark|number} When setting, returns this mark, when getting, returns the value of the property.
+ */
+pv.Mark.prototype.pointingRadiusMax = function(value) {
+  if(arguments.length) {
+      value = +value;
+      this._pointingRadiusMax = isNaN(value) || value < 0 ? 0 : value;
+      return this;
+  }
+  return this._pointingRadiusMax;
+};
+
+/** @private */
+pv.Mark.prototype._pointingRadiusMax = Infinity;
