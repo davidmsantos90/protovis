@@ -102,8 +102,26 @@ pv.Behavior.point = function(keyArgs) {
     }
   
     function searchScenes(scenes, curr) {
-        var mark = scenes.mark;
-        if(mark.type === 'panel') {
+        var mark = scenes.mark,
+            isPanel = mark.type === 'panel',
+            result;
+
+        if(mark.$handlers.point) {
+            var mouse = ((isPanel && mark.parent) || mark).mouse(),
+                visibility,
+                markRMax = mark._pointingRadiusMax,
+                markCostMax = markRMax * markRMax;
+
+            for(var j = scenes.length - 1 ; j >= 0; j--)
+                if((visibility = sceneVisibility(scenes, j)))
+                    if(evalScene(scenes, j, mouse, curr, visibility, markCostMax)) {
+                        result = true;
+                        break; // stop (among siblings)
+                    }
+        }
+
+        if(isPanel) {
+            // Give a chance to panel's children.
             mark.scene = scenes;
             try {
                 for(var j = scenes.length - 1 ; j >= 0; j--) {
@@ -115,17 +133,9 @@ pv.Behavior.point = function(keyArgs) {
                 delete mark.scene;
                 delete mark.index;
             }
-        } else if(mark.$handlers.point) {
-            var mouse = mark.mouse(),
-                visibility,
-                markRMax = mark._pointingRadiusMax,
-                markCostMax = markRMax * markRMax;
-
-            for(var j = scenes.length - 1 ; j >= 0; j--)
-                if((visibility = sceneVisibility(scenes, j)))
-                    if(evalScene(scenes, j, mouse, curr, visibility, markCostMax))
-                        return true; // stop
         }
+
+        return result;
     }
   
     function sceneVisibility(scenes, index) {
