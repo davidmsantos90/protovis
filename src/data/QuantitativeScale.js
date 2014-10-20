@@ -466,12 +466,12 @@ function genNumberTicks(N, min, max, options) {
 
   var precision    = pv.parseNumNonNeg(pv.get(options, 'precision',    0)),
       precisionMin = pv.parseNumNonNeg(pv.get(options, 'precisionMin', 0)),
-      precisionMax = pv.parseNumNonNeg(pv.get(options, 'precisionMax', Infinity));
+      precisionMax = pv.parseNumNonNeg(pv.get(options, 'precisionMax', Infinity)),
+      roundInside  = pv.get(options, 'roundInside', true);
 
   if(!isFinite(precision)) precision = 0;
   if(!isFinite(precisionMin)) precisionMin = 0;
   if(!precisionMax) precisionMax = Infinity;
-
 
   // Combine exponent and precision constraints
   var exponentMin = pv.get(options, 'numberExponentMin'),
@@ -483,6 +483,14 @@ function genNumberTicks(N, min, max, options) {
   // Highest multiplier is always 5, for any given base precision.
   if(exponentMax != null && isFinite(exponentMax))
     precisionMax = Math.min(precisionMax, 5 * Math.pow(10, Math.floor(exponentMax)));
+
+  // There's an upper bound for both precisionMin and precisionMax.
+  // When roundInside, unless precisionMin/Max <= span, 0 ticks result.
+  // We want to ensure that at least one tick is always returned.
+  if(roundInside) {
+    if(precisionMin > span) precisionMin = span; // precisionMin = 0 does not fall here
+    if(precisionMax > span) precisionMax = span; // precisionMax = Infinity does fall here
+  }
 
   if(precisionMax < precisionMin) precisionMax = precisionMin;
 
@@ -506,7 +514,7 @@ function genNumberTicks(N, min, max, options) {
     result.value = result.base;
   } else {
     var NMax = pv.parseNumNonNeg(pv.get(options, 'tickCountMax', Infinity));
-    if(NMax < 2) NMax = 2;
+    if(NMax < 1) NMax = 1;
 
     // When N is Infinite, it means, use precisionMin or tickCountMax.
     // If precisionMin is not defined, then N is defaulted to 10, anyway...
@@ -524,7 +532,7 @@ function genNumberTicks(N, min, max, options) {
     };
     result.value = result.base;
 
-    // Maintain the base-precision within constraints.
+    // Maintain the precision within constraints.
     if(precisionMin > 0) {
       precMin = readNumberPrecision(precisionMin, /*isMin*/true);
       if(result.value < precMin.value) {
@@ -546,31 +554,39 @@ function genNumberTicks(N, min, max, options) {
     // If we'd obtain "many" more ticks than desired,
     // reduce the number of ticks,
     // by only generating ticks for multiples (2,5,10) of the base precision.
-    if(isFinite(N)) {
-      NObtained = span / result.value;
+    // Only if not already at the maximum precision (overflow = 1).
+    if(overflow !== 1 && isFinite(N) && result.mult < 10) {
+      // Compare to the base value,
+      // as the err logic below is devised for that case (mult = 1).
+      NObtained = span / result.base;
       if(N < NObtained) {
         var err = N / NObtained;
 
-        if(err <= .15) result.mult = 10;
-        else
-        if(err <= .35) result.mult = 5;
-        else
-        if(err <= .75) result.mult = 2;
+        // Take care not to reduce the existing multiplier - only consider a rule if multiplier can increase.
+        // Don't increase precision to a point where 0 ticks would result - this can happen when roundInside and span < step.
+        if(err <= .15) {
+          result.mult = 10;
+        } else if(result.mult < 5) {
+          if(err <= .35) {
+            result.mult = 5;
+          } else if(result.mult < 2) {
+            if(err <= .75) {
+              result.mult = 2;
+            }
+          }
+        }
 
         if(result.mult > 1) {
           result.value = result.base * result.mult;
-          NObtained /= result.mult;
 
           if(precMin && result.value < precMin.value) {
             numberCopyResult(result, precMin);
             overflow = -1;
-            NObtained = span / result.value;
           } else if(precMax && precMax.value < result.value) {
             numberCopyResult(result, precMax);
             overflow = 1;
-            NObtained = span / result.value;
           } else if(result.mult === 10) {
-            // Now it's worth fixing this.
+            // Now it's worth normalizing this case.
             result.base *= 10;
             result.mult = 1;
           }
@@ -579,15 +595,18 @@ function genNumberTicks(N, min, max, options) {
     }
   } // if fixed else
 
-  var roundInside = pv.get(options, 'roundInside', true),
-      resultPrev;
+  var resultPrev;
 
   while(true) {
+    // When roundInside and:
+    // * span = step  =>  start = end
+    // * span < step  =>  start > end
+
     var step  = result.value,
         start = step * Math[roundInside ? 'ceil'  : 'floor'](min / step),
         end   = step * Math[roundInside ? 'floor' : 'ceil' ](max / step);
 
-    if(resultPrev && precMax && (end - start) > precMax.value) {
+    if(resultPrev && ((end < start) || (precMax && (end - start) > precMax.value))) {
       result = resultPrev;
       break;
     }
@@ -597,11 +616,11 @@ function genNumberTicks(N, min, max, options) {
 
     result.decPlaces = Math.max(0, -exponent);
 
-    // Generates at least 2 ticks.
+    // When !roundInside, generates at least 2 ticks.
     // For cases with negative and positive data, generates at least 3 ticks, whatever the step.
     result.ticks = pv.range(start, end + step, step);
 
-    // NMax >= 2
+    // NMax >= 1
     if(fixed || overflow > 0 || result.ticks.length <= NMax) break;
 
     if(resultPrev && resultPrev.ticks.length <= result.ticks.length) {
