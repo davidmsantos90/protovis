@@ -77,7 +77,7 @@ pv.Layout.Band = function() {
 
             /* Layout kind */
             switch(s.layout){
-                case "grouped": this._calcGrouped(bands, L, s);     break;
+                case "grouped": this._calcGrouped(bands, L, bh, s); break;
                 case "stacked": this._calcStacked(bands, L, bh, s); break;
             }
 
@@ -377,7 +377,64 @@ pv.Layout.prototype._readData = function(data, layersValues, scene){
     return bands;
 };
 
-pv.Layout.Band.prototype._calcGrouped = function(bands, L, scene){
+pv.Layout.Band.prototype._normalizeBands = function(bands, L, bh, scene) {
+    var B = bands.length,
+        items;
+
+    if(scene.verticalMode === "expand") {
+        for (var b = 0; b < B; b++) {
+            items = bands[b].items;
+
+            /* Sum across layers for this band */
+            var hSum = null, nonNullCount = 0;
+            for (var l = 0; l < L; l++) {
+                /* We get rid of negative heights
+                 * because it is preferable to respect the layer's order
+                 * in this case, than to group negative and positive layers,
+                 * taking them out of order.
+                 */
+                var item = items[l];
+                item.dir = 1;
+                var h = item.h;
+                if(h != null){
+                    nonNullCount++;
+                    hSum += h; // null + 1 = 0 + 1
+                }
+            }
+
+            /* Scale hs */
+            if (nonNullCount){
+                if (hSum) {
+                    var hScale = bh / hSum;
+                    for (var l = 0; l < L; l++) {
+                        var h = items[l].h;
+                        if(h != null){
+                            items[l].h = h * hScale;
+                        }
+                    }
+                } else if (hSum == 0) {
+                    // 0/0 ambiguous, just defer to standard bar behavior for now
+                    for (var l = 0; l < L; l++) {
+                        items[l].h = 0;
+                    }
+                } else { //TODO: still relevant after ==0?
+                    var hAvg = bh / nonNullCount;
+                    for (var l = 0; l < L; l++) {
+                        var h = items[l].h;
+                        if(h != null){
+                            items[l].h = hAvg;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return items
+};
+
+pv.Layout.Band.prototype._calcGrouped = function(bands, L, bh, scene) {
+    var items = this._normalizeBands(bands, L, bh, scene);
+
     /* Compute item x positions relative to parent panel */
     for (var b = 0, B = bands.length; b < B ; b++) {
         var band = bands[b],
@@ -441,57 +498,7 @@ pv.Layout.Band.prototype._calcGrouped = function(bands, L, scene){
 };
 
 pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
-    var B = bands.length,
-        items;
-
-    if(scene.verticalMode === "expand") {
-        for (var b = 0; b < B; b++) {
-            items = bands[b].items;
-
-            /* Sum across layers for this band */
-            var hSum = null, nonNullCount = 0;
-            for (var l = 0; l < L; l++) {
-                /* We get rid of negative heights
-                 * because it is preferable to respect the layer's order
-                 * in this case, than to group negative and positive layers,
-                 * taking them out of order.
-                 */
-                var item = items[l];
-                item.dir = 1;
-                var h = item.h;
-                if(h != null){
-                    nonNullCount++;
-                    hSum += h; // null + 1 = 0 + 1
-                }
-            }
-
-            /* Scale hs */
-            if (nonNullCount){
-                if (hSum) {
-                    var hScale = bh / hSum;
-                    for (var l = 0; l < L; l++) {
-                        var h = items[l].h;
-                        if(h != null){
-                            items[l].h = h * hScale;
-                        }
-                    }
-                } else if (hSum == 0) {
-                    // 0/0 ambiguous, just defer to standard bar behavior for now
-                    for (var l = 0; l < L; l++) {
-                        items[l].h = 0;
-                    }
-                } else { //TODO: still relevant after ==0?
-                    var hAvg = bh / nonNullCount;
-                    for (var l = 0; l < L; l++) {
-                        var h = items[l].h;
-                        if(h != null){
-                            items[l].h = hAvg;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    var items = this._normalizeBands(bands, L, bh, scene);
 
     /*
      * Propagate y offset to other layers.
@@ -502,7 +509,7 @@ pv.Layout.Band.prototype._calcStacked = function(bands, L, bh, scene){
     var yZero = scene.yZero,
         yOffset = yZero;
 
-    for (var b = 0; b < B; b++) {
+    for (var b = 0, B = bands.length; b < B; b++) {
         var band = bands[b],
             bx = band.x, // centered on band
             bDiffControl = band.diffControl,
