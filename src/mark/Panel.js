@@ -102,6 +102,16 @@ pv.Panel.prototype.type = "panel";
  */
 
 /**
+ * Indicates that contained marks are only pointable
+ * if the mouse is within the panel.
+ * 
+ * The default value is <tt>false</tt>.
+ * 
+ * @type boolean
+ */
+pv.Panel.prototype.isPointingBarrier = false;
+
+/**
  * The number of children that have a non-zero {@link pv.Mark#_zOrder}.
  *
  *  @type number
