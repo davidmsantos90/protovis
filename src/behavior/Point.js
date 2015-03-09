@@ -104,7 +104,7 @@ pv.Behavior.point = function(keyArgs) {
     function searchScenes(scenes, curr) {
         var mark = scenes.mark,
             isPanel = mark.type === 'panel',
-            result;
+            result, j, isPointingBarrier;
 
         if(mark.$handlers.point) {
             var mouse = ((isPanel && mark.parent) || mark).mouse(),
@@ -112,22 +112,27 @@ pv.Behavior.point = function(keyArgs) {
                 markRMax = mark._pointingRadiusMax,
                 markCostMax = markRMax * markRMax;
 
-            for(var j = scenes.length - 1 ; j >= 0; j--)
+            j = scenes.length;
+            while(j--) {
                 if((visibility = sceneVisibility(scenes, j)))
                     if(evalScene(scenes, j, mouse, curr, visibility, markCostMax)) {
                         result = true;
                         break; // stop (among siblings)
                     }
+            }    
         }
 
         if(isPanel) {
-            // Give a chance to panel's children.
+            // Give a chance to the panel's children.
             mark.scene = scenes;
+            isPointingBarrier = !!(mark.isPointingBarrier && mark.parent);
             try {
-                for(var j = scenes.length - 1 ; j >= 0; j--) {
+                j = scenes.length;
+                while(j--) {
                     mark.index = j;
-                    if(searchSceneChildren(scenes[j], curr))
-                        return true; // stop
+                    if(!isPointingBarrier || mark.getShape(scenes, j).containsPoint(mark.parent.mouse()))
+                        if(searchSceneChildren(scenes[j], curr))
+                            return true; // stop
                 }
             } finally {
                 delete mark.scene;
