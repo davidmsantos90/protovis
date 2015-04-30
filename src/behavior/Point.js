@@ -342,12 +342,11 @@ pv.Behavior.point = function(keyArgs) {
 
                 // Initialize panel.
                 // Unpoint when the mouse leaves the pointing panel.
-                if(!pointingPanel && this.type === 'panel') {
-
+                if(pointingPanel) {
+                    ;
+                } else if(this.type === 'panel') {
                     pointingPanel = this;
-                    pointingPanel.event('mouseout', function() {
-                        mouseout.call(pointingPanel.scene.$g);
-                    });
+                    this.event('mouseout', function() { mouseout.call(this.scene.$g); });
 
                     if(stealClick) pointingPanel.addEventInterceptor('click', eventInterceptor);
                 } else {

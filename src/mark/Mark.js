@@ -298,17 +298,25 @@ pv.Mark.prototype.setPropertyValue = function(name, v, isDef, cast, chain, tag){
         id:    pv.id(),
         value: v,
         type:  type,
-        tag:   tag
+        tag:   tag,
+        proto: null,
+        root:  null,
+        
+        // Used in #bind to connect the property chains 
+        // found along a mark's proto chain.
+        _proto: null
     };
+    
+    p.root = p;
 
-    var specified = propertiesMap[name];
+    var existing = propertiesMap[name];
 
     propertiesMap[name] = p;
 
-    if(specified) {
+    if(existing) {
       // Find it and remove it
       for(var i = 0, P = properties.length; i < P; i++) {
-        if(properties[i] === specified) {
+        if(properties[i] === existing) {
           properties.splice(i, 1);
           break;
         }
@@ -317,9 +325,9 @@ pv.Mark.prototype.setPropertyValue = function(name, v, isDef, cast, chain, tag){
 
     properties.push(p);
 
-    if(chain && specified && type === 3) { // is a prop fun
-      p.proto = specified;
-      p.root  = specified.root || specified;
+    if(chain && existing && type === 3) { // is a prop fun
+      p.proto = existing;
+      p.root  = existing.root;
     }
 
     return p;
@@ -1088,6 +1096,7 @@ pv.Mark.prototype.renderCore = function() {
  */
 pv.Mark.prototype.bind = function() {
   var seen = {},
+      root = {},
       data,
 
       // Required props (no defs)
@@ -1131,20 +1140,23 @@ pv.Mark.prototype.bind = function() {
         var pLeaf = seen[name];
         if(!pLeaf) {
           seen[name] = p;
+          root[name] = p.root;
+          // Reset, from a previous binding
+          p.root._proto = null;
           switch(name) {
             case 'data': data = p; break;
             case 'visible': case 'id': required.push(p); break;
             default: types[p.type].push(p); break;
           }
-        } else if(pLeaf.type === 3) { // prop/fun
-          // Chain properties
-          //
-          // seen[name]-> (leaf).proto-> (B).proto-> (C).proto-> (root)
-          //                    .root-------------------------------^
-          var pRoot  = pLeaf.root;
-          pLeaf.root = p;
-          if(!pRoot)            { pLeaf.proto = p; }
-          else if(!pRoot.proto) { pRoot.proto = p; }
+        } else {
+          var pRoot = root[name];
+          if(pRoot.type === 3) { // prop/fun
+            // Chain property chains of pRoot and p
+            pRoot._proto = p;
+            pRoot = root[name] = p.root;
+            // Reset, from a previous binding
+            pRoot._proto = null;
+          }
         }
       }
     } while((mark = mark.proto));
@@ -1387,7 +1399,7 @@ pv.Mark.prototype.buildInstance = function(s) {
 
     // 3 - prop - fun
     function(p) {
-      _protoProp = p.proto;
+      _protoProp = p.proto || p._proto;
       return p.value.apply(this, _stack);
     }
   ];
