@@ -11,7 +11,7 @@
  * the license for the specific language governing your rights and limitations.
  */
  /*! Copyright 2010 Stanford Visualization Group, Mike Bostock, BSD license. */
- /*! 0a846e02116638f4d7f3c88a223ee1ae23f0cb3f */
+ /*! 10fd5c729c201633f0967565b7cc78a0d507bab7 */
 /**
  * @class The built-in Array class.
  * @name Array
@@ -22394,7 +22394,7 @@ pv.Behavior.drag = function() {
  *
  * @extends pv.Behavior
  *
- * @param {object|number} [keyArgs] the fuzzy radius threshold in pixels, or an 
+ * @param {object|number} [keyArgs] the fuzzy radius threshold in pixels, or an
  * optional keyword arguments object.
  * @param {number} [keyArgs.radius=30] the fuzzy radius threshold in pixels.
  * @param {number} [keyArgs.radiusHyst=0] the minimum distance in pixels that
@@ -22434,10 +22434,10 @@ pv.Behavior.point = function(keyArgs) {
             return r * r;
         } ());
 
-    /** @private 
-     * Search for the mark, 
-     * that has a point handler and 
-     * that is "closest" to the mouse. 
+    /** @private
+     * Search for the mark,
+     * that has a point handler and
+     * that is "closest" to the mouse.
      */
     function searchSceneChildren(scene, curr) {
         if(scene.visible)
@@ -22445,7 +22445,7 @@ pv.Behavior.point = function(keyArgs) {
                 if(searchScenes(scene.children[i], curr))
                     return true; // stop
     }
-  
+
     function searchScenes(scenes, curr) {
         var mark = scenes.mark,
             isPanel = mark.type === 'panel',
@@ -22464,7 +22464,7 @@ pv.Behavior.point = function(keyArgs) {
                         result = true;
                         break; // stop (among siblings)
                     }
-            }    
+            }
         }
 
         if(isPanel) {
@@ -22487,7 +22487,7 @@ pv.Behavior.point = function(keyArgs) {
 
         return result;
     }
-  
+
     function sceneVisibility(scenes, index) {
         var s = scenes[index];
         if(!s.visible) return 0;
@@ -22505,7 +22505,7 @@ pv.Behavior.point = function(keyArgs) {
                o > 0.98 ? 1 :
                0.5;
     }
-  
+
     function evalScene(scenes, index, mouse, curr, visibility, markCostMax) {
         var shape = scenes.mark.getShape(scenes, index),
 
@@ -22630,7 +22630,7 @@ pv.Behavior.point = function(keyArgs) {
             curr.scenes  = scenes;
             curr.index   = index;
             curr.shape   = shape;
-            
+
             // Be satisfied with the first insideStrict and opaque (visibility === 1) curr.
             // Cannot see through.
             // Hides anything below/after.
@@ -22666,6 +22666,9 @@ pv.Behavior.point = function(keyArgs) {
             // When inside, max distance doesn't apply.
             // Note: !isFinite(point.cost) => no point after all.
             if(!point.inside && !isFinite(point.cost)) point = null;
+
+            e.pointFrom = unpoint;
+            e.pointTo   = point;
 
             // Unpoint the old target, if it's not the new target.
             if(unpoint) {
@@ -22714,13 +22717,13 @@ pv.Behavior.point = function(keyArgs) {
     }
 
     /**
-     * Intercepts click events and redirects them 
+     * Intercepts click events and redirects them
      * to the pointed by element, if any.
-     * 
-     * @returns {boolean|array} 
+     *
+     * @returns {boolean|array}
      * <tt>false</tt> to indicate that the event is handled,
      * otherwise, an event handler info array: [handler, type, scenes, index, ev].
-     * 
+     *
      * @private
      */
     function eventInterceptor(type, ev) {
@@ -22731,7 +22734,7 @@ pv.Behavior.point = function(keyArgs) {
         }
         // Let event be handled normally
     }
-    
+
     /**
      * Sets or gets the collapse parameter. By default, the standard Cartesian
      * distance is computed. However, with some visualizations it is desirable to
@@ -22758,7 +22761,7 @@ pv.Behavior.point = function(keyArgs) {
         }
         return collapse;
     };
-    
+
     if(keyArgs && keyArgs.collapse != null) mousemove.collapse(keyArgs.collapse);
     keyArgs = null;
 
