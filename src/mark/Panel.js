@@ -104,9 +104,9 @@ pv.Panel.prototype.type = "panel";
 /**
  * Indicates that contained marks are only pointable
  * if the mouse is within the panel.
- * 
+ *
  * The default value is <tt>false</tt>.
- * 
+ *
  * @type boolean
  */
 pv.Panel.prototype.isPointingBarrier = false;
@@ -160,7 +160,7 @@ pv.Panel.prototype.add = function(Type) {
   child.root = this.root;
   child.childIndex = this.children.length;
   this.children.push(child);
-  
+
   // Process possibly set zOrder
   var zOrder = (+child._zOrder) || 0; // NaN -> 0
   if(zOrder !== 0) { this._zOrderChildCount++; }
@@ -215,7 +215,7 @@ pv.Panel.prototype.buildInstance = function(s) {
     child.scale = scale;
     child.build();
     // Leave scene in children, because these might me used
-    // during build of siblings; 
+    // during build of siblings;
     // calling a sibling mark's property method (instance() evaluates to same index).
   }
 
@@ -266,7 +266,7 @@ pv.Panel.prototype.buildInstance = function(s) {
 pv.Panel.prototype.buildImplied = function(s) {
   if(!this.parent && !this._buildRootInstanceImplied(s)) {
     // Canvas was stolen by other root panel.
-    // Set the root scene instance as invisible, 
+    // Set the root scene instance as invisible,
     //  to prevent rendering on the stolen canvas.
     s.visible = false;
     return;
@@ -281,7 +281,7 @@ pv.Panel.prototype._buildRootInstanceImplied = function(s) {
   // Was a canvas specified for *this* instance?
   var c = s.canvas;
   if(!c) {
-    // For every instance that doesn't specify a canvas, 
+    // For every instance that doesn't specify a canvas,
     //  a new canvas element (a span) is created for it.
     // This is a typical case of a viz having multiple canvas.
     s.canvas = this._rootInstanceGetInlineCanvas(s);
@@ -300,9 +300,9 @@ pv.Panel.prototype._rootInstanceStealCanvas = function(s, c) {
   //  and start stealing the canvas to one another...
   // TODO: There's no provision here to deal with the same canvas being used
   //  by different instances of the same root panel?
-  // If this is the first render of this root panel, 
+  // If this is the first render of this root panel,
   //  then we're allowed to steal it from another panel.
-  // If this is not our first render, 
+  // If this is not our first render,
   //  then just accept that the canvas has been stolen.
   var cPanel = c.$panel;
   if(cPanel !== this) {
@@ -312,13 +312,13 @@ pv.Panel.prototype._rootInstanceStealCanvas = function(s, c) {
         return false;
       }
 
-      // We win the fight, 
+      // We win the fight,
       // dispose the other root panel.
       cPanel._disposeRootPanel();
-      
-      this._updateCreateId(c);  
+
+      this._updateCreateId(c);
     }
-    
+
     c.$panel = this;
     pv.removeChildren(c);
   } else {
@@ -335,13 +335,32 @@ pv.Panel.prototype._registerBoundEvent = function(source, name, listener, captur
   }
 };
 
+pv.Panel.prototype.dispose = function() {
+  var root = this.root;
+
+  root._disposeRootPanel();
+
+  var canvas = root.canvas();
+  root.canvas(null);
+
+  canvas.$panel = null;
+  root.binds = null;
+
+  var scene = root.scene;
+  if(scene) {
+      scene.$defs = null;
+      scene.$g    = null;
+      root.scene  = null;
+  }
+};
+
 pv.Panel.prototype._disposeRootPanel = function() {
   // Clear running transitions.
   // If we don't do this,
   //  a running animation's setTimeouts will
-  //  continue rendering, over a canvas that 
+  //  continue rendering, over a canvas that
   //  might already b being used by other panel,
-  //  resulting in "concurrent" updates to 
+  //  resulting in "concurrent" updates to
   //  the same dom elements -- a big mess.
   var t = this.$transition;
   t && t.stop();
@@ -376,14 +395,14 @@ pv.Panel.prototype._rootInstanceInitCanvas = function(s, c) {
 };
 
 pv.Panel.prototype._rootInstanceGetInlineCanvas = function(s) {
-  // When no container is specified, 
+  // When no container is specified,
   //  the vis is added inline, as a span.
-  // The spans are created on first render only, 
+  // The spans are created on first render only,
   //  and cached for later renders.
-  // If the visualization was created using a 
+  // If the visualization was created using a
   //  script element with language "text/javascript+protovis",
   //  the span of each instance is added right before the script tag.
-  // Otherwise, the canvas is added as a sibling of 
+  // Otherwise, the canvas is added as a sibling of
   //  the last (leaf) element of the page.
   var cache = this.$canvas || (this.$canvas = []);
   var c;
@@ -399,7 +418,7 @@ pv.Panel.prototype._rootInstanceGetInlineCanvas = function(s) {
 
       // Take its parent.
       if(n != document.body) { n = n.parentNode; }
-      
+
       // Add canvas as last child.
       n.appendChild(c);
     }
@@ -407,10 +426,10 @@ pv.Panel.prototype._rootInstanceGetInlineCanvas = function(s) {
   return c;
 };
 
-/** 
+/**
  * Updates the protovis create counter in the specified canvas.
  * This allows external entities to detect that a previous
- * panel attached to this canvas has been disposed of, 
+ * panel attached to this canvas has been disposed of,
  * or is no longer in control of this panel.
  * Also, by storing the latest counter on which this panel updated
  *  the canvas we're able to detect when we lost the canvas,
