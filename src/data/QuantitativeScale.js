@@ -1,3 +1,6 @@
+
+(function() {
+
 /**
  * Returns a default quantitative, linear, scale for the specified domain. The
  * arguments to this constructor are optional, and equivalent to calling
@@ -1275,3 +1278,4 @@ defDateComp(31536e6, {
   }
 });
 
+}());
