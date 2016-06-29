@@ -1062,7 +1062,7 @@ function firstWeekStartOfMonth(date, dateTickWeekStart) {
   return d;
 }
 
-parseDatePrecision = function(value, dv) {
+function parseDatePrecision(value, dv) {
   if(typeof value === 'string') {
     var n = +value;
     if(!isNaN(n)) {
@@ -1084,11 +1084,11 @@ parseDatePrecision = function(value, dv) {
 
 pv.parseDatePrecision = parseDatePrecision;
 
-parseDateInterval = function(s) {
+function parseDateInterval(s) {
   switch(s) {
-    case 'year': 
+    case 'year':
     case 'y':  return 31536e6;
-    case 'month': 
+    case 'month':
     case 'm':  return 2592e6;
     case 'week':
     case 'w':  return 6048e5;
