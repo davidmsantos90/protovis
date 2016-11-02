@@ -337,16 +337,18 @@ pv.Panel.prototype._registerBoundEvent = function(source, name, listener, captur
 
 pv.Panel.prototype.dispose = function() {
   var root = this.root;
+  var scene = root.scene;
 
   root._disposeRootPanel();
 
-  var canvas = root.canvas();
+  var canvas = scene ? root.canvas() : null;
+
   root.canvas(null);
 
-  canvas.$panel = null;
+  if(canvas) canvas.$panel = null;
+
   root.binds = null;
 
-  var scene = root.scene;
   if(scene) {
       scene.$defs = null;
       scene.$g    = null;
