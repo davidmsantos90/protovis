@@ -410,6 +410,8 @@ pv.Layout.Band.prototype._normalizeBands = function(bands, L, bh, scene) {
                         var h = items[l].h;
                         if(h != null){
                             items[l].h = h * hScale;
+                            // Update the condition to have zero bars display a minimal stripe
+                            items[l].zero = items[l].h <= scene.hZero;
                         }
                     }
                 } else if (hSum == 0) {
