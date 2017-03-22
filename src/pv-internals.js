@@ -308,8 +308,8 @@ pv.elementOffset = function(elem) {
   var scrollTop  = win.pageYOffset || docElem.scrollTop;
   var scrollLeft = win.pageXOffset || docElem.scrollLeft;
   return {
-    top:  box.top  + scrollTop  - clientTop,
-    left: box.left + scrollLeft - clientLeft
+    top:  box.top  + scrollTop  - clientTop  - (elem.scrollTop  || 0),
+    left: box.left + scrollLeft - clientLeft - (elem.scrollLeft || 0)
   };
 };
 
