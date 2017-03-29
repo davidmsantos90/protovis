@@ -28,14 +28,14 @@
 (function() {
 
     var round = Math.round;
-    
+
     var parseRgb = function(c) { // either integer or percentage
         var f = parseFloat(c);
         return (c[c.length - 1] == '%') ? round(f * 2.55) : f;
     };
-    
+
     var reSysColor = /([a-z]+)\((.*)\)/i;
-    
+
     var createColor = function(format) {
         /* Hexadecimal colors: #rgb and #rrggbb. */
         if (format.charAt(0) === "#") {
@@ -49,16 +49,16 @@
             g = format.substring(3, 5);
             b = format.substring(5, 7);
           }
-          
+
           return pv.rgb(parseInt(r, 16), parseInt(g, 16), parseInt(b, 16), 1);
         }
-        
+
         /* Handle hsl, rgb. */
         var m1 = reSysColor.exec(format);
         if (m1) {
-          var m2 = m1[2].split(","), 
+          var m2 = m1[2].split(","),
               a = 1;
-          
+
           switch (m1[1]) {
             case "hsla":
             case "rgba": {
@@ -67,7 +67,7 @@
               break;
             }
           }
-          
+
           switch (m1[1]) {
             case "hsla":
             case "hsl": {
@@ -76,33 +76,33 @@
                   l = parseFloat(m2[2]) / 100; // percentage
               return (new pv.Color.Hsl(h, s, l, a)).rgb();
             }
-            
+
             case "rgba":
             case "rgb": {
-              var r = parseRgb(m2[0]), 
-                  g = parseRgb(m2[1]), 
+              var r = parseRgb(m2[0]),
+                  g = parseRgb(m2[1]),
                   b = parseRgb(m2[2]);
               return pv.rgb(r, g, b, a);
             }
           }
         }
-      
+
         /* Otherwise, pass-through unsupported colors. */
         return new pv.Color(format, 1);
     };
-    
-    var colorsByFormat = {}; // TODO: unbounded cache 
-    
+
+    var colorsByFormat = {}; // TODO: unbounded cache
+
     pv.color = function(format) {
       if(format.rgb) { return format.rgb(); }
-      
+
       /* Named colors. */
       var color = pv.Color.names[format];
       if(!color) {
           color = colorsByFormat[format] ||
                   (colorsByFormat[format] = createColor(format));
       }
-      
+
       return color;
     };
 }());
@@ -140,17 +140,17 @@ pv.Color = function(color, opacity) {
    * @type number
    */
   this.opacity = opacity;
-  
+
   this.key = "solid " + color + " alpha(" + opacity + ")";
 };
 
 /**
  * Returns an equivalent color in the HSL color space.
- * 
+ *
  * @returns {pv.Color.Hsl} an HSL color.
  */
-pv.Color.prototype.hsl = function() { 
-    return this.rgb().hsl(); 
+pv.Color.prototype.hsl = function() {
+    return this.rgb().hsl();
 };
 
 /**
@@ -184,33 +184,53 @@ pv.Color.prototype.darker = function(k) {
 };
 
 /**
+ * Determines the relative luminance of the color.
+ *
+ * @see https://www.w3.org/TR/WCAG20/#relativeluminancedef
+ *
+ * @param {pv.Color} [mate='white'] The mate color. Defaults to 'white'.
+ * @return {number} A number between `0`, for darkest black and `1`, for lightest white.
+ */
+pv.Color.prototype.relativeLuminance = function(mate) {
+
+  var rgb = this.alphaBlend(mate);
+
+  return 0.2126 * correctSRgbComponent(rgb.r) + 0.7152 * correctSRgbComponent(rgb.g) + 0.0722 * correctSRgbComponent(rgb.b);
+};
+
+function correctSRgbComponent(s) {
+  s = s / 255;
+  return s <= 0.03928 ? s/12.92 : Math.pow((s + 0.055)/1.055, 2.4);
+}
+
+/**
  * Blends a color with transparency with a given mate color.
  * Returns an RGB color.
- * 
- * @param {pv.Color} [mate='white'] the mate color. Defaults to 'white'. 
+ *
+ * @param {pv.Color} [mate='white'] the mate color. Defaults to 'white'.
  */
 pv.Color.prototype.alphaBlend = function(mate) {
   var rgb = this.rgb();
   var a = rgb.a;
-  if(a === 1){ return this; }
-    
-  if(!mate){ mate = pv.Color.names.white; } else { mate = pv.color(mate); }
-  
+  if(a === 1) { return this; }
+
+  if(!mate) { mate = pv.Color.names.white; } else { mate = pv.color(mate); }
+
   mate = mate.rgb();
-  
+
   var z = (1 - a);
   return pv.rgb(
-          z * rgb.r + a * mate.r, 
+          z * rgb.r + a * mate.r,
           z * rgb.g + a * mate.g,
           z * rgb.b + a * mate.b,
           1);
 };
-  
+
 /**
  * Returns the decimal number corresponding to the rgb hexadecimal representation.
- * 
+ *
  * If a mate color is provided it is used for blending the alpha channel of this color, if any.
- * 
+ *
  * @param {pv.Color} [mate='white'] the mate color. Defaults to 'white'.
  */
 pv.Color.prototype.rgbDecimal = function(mate) {
@@ -222,11 +242,26 @@ pv.Color.prototype.rgbDecimal = function(mate) {
  * Determines if a color is in the "dark" category.
  * If this is a background color, you may then choose a color for text
  * that is in the "bright" category.
- * 
+ *
  * Adapted from {@link http://us2.php.net/manual/en/function.hexdec.php#74092}.
  */
 pv.Color.prototype.isDark = function() {
   return this.rgbDecimal() < 0xffffff/2;
+};
+
+/**
+ * Determines the constrast ratio of this color relative to the given background color.
+ *
+ * @see https://www.w3.org/TR/UNDERSTANDING-WCAG20/visual-audio-contrast-contrast.html
+ *
+ * @param {pv.Color} [mate='white'] The background color. Defaults to 'white'.
+ * @return {number} A number in the range from `1` to `21`.
+ */
+pv.Color.prototype.contrastRatioTo = function(mate) {
+  var rl1 = this.relativeLuminance(mate);
+  var rl2 = mate.relativeLuminance();
+
+  return (Math.max(rl1, rl2) + 0.05) / (Math.min(rl1, rl2) + 0.05);
 };
 
 /**
@@ -355,8 +390,15 @@ pv.Color.Rgb.prototype.rgb = function() { return this; };
  */
 pv.Color.Rgb.prototype.brighter = function(k) {
   k = Math.pow(0.7, k != null ? k : 1);
-  var r = this.r, g = this.g, b = this.b, i = 30;
+
+  var r = this.r;
+  var g = this.g;
+  var b = this.b;
+
+  var i = 30;
+
   if (!r && !g && !b) return pv.rgb(i, i, i, this.a);
+
   if (r && (r < i)) r = i;
   if (g && (g < i)) g = i;
   if (b && (b < i)) b = i;
@@ -388,21 +430,21 @@ pv.Color.Rgb.prototype.darker = function(k) {
 };
 
 /**
- * Converts an RGB color value to HSL. 
+ * Converts an RGB color value to HSL.
  * Conversion formula adapted from http://en.wikipedia.org/wiki/HSL_color_space.
- * 
+ *
  * (Adapted from http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript)
- * 
+ *
  * @returns pv.Color.Hsl
  */
 pv.Color.Rgb.prototype.hsl = function(){
     var r = this.r / 255;
     var g = this.g / 255;
     var b = this.b / 255;
-    
-    var max = Math.max(r, g, b); 
+
+    var max = Math.max(r, g, b);
     var min = Math.min(r, g, b);
-    
+
     var l = (max + min) / 2;
     var h, s;
 
@@ -416,7 +458,7 @@ pv.Color.Rgb.prototype.hsl = function(){
             case g: h = (b - r) / d + 2; break;
             case b: h = (r - g) / d + 4; break;
         }
-        
+
         h /= 6;
     }
 
@@ -542,7 +584,7 @@ pv.Color.Hsl.prototype.alpha = function(a) {
 pv.Color.Hsl.prototype.complementary = function() {
   return pv.hsl((this.h + 180) % 360, 1 - this.s, 1 - this.l, this.a);
 };
-  
+
 /**
  * Returns the RGB color equivalent to this HSL color.
  *
